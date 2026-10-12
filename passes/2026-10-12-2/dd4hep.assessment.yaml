@@ -1,0 +1,488 @@
+schema_version: 1
+project: dd4hep
+pass: "2026-10-12-2"
+commit: 78ca69c4b2cc8130b6ff9948f458c539ac81433e
+assessor: { agent: claude-code, model: claude-opus-5-5 }
+summary: >-
+  Only 33% of merged PRs have a recorded review, there is no C++ formatter, no code of conduct, no
+  documented governance or version scheme, all 9 releases in 24 months were cut by one person, and a
+  GPL-3.0 copy of GaudiPluginService ships inside the LGPL-3.0 project. CI builds and runs the core and
+  example ctest suites, including reference-shape and multi-thread output comparisons, on 8 LCG
+  stacks plus the Key4hep nightly, and it is required before merge. The latest release (1.38) ships in
+  eic-shell and in upstream Spack, and 32 authors from 9 e-mail domains contributed in 24 months.
+criteria:
+  eng.change-control:
+    level: 1
+    confidence: high
+    rationale: >-
+      96.5% of first-parent commits arrive through PRs, but only 32.7% of merged PRs carry a review from
+      someone other than the author, below the 50% required for level 2.
+    evidence:
+      - metrics:git.first_parent_pr_fraction_12m = 0.965
+      - metrics:prs.reviewed_fraction_12m = 0.327
+      - metrics:repo.default_branch_protected = true
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/.github/PULL_REQUEST_TEMPLATE#L1-L8
+    gaps:
+      - Fewer than 50% of merged PRs have a review by someone other than the author.
+      - Branch protection requires status checks but no approving review, and there is no CODEOWNERS.
+    actions:
+      - action: Require one approving review in the `master` branch protection rule.
+        priority: high
+        effort: S
+      - action: Add `.github/CODEOWNERS` assigning each top-level package (DDCore, DDG4, DDDigi, DDRec, ...) to at least one reviewer.
+        priority: medium
+        effort: S
+  eng.ci:
+    level: 2
+    confidence: high
+    rationale: >-
+      Every PR and push builds and runs ctest for the core and the examples on 8 LCG stacks and the
+      Key4hep nightly, the jobs are required status checks, and 94% of default-branch runs succeed. The
+      macOS job only compiles (without Geant4) and runs no tests, although the manual declares macOS
+      supported.
+    evidence:
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/.github/workflows/linux.yml#L7-L28
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/.github/workflows/linux.yml#L90-L121
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/.github/workflows/mac.yml#L23-L28
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/doc/usermanuals/DD4hep/chapters/basics.tex#L19-L27
+      - metrics:ci.default_branch_success_rate = 0.94
+      - https://github.com/AIDASoft/DD4hep/actions/runs/37940902195
+    gaps:
+      - The declared macOS platform is built without Geant4 and no tests run on it.
+      - The run on the assessed commit failed in the required `g4units` job (6 ddsim tests).
+    actions:
+      - action: Run `ctest` in `.github/workflows/mac.yml` with Geant4 enabled (see issue #1671 on an lcgcmake-based macOS install).
+        priority: medium
+        effort: M
+  eng.testing:
+    level: 2
+    confidence: medium
+    rationale: >-
+      Unit tests in DDTest and example suites for DDCore, DDG4, DDDigi, DDCond, DDAlign, DDCAD and DDRec
+      run in CI, with ddsim end-to-end runs and regression checks against reference shape meshes and
+      between thread counts. Coverage is not measured and only 1.8% of merged PRs touch test files.
+    evidence:
+      - metrics:code.test_files = 36
+      - metrics:prs.test_touching_fraction_12m = 0.018
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/DDTest/CMakeLists.txt#L145-L162
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/DDTest/CMakeLists.txt#L265-L278
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/examples/ClientTests/compact/Check_Shape_Box_Det.xml#L21
+    gaps:
+      - Test coverage is neither measured nor published (`metrics:files.codecov` is empty).
+      - Fewer than 40% of merged PRs touch test files.
+    actions:
+      - action: Add a gcov/lcov build job to `.github/workflows/linux.yml` and upload results to Codecov.
+        priority: medium
+        effort: M
+      - action: Ask in the PR template that bug-fix and feature PRs add or update a ctest.
+        priority: medium
+        effort: S
+  eng.static-quality:
+    level: 1
+    confidence: high
+    rationale: >-
+      flake8 runs on every PR for Python, clang-tidy checks only header guards, Coverity runs nightly, and
+      `-Wall -Wextra -pedantic` are set, but no C++ formatter is configured or enforced.
+    evidence:
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/.github/workflows/python.yml#L26-L27
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/.github/workflows/clang-tidy.yml#L51-L55
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/.github/workflows/coverity.yml#L7-L10
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/cmake/DD4hepBuild.cmake#L42
+      - metrics:files.clang_format = []
+    gaps:
+      - No `.clang-format` and no formatter enforced on C++ code.
+      - clang-tidy runs only the `llvm-header-guard` check.
+    actions:
+      - action: Add `.clang-format` and a PR job (or pre-commit.ci) that checks formatting of changed C++ lines.
+        priority: high
+        effort: M
+  eng.modularity:
+    level: 3
+    confidence: medium
+    rationale: >-
+      The code is split into packages (DDCore, DDG4, DDDigi, DDRec, DDCond, DDAlign) with separate
+      `include/` and `src/` trees, requires C++17, exports a `DD4hep::` CMake package, loads detectors as
+      plugins from compact XML, and has per-package user manuals.
+    evidence:
+      - metrics:code.cxx_standard = ["17"]
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/CMakeLists.txt#L56-L57
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/CMakeLists.txt#L331-L358
+      - https://github.com/AIDASoft/DD4hep/tree/78ca69c4b2cc8130b6ff9948f458c539ac81433e/doc/usermanuals
+    gaps: []
+    actions: []
+  doc.user:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The hosted installation page lists minimum versions for CMake, Boost and ROOT and the beginners guide
+      has runnable ddsim and geoDisplay examples, but Geant4, Xerces-C, HepMC3, EDM4hep and LCIO have no
+      versions and the only distribution route is a CentOS 7 LCG_102b view.
+    evidence:
+      - https://dd4hep.web.cern.ch/dd4hep/page/installation/
+      - https://dd4hep.web.cern.ch/dd4hep/page/beginners-guide
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/doc/usermanuals/DD4hep/chapters/basics.tex#L82
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/CMakeLists.txt#L147-L161
+    gaps:
+      - Optional dependencies have no minimum versions, and the documented Boost minimum (1.56) differs from CMake (1.70).
+      - No Spack, Key4hep or eic-shell installation route is documented.
+      - The manual's "Build From Source" section reads "NEED REWRITE ONCE FINALIZED".
+    actions:
+      - action: List minimum versions for every optional dependency on the installation page, matching `find_package` in `CMakeLists.txt`.
+        priority: medium
+        effort: S
+      - action: Add `spack install dd4hep`, Key4hep and eic-shell routes to the installation page.
+        priority: medium
+        effort: S
+  doc.developer:
+    level: 3
+    confidence: medium
+    rationale: >-
+      Public headers carry Doxygen comments, the Doxygen reference and LaTeX manuals are built and
+      deployed by GitLab CI on `master` and tags (the hosted reference was generated on the assessed
+      commit's date), and the per-package manuals describe design and data flow with bibliographies.
+    evidence:
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/.gitlab-ci.yml#L72-L139
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/DDCore/include/DD4hep/Segmentations.h#L30-L80
+      - https://dd4hep.web.cern.ch/dd4hep/reference/
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/doc/usermanuals/DD4hep/references.bib
+    gaps: []
+    actions: []
+  doc.contributing:
+    level: 1
+    confidence: high
+    rationale: >-
+      `.github/CONTRIBUTING.md` covers the PR and release-notes process and one coding rule, and issue and
+      PR templates exist, but it does not explain environment setup, building or running the tests.
+    evidence:
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/.github/CONTRIBUTING.md#L1-L33
+      - metrics:files.issue_templates = [".github/ISSUE_TEMPLATE/bug_report.yml", ".github/ISSUE_TEMPLATE/feature.md", ".github/ISSUE_TEMPLATE/question.md"]
+      - metrics:files.pr_template = [".github/PULL_REQUEST_TEMPLATE"]
+    gaps:
+      - CONTRIBUTING has no development-environment setup, build or `ctest` instructions.
+      - Coding conventions are limited to "no new warnings".
+    actions:
+      - action: Extend `.github/CONTRIBUTING.md` with an LCG-view or Key4hep setup, the CMake build, `ctest`, and Python/C++ style rules.
+        priority: medium
+        effort: S
+  com.responsiveness:
+    level: 2
+    confidence: medium
+    rationale: >-
+      Median first response is 0.32 days, no issue went unanswered and 80% are labeled, but 5 of 13 open
+      issues (38%) are older than one year and only about half of merged PRs show review or comments from
+      someone other than the author.
+    evidence:
+      - metrics:issues.median_first_response_days_12m = 0.32
+      - metrics:issues.unanswered_fraction_12m = 0.0
+      - metrics:issues.labeled_fraction_12m = 0.804
+      - metrics:issues.open_older_365d = 5
+      - metrics:issues.open_total = 13
+    gaps:
+      - 38% of open issues are older than one year (#777, #924, #1335).
+      - The triage process (labels, milestones) is not documented.
+    actions:
+      - action: Close or schedule the open issues older than one year, starting with #777 and #924.
+        priority: low
+        effort: S
+      - action: Document the label scheme and triage practice in `.github/CONTRIBUTING.md`.
+        priority: medium
+        effort: S
+  com.contributors:
+    level: 3
+    confidence: high
+    rationale: >-
+      32 authors in 24 months from 9 e-mail domains, 13 new authors in 12 months, and 23.9% of merged PRs
+      from outside the maintainer group.
+    evidence:
+      - metrics:git.authors_24m = 32
+      - metrics:git.email_domains_24m = 9
+      - metrics:git.new_authors_12m = 13
+      - metrics:prs.external_fraction_12m = 0.239
+    gaps: []
+    actions: []
+  com.bus-factor:
+    level: 2
+    confidence: medium
+    rationale: >-
+      Bus factor (50%) is 3, 9 people reviewed and 2 merged, and the website names 4 main developers at
+      CERN and DESY, but there are no per-component owners and all releases in 24 months were cut by one
+      person without a documented procedure.
+    evidence:
+      - metrics:git.bus_factor_50_24m = 3
+      - metrics:prs.distinct_reviewers_12m = 9
+      - metrics:prs.distinct_mergers_12m = 2
+      - metrics:releases.authors_24m = 1
+      - https://dd4hep.web.cern.ch/dd4hep/page/about/
+    gaps:
+      - No CODEOWNERS or list naming two owners per package.
+      - Releases are made by one person and the release procedure is not documented.
+    actions:
+      - action: Document the tagging and release-notes procedure in `RELEASING.md` and have a second maintainer tag the next release.
+        priority: high
+        effort: S
+      - action: Add `.github/CODEOWNERS` with two owners per top-level package.
+        priority: medium
+        effort: S
+  com.governance:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The main developers are named on the website, but no decision process or maintainer path is
+      documented and the milestones page lists 2019-2020 items only.
+    evidence:
+      - https://dd4hep.web.cern.ch/dd4hep/page/about/
+      - https://dd4hep.web.cern.ch/dd4hep/page/milestones
+      - metrics:files.governance = []
+    gaps:
+      - No documented decision process or path to becoming a reviewer or maintainer.
+      - The roadmap is not kept up to date.
+    actions:
+      - action: Add `GOVERNANCE.md` naming the maintainers, how decisions are made, and how contributors become maintainers.
+        priority: medium
+        effort: S
+  com.conduct:
+    level: 1
+    confidence: high
+    rationale: >-
+      Support channels exist (issue tracker with a question template and the dd4hep-developers mailing
+      list), but no code of conduct applies to the repository or the AIDASoft organization.
+    evidence:
+      - metrics:community.files.code_of_conduct = false
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/.github/ISSUE_TEMPLATE/question.md
+      - https://dd4hep.web.cern.ch/dd4hep/
+    gaps:
+      - No code of conduct with a reporting contact.
+    actions:
+      - action: Add `CODE_OF_CONDUCT.md` (for example the CERN Code of Conduct or Contributor Covenant) with a reporting contact.
+        priority: high
+        effort: S
+  dist.packaging:
+    level: 3
+    confidence: high
+    rationale: >-
+      Upstream Spack provides 1.38, which is the latest release v01-38 and the version eic-shell ships
+      (the collector's `latest_release_packaged = false` reflects the `v01-38` tag naming).
+    evidence:
+      - metrics:packaging.spack_builtin.versions = ["master", "1.38", "1.37", "1.36", "1.35"]
+      - metrics:packaging.in_eic_shell = true
+      - metrics:packaging.eic_shell_version = 1.38
+      - metrics:releases.latest_tag = v01-38
+    gaps: []
+    actions: []
+  dist.releases:
+    level: 1
+    confidence: medium
+    rationale: >-
+      Nine releases in 24 months each have notes generated from PR descriptions, but the `vXX-YY` version
+      scheme is not documented anywhere.
+    evidence:
+      - metrics:releases.count_24m = 9
+      - metrics:releases.with_notes_fraction_24m = 1.0
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/doc/ReleaseNotes.md#L1-L10
+    gaps:
+      - No documented version scheme.
+      - No flagged breaking changes, deprecation policy, or release workflow.
+    actions:
+      - action: State the version scheme (major.minor.patch mapped to `vXX-YY[-ZZ]` tags) and its compatibility meaning in `README.md`.
+        priority: high
+        effort: S
+  dist.dependencies:
+    level: 1
+    confidence: high
+    rationale: >-
+      ROOT, Boost, Geant4, EDM4hep and podio have minimum versions, but LCIO, HepMC3, TBB, Xerces-C and
+      G4HepEm do not, and TinyXML 2.5.2 (unmaintained upstream) and a copy of GaudiPluginService are
+      vendored.
+    evidence:
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/CMakeLists.txt#L147-L224
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/DDCore/include/XML/tinyxml.h#L98-L100
+      - https://github.com/AIDASoft/DD4hep/tree/78ca69c4b2cc8130b6ff9948f458c539ac81433e/GaudiPluginService
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/.github/dependabot.yml
+    gaps:
+      - Several `find_package` calls have no minimum version.
+      - Unmaintained vendored TinyXML 2.5.2 remains as the default XML parser.
+    actions:
+      - action: Add minimum versions to `find_package` for LCIO, HepMC3, TBB, XercesC and G4HepEm in `CMakeLists.txt`.
+        priority: medium
+        effort: S
+      - action: Replace the vendored TinyXML 2.5.2 with an external maintained parser (TinyXML2 or Xerces-C as default).
+        priority: medium
+        effort: L
+  dist.reproducibility:
+    level: 2
+    confidence: medium
+    rationale: >-
+      CI runs in pinned LCG views (LCG_101, LCG_106, LCG_107a) and the install page documents sourcing an
+      LCG view; ddsim writes DD4hep and Geant4 versions, all steering parameters and the command line into
+      the run header. No environment is versioned with each DD4hep release.
+    evidence:
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/.github/workflows/linux.yml#L21-L28
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/DDG4/python/DDSim/Helper/Meta.py#L71-L114
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/DDG4/edm4hep/Geant4Output2EDM4hep.cpp#L407-L410
+    gaps:
+      - Releases do not name a tested environment (LCG or Key4hep release) to reproduce them.
+    actions:
+      - action: State in each release note the LCG and Key4hep stacks the release was tested in.
+        priority: medium
+        effort: S
+  dist.portability:
+    level: 2
+    confidence: high
+    rationale: >-
+      CI builds and tests with GCC 11/13/15 and Clang 22 on EL9, CentOS 7 and Ubuntu 24.04; macOS is built
+      but not tested, there is no aarch64 job, and accelerator support is not addressed.
+    evidence:
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/.github/workflows/linux.yml#L21-L28
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/.github/workflows/mac.yml#L15-L28
+      - metrics:ci.runs_on = ["macos-latest", "ubuntu-latest"]
+      - metrics:code.site_specific_paths
+    gaps:
+      - No tests on macOS or aarch64.
+      - No documentation of batch/HPC use or of why accelerators are not supported.
+      - Three example scripts contain `/afs/` or personal home paths.
+    actions:
+      - action: Add an `ubuntu-24.04-arm` job and run `ctest` in the macOS job.
+        priority: medium
+        effort: M
+  eic.reuse:
+    level: 3
+    confidence: medium
+    rationale: >-
+      DD4hep builds on ROOT, Geant4, HepMC3 and podio/EDM4hep, its HepMC2 ASCII reader is a documented
+      fallback when HepMC3 is not built, and it is itself the geometry component reused by epic, EICrecon
+      and npsim.
+    evidence:
+      - metrics:eic.domain_components = ["edm4hep", "geant4", "hepmc3", "npsim", "podio"]
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/DDG4/python/DDSim/Helper/HepMC3.py#L14-L23
+      - metrics:packaging.eic_spack_dependents = ["algorithms", "eic-ip6", "eicrecon", "epic", "g4occt", "juggler", "npdet", "npsim", "simphony"]
+    gaps: []
+    actions: []
+  eic.data-model:
+    level: 2
+    confidence: medium
+    rationale: >-
+      DD4hep defines the compact XML geometry format, reads HepMC3 and EDM4hep and writes EDM4hep, and
+      its EDM4hep outputs are read back in tests by PyROOT. The default `.root` output uses DD4hep-native
+      classes that need DD4hep dictionaries, and file data-model versions are not checked on read.
+    evidence:
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/DDG4/edm4hep/Geant4Output2EDM4hep.cpp#L390-L415
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/DDTest/CMakeLists.txt#L188-L196
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/DDTest/python/compare_simulation_output.py#L22-L26
+    gaps:
+      - The EDM4hep version of input files is checked only at compile time, not on read.
+      - The default ddsim `.root` output cannot be read without DD4hep libraries.
+    actions:
+      - action: Check the EDM4hep schema version from the podio metadata in `EDM4hepFileReader.cpp` and warn on mismatch.
+        priority: medium
+        effort: S
+  eic.environment:
+    level: 2
+    confidence: medium
+    rationale: >-
+      eic/containers builds DD4hep 1.38 for eic-shell and the epic CI runs DD4hep tools (checkGeometry,
+      npsim) in `eic_xl:nightly` and a pinned stable release, but both use released DD4hep, so no EIC
+      CI tests DD4hep `master` before a release (calibrated against podio, ACTS, ROOT and EDM4hep in
+      this pass).
+    evidence:
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/spack-environment/packages.yaml#L134-L138
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/.github/workflows/linux-eic-shell.yml#L50-L66
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/.github/workflows/linux-eic-shell.yml#L356-L366
+      - metrics:ci.uses_eic_shell = false
+    gaps:
+      - No EIC CI builds DD4hep `master` or release candidates in an eic container, so incompatibilities surface only after a release.
+    actions:
+      - action: (EIC side) Add a scheduled eic/containers or epic CI job that builds DD4hep `master` in `eic_ci:nightly` and runs the epic geometry checks.
+        priority: medium
+        effort: M
+  eic.currency:
+    level: 2
+    confidence: medium
+    rationale: >-
+      DD4hep 1.38 is the version in current eic-shell and CI tracks ROOT and Geant4 development stacks,
+      but `DrawBField.cpp` includes ROOT headers `Hoption.h`/`Hparam.h` that emit deprecation warnings
+      in the dev3 CI build.
+    evidence:
+      - metrics:packaging.eic_shell_version = 1.38
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/DDCore/src/graphics/DrawBField.cpp#L33-L37
+      - https://github.com/AIDASoft/DD4hep/actions/runs/37940902195
+    gaps:
+      - Uses ROOT headers deprecated for removal in ROOT 6.44.
+      - Compatibility code for podio < 1.0 and EDM4hep < 1.0 remains.
+    actions:
+      - action: Replace `Hoption.h`/`Hparam.h` in `DDCore/src/graphics/DrawBField.cpp` with the public `THistPainter` interface.
+        priority: medium
+        effort: S
+      - action: (EIC side) Add a scheduled eic-shell job that builds DD4hep `master` and runs the epic geometry checks before each DD4hep release.
+        priority: low
+        effort: M
+  via.license:
+    level: 1
+    confidence: high
+    rationale: >-
+      LGPL-3.0 is detected and declared in Spack, but the bundled GaudiPluginService is GPL-3.0 with its
+      own LICENCE and is built into the DD4hep libraries, and the user manual states that DD4hep is GPLv3.
+    evidence:
+      - metrics:repo.license_spdx = LGPL-3.0
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/GaudiPluginService/src/PluginServiceV2.cpp#L1-L10
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/GaudiPluginService/CMakeLists.txt#L6-L7
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/doc/usermanuals/DD4hep/chapters/basics.tex#L13
+    gaps:
+      - GPL-3.0 code is shipped inside the LGPL-3.0 project.
+      - The user manual states a different license (GPLv3) than LICENSE (LGPLv3).
+    actions:
+      - action: Re-import GaudiPluginService from current Gaudi (Apache-2.0) or obtain relicensing, and update `GaudiPluginService/LICENCE`.
+        priority: high
+        effort: M
+      - action: Correct the license statement in `doc/usermanuals/DD4hep/chapters/basics.tex`.
+        priority: high
+        effort: S
+  via.citation:
+    level: 2
+    confidence: medium
+    rationale: >-
+      A Zenodo concept DOI (10.5281/zenodo.592244) and `.zenodo.json` exist and release notes credit each
+      PR author, but the last versioned DOI is for v01-25-01 (February 2023) and `.zenodo.json` was last
+      changed in 2018.
+    evidence:
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/.zenodo.json
+      - https://doi.org/10.5281/zenodo.7673417
+      - https://dd4hep.web.cern.ch/dd4hep/page/publications/
+    gaps:
+      - Releases after v01-25-01 have no Zenodo DOI.
+      - "`.zenodo.json` lists 4 creators and has not been updated since 2018; no CITATION.cff."
+    actions:
+      - action: Re-enable the Zenodo-GitHub integration so each release gets a DOI, and update `.zenodo.json` creators.
+        priority: medium
+        effort: S
+      - action: Add `CITATION.cff` citing the software DOI and the reference publication.
+        priority: medium
+        effort: S
+  via.adoption:
+    level: 3
+    confidence: high
+    rationale: >-
+      DD4hep ships in eic-shell and underlies the ePIC geometry, simulation and reconstruction, and it is
+      used outside EIC, for example by Key4hep detector models and CMS.
+    evidence:
+      - metrics:packaging.in_eic_shell = true
+      - metrics:packaging.eic_spack_dependents = ["algorithms", "eic-ip6", "eicrecon", "epic", "g4occt", "juggler", "npdet", "npsim", "simphony"]
+      - https://github.com/key4hep/k4geo
+      - https://github.com/search?q=DD4hep&type=code
+    gaps: []
+    actions: []
+  via.support:
+    level: 2
+    confidence: medium
+    rationale: >-
+      The website and `.zenodo.json` acknowledge AIDA2020 (Horizon 2020 grant 654168) funding and name
+      developers at CERN and DESY, but no current multi-institution maintenance commitment or succession
+      plan is documented.
+    evidence:
+      - https://dd4hep.web.cern.ch/dd4hep/page/about/
+      - https://github.com/AIDASoft/DD4hep/blob/78ca69c4b2cc8130b6ff9948f458c539ac81433e/.zenodo.json#L47-L51
+    gaps:
+      - The acknowledged grant ended in 2020; no current institutional commitment or succession plan is documented.
+    actions:
+      - action: State the current supporting institutions and the plan for maintainer succession in the README.
+        priority: medium
+        effort: S

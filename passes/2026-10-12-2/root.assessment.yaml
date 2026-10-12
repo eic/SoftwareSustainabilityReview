@@ -1,0 +1,473 @@
+schema_version: 1
+project: root
+pass: '2026-10-12-2'
+commit: 14a58f7421159e73840ff07d09a975b7145d7fcb
+assessor: { agent: claude-code, model: claude-opus-5-5 }
+summary: >-
+  The main risks are a default branch that is almost never fully green (2 of the last 43 `ROOT CI`
+  push runs on `master` passed every job, with failures concentrated on new or pre-release platforms),
+  74% of open issues older than one year, and a license that GitHub cannot detect (LGPL-2.1-or-later notice
+  plus GPL and BSD-style parts). Established practices are PR-based review by 22 reviewers, unit and
+  reference-output tests with published coverage, formatting, clang-tidy, ruff and ASan on every PR, frequent
+  releases with deprecation and removal notes and per-release Zenodo DOIs, and the latest release (6.40.04)
+  shipped in eic-shell and upstream Spack.
+criteria:
+  eng.change-control:
+    level: 2
+    confidence: high
+    rationale: >-
+      All sampled first-parent commits in 12 months came through PRs, `master` is protected, CODEOWNERS and a PR
+      template exist, and CONTRIBUTING describes review; 89.9% of merged PRs had a non-author review, just below
+      the 90% required for level 3.
+    evidence:
+      - metrics:git.first_parent_pr_fraction_12m = 1.0
+      - metrics:prs.reviewed_fraction_12m = 0.899
+      - metrics:repo.default_branch_protected = true
+      - metrics:repo.rulesets = 4
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/.github/CODEOWNERS#L10-L54
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/.github/pull_request_template.md
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/CONTRIBUTING.md#L72-L98
+    gaps:
+      - 10.1% of merged PRs in 12 months had no review from someone other than the author.
+      - The public rulesets require a PR and review only on `v*-patches` branches (with 0 required approvals), not on `master`.
+    actions:
+      - action: Add a ruleset on `master` requiring one approving review (CODEOWNERS review where an owner exists).
+        priority: medium
+        effort: S
+  eng.ci:
+    level: 1
+    confidence: high
+    rationale: >-
+      `ROOT CI` builds and runs ctest on about 27 configurations on every PR and `master` push, but of the 50 push runs
+      in the metric only 2 of 43 `ROOT CI` runs passed every job and all 7 `Sync Cling repo` runs failed at checkout.
+      Failing `ROOT CI` runs have 1 to 7 of 27 jobs failing, mostly new or pre-release platforms: ubuntu2610 in 29 of
+      43 (a distributed-RDataFrame test timeout, issue 23675), fedora44 in 20, and mac27 and mac-beta in 12 each.
+    evidence:
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/.github/workflows/root-ci.yml#L1-L20
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/.github/workflows/root-ci.yml#L395-L470
+      - https://github.com/root-project/root/actions/runs/38237045463
+      - https://github.com/root-project/root/actions/runs/37973558286
+      - https://github.com/root-project/root/issues/23675
+      - metrics:ci.default_branch_success_rate = 0.04
+    gaps:
+      - 4% of recent default-branch runs succeed; `ROOT CI` on `master` fails in 41 of 43 recent push runs.
+      - '`Sync Cling repo` has failed on all 7 recent `master` pushes at the "Checkout Cling" step.'
+      - No required status checks on `master` (branch protection lists none).
+    actions:
+      - action: Mark the ubuntu2610, fedora44, mac27 and mac-beta jobs as non-blocking (or fix issue 23675 and the platform failures) so `ROOT CI` on `master` passes.
+        priority: high
+        effort: M
+      - action: Fix the `CLING_GIT_TOKEN` checkout in `.github/workflows/sync_cling.yml` or disable the workflow.
+        priority: high
+        effort: S
+  eng.testing:
+    level: 3
+    confidence: high
+    rationale: >-
+      1555 test files (GoogleTest unit tests per module, pytest, and roottest with 1029 `.ref` reference-output
+      files) run through ctest in CI on every PR, tutorials run as tests, and coverage is uploaded nightly to Codecov
+      (60.9% of lines). 40.7% of merged PRs in 12 months touched tests.
+    evidence:
+      - metrics:code.test_files = 1555
+      - metrics:prs.test_touching_fraction_12m = 0.407
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/roottest/cling/dict/ROOT-8096/CMakeLists.txt#L38
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/.github/workflows/test-coverage.yml#L193-L201
+      - https://app.codecov.io/gh/root-project/root
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/CONTRIBUTING.md#L100-L110
+    gaps: []
+    actions: []
+  eng.static-quality:
+    level: 3
+    confidence: high
+    rationale: >-
+      clang-format, clang-tidy (`WarningsAsErrors: '*'`) and ruff check every PR, the debian13 CI job builds with
+      `dev=ON` (`-Werror`), and an ASan build runs in the CI matrix. Global flags disable only two specific warnings.
+    evidence:
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/.github/workflows/code_analysis.yml#L1-L164
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/.clang-tidy
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/.github/workflows/root-ci.yml#L415-L438
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/cmake/modules/SetUpLinux.cmake#L43-L46
+    gaps: []
+    actions: []
+  eng.modularity:
+    level: 2
+    confidence: medium
+    rationale: >-
+      The code is split into libraries (core, io, tree, hist, math, roofit, ...) with `inc/` and `src/` separation,
+      builds with CMake 3.20 and C++17/20/23, and exports `ROOTConfig.cmake`; the architecture page documents the
+      components. Libraries are not usable independently of Core and the Cling interpreter, and components share
+      global state (`gROOT`, `gDirectory`, `gPad`, `gStyle`).
+    evidence:
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/cmake/modules/CheckCompiler.cmake#L196-L201
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/cmake/modules/RootConfiguration.cmake#L629-L630
+      - https://root.cern/manual/root_architecture_and_components/
+      - metrics:code.requires_python = ">=3.10"
+    gaps:
+      - Every library depends on Core and Cling at runtime, so components cannot be reused independently.
+      - Components communicate through documented global variables (`gROOT`, `gDirectory`, `gPad`).
+    actions:
+      - action: Document which libraries can be linked without Cling (for example the RNTuple and histogram v7 libraries) and test such a minimal consumer in CI.
+        priority: low
+        effort: M
+  doc.user:
+    level: 2
+    confidence: medium
+    rationale: >-
+      root.cern documents installation through binaries, conda, Spack-based LCG views, distribution packages and from
+      source, lists all build options, and has a getting-started guide, a manual and tutorials that run as ctest tests;
+      reference docs are versioned per release. Required libraries are listed per distribution without minimum versions
+      (only compilers and C++ standard), and there is no FAQ or troubleshooting page.
+    evidence:
+      - https://root.cern/install/
+      - https://root.cern/install/dependencies/
+      - https://root.cern/install/build_from_source/
+      - https://root.cern/manual/first_steps_with_root/
+      - https://root.cern/doc/v640/
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/README.md#L53-L57
+    gaps:
+      - The dependencies page gives no minimum versions for required libraries (only compilers and C++ standard).
+      - No FAQ or troubleshooting page; users are referred to the forum.
+    actions:
+      - action: Add minimum versions for each required library to https://root.cern/install/dependencies/ (matching `SearchInstalledSoftware.cmake`).
+        priority: medium
+        effort: S
+      - action: Add a troubleshooting page for common build and runtime errors to the manual.
+        priority: medium
+        effort: S
+  doc.developer:
+    level: 3
+    confidence: high
+    rationale: >-
+      The Doxygen reference guide is generated and published to root.cern by the docs CI for `master` and each
+      release branch, the manual covers architecture and each functional area, and design documents exist in-tree
+      (for example RNTuple architecture and binary format). Algorithm documentation cites references in the
+      reference guide (for example Minuit2, RooFit, TMVA).
+    evidence:
+      - metrics:files.doxygen = ["documentation/doxygen/Doxyfile"]
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/.github/workflows/root-docs-schedule.yml#L1-L30
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/.github/workflows/root-docs-ci.yml#L185-L209
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/tree/ntuple/doc/Architecture.md
+      - https://root.cern/doc/master/
+    gaps: []
+    actions: []
+  doc.contributing:
+    level: 2
+    confidence: high
+    rationale: >-
+      CONTRIBUTING.md covers build and test links, coding conventions, commit and PR format, tests and the CI checks,
+      with PR and issue templates; 89 issues carry `good first issue`, and some were closed by first-time
+      contributors. No ready-made development environment (devcontainer or documented CI image) is described.
+    evidence:
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/CONTRIBUTING.md#L1-L154
+      - https://root.cern/for_developers/run_the_tests/
+      - metrics:files.issue_templates = 4
+      - https://github.com/root-project/root/issues?q=label%3A%22good+first+issue%22
+      - https://github.com/root-project/root/pull/23079
+    gaps:
+      - No devcontainer or documented container image for development, although CI images exist (root-ci-images).
+    actions:
+      - action: Document building and testing ROOT inside the public `registry.cern.ch/root-ci/<os>:buildready` images, or add `.devcontainer/devcontainer.json` based on one.
+        priority: medium
+        effort: S
+  com.responsiveness:
+    level: 1
+    confidence: high
+    rationale: >-
+      Median first response is 0.68 days and 97.7% of new issues are labeled, but 282 of 380 open issues (74%) are
+      older than one year, which is more than half.
+    evidence:
+      - metrics:issues.median_first_response_days_12m = 0.68
+      - metrics:issues.labeled_fraction_12m = 0.977
+      - metrics:issues.open_older_365d = 282
+      - metrics:issues.open_total = 380
+      - metrics:prs.median_days_to_merge_12m = 1.14
+    gaps:
+      - 74% of open issues are older than one year.
+    actions:
+      - action: Review the 282 issues open longer than one year and close, or label and milestone, each one.
+        priority: medium
+        effort: M
+  com.contributors:
+    level: 3
+    confidence: high
+    rationale: >-
+      173 authors in 24 months from 34 e-mail domains, 58 new authors in 12 months, and 55.5% of merged PRs from
+      contributors outside the maintainer group.
+    evidence:
+      - metrics:git.authors_24m = 173
+      - metrics:git.email_domains_24m = 34
+      - metrics:git.new_authors_12m = 58
+      - metrics:prs.external_fraction_12m = 0.555
+    gaps: []
+    actions: []
+  com.bus-factor:
+    level: 2
+    confidence: high
+    rationale: >-
+      Bus factor (50%) is 5, 22 people reviewed and 18 merged in 12 months, CODEOWNERS names two owners for most
+      directories, and the team spans CERN, Fermilab and GSI. Some components have a single owner (`/geom/`, `/tmva/`,
+      `/net/http/`, `/cmake/`), and all releases in 24 months were published by one account.
+    evidence:
+      - metrics:git.bus_factor_50_24m = 5
+      - metrics:prs.distinct_reviewers_12m = 22
+      - metrics:prs.distinct_mergers_12m = 18
+      - metrics:releases.authors_24m = 1
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/.github/CODEOWNERS#L10-L87
+      - https://root.cern/about/team/
+    gaps:
+      - Single CODEOWNERS entries for `/geom/`, `/tmva/`, `/net/http/`, the web GUI directories and `/cmake/`.
+      - Releases published by one account in 24 months; the release procedure is not publicly documented.
+    actions:
+      - action: Add a second owner to each single-owner path in `.github/CODEOWNERS`.
+        priority: medium
+        effort: S
+      - action: Document the release procedure (tagging, `root-src-tarball.yml`, `root-relpage-ci.yml`, binaries) in `README/DEVELOPMENT.md`.
+        priority: medium
+        effort: S
+  com.governance:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The project leader and team are named, the yearly Program of Work process and weekly developer meetings are
+      public, and milestones exist up to 7.00; there is no documented decision process or path to becoming a
+      reviewer or maintainer.
+    evidence:
+      - https://root.cern/about/team/
+      - https://root.cern/for_developers/program_of_work/
+      - https://root.cern/for_developers/meetings/
+      - https://github.com/root-project/root/milestones
+    gaps:
+      - No document states who makes decisions or how a contributor becomes a reviewer or maintainer.
+      - The latest Program of Work listed is for 2025.
+    actions:
+      - action: Add a `GOVERNANCE.md` naming the project leader and core team, how decisions are made, and how contributors become reviewers or code owners.
+        priority: high
+        effort: S
+  com.conduct:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The README links the ROOT Forum, which is active, and the issue tracker; no code of conduct with a reporting
+      contact applies to the repository or organization (the forum carries only generic Discourse guidelines).
+    evidence:
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/README.md#L59-L63
+      - https://root-forum.cern.ch/
+      - metrics:community.files.code_of_conduct = false
+    gaps:
+      - No code of conduct with a reporting contact.
+    actions:
+      - action: Add `CODE_OF_CONDUCT.md` (Contributor Covenant or the CERN Code of Conduct) with a reporting contact, and link it from the README.
+        priority: high
+        effort: S
+  dist.packaging:
+    level: 3
+    confidence: high
+    rationale: >-
+      ROOT 6.40.04, the latest feature-series release (2026-08-27), is in upstream Spack and ships in eic-shell, where
+      it was pinned two days after release; conda-forge also provides 6.40.04. The collector's `latest_tag` (v6-36-14)
+      is a later-dated patch release of an older series, so `latest_release_packaged = false` does not indicate lag.
+    evidence:
+      - metrics:packaging.in_eic_shell = true
+      - metrics:packaging.eic_shell_version = 6.40.04
+      - metrics:packaging.spack_builtin
+      - https://github.com/root-project/root/releases/tag/v6-40-04
+      - https://github.com/eic/containers/commit/3d05d87c22
+      - https://anaconda.org/conda-forge/root
+    gaps: []
+    actions: []
+  dist.releases:
+    level: 3
+    confidence: medium
+    rationale: >-
+      40 releases in 24 months with notes, a documented MAJOR.MINOR.PATCH scheme with even/odd stable and development
+      series and compatibility guarantees, per-version release notes with Deprecations and Removals sections that
+      name the removal release and replacement, and workflows that build source tarballs, binaries and release pages.
+    evidence:
+      - metrics:releases.count_24m = 40
+      - metrics:releases.with_notes_fraction_24m = 1.0
+      - https://root.cern/about/versioning/
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/README/ReleaseNotes/v640/index.md#L40-L88
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/.github/workflows/root-src-tarball.yml
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/.github/workflows/root-relpage-ci.yml
+    gaps: []
+    actions: []
+  dist.dependencies:
+    level: 1
+    confidence: high
+    rationale: >-
+      Dependencies are declared in `SearchInstalledSoftware.cmake` with builtin fallbacks pinned by version and hash,
+      but many required packages have no minimum version (LZ4, LibLZMA, ZLIB, xxHash, Freetype, XRootD, OpenSSL, ...).
+      There is a SECURITY.md, but no Dependabot or Renovate, and 72 action references are not pinned to a SHA.
+    evidence:
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/cmake/modules/SearchInstalledSoftware.cmake#L118-L203
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/builtins/zstd/CMakeLists.txt#L7-L40
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/SECURITY.md
+      - metrics:ci.action_refs_not_sha_pinned = 72
+      - metrics:files.dependabot = []
+    gaps:
+      - Most `ROOT_FIND_REQUIRED_DEP` calls give no minimum version.
+      - No automated update monitoring for dependencies or GitHub Actions.
+    actions:
+      - action: Add the minimum supported version to every `ROOT_FIND_REQUIRED_DEP` and `find_package` call in `cmake/modules/SearchInstalledSoftware.cmake`.
+        priority: medium
+        effort: M
+      - action: Add `.github/dependabot.yml` for `github-actions`.
+        priority: low
+        effort: S
+  dist.reproducibility:
+    level: 2
+    confidence: medium
+    rationale: >-
+      Release-tagged Docker images (`rootproject/root:<version>-<os>`) are documented on the install page, CI uses
+      public versioned build images, and ROOT files record the writing ROOT version and class schemas. The Docker
+      images are not published for 6.40 (latest tag 6.38.00), and CI does not run in the published user images.
+    evidence:
+      - https://root.cern/install/#run-in-a-docker-container
+      - https://hub.docker.com/r/rootproject/root/tags
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/.github/workflows/root-ci.yml#L395-L400
+    gaps:
+      - No Docker image for the 6.40 releases; images are not built for every release.
+      - CI runs in `root-ci` build images, not in the published release images.
+    actions:
+      - action: Publish `rootproject/root:<version>-<os>` images from a workflow triggered by each release tag.
+        priority: medium
+        effort: M
+  dist.portability:
+    level: 3
+    confidence: high
+    rationale: >-
+      CI builds and tests on 12 Linux distribution versions (GCC and Clang, x86_64 and aarch64), macOS ARM64 and x86_64, and
+      Windows; ROOT is distributed on CVMFS through LCG views and runs on grid and batch resources; CUDA support exists
+      as build options, although the GPU CI job is disabled.
+    evidence:
+      - metrics:ci.runs_on = ["macos-15","macos-26","self-hosted","ubuntu-24.04-arm","ubuntu-latest"]
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/.github/workflows/root-ci.yml#L120-L130
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/.github/workflows/root-ci.yml#L400-L470
+      - https://root.cern/install/build_from_source/
+      - https://root.cern/install/#lcg-releases-on-cvmfs
+    gaps: []
+    actions: []
+  eic.reuse:
+    level: 3
+    confidence: medium
+    rationale: >-
+      ROOT is a base component that needs no other EIC-supported domain functionality and uses the external Pythia8
+      and XRootD packages rather than copies; 25 eic-spack packages (including podio-based EDM4eic, JANA2, EICrecon and
+      npsim) build on it.
+    evidence:
+      - metrics:eic.vendored_candidates = []
+      - metrics:eic.eic_spack_dependents
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/cmake/modules/SearchInstalledSoftware.cmake#L657
+    gaps: []
+    actions: []
+  eic.data-model:
+    level: 3
+    confidence: high
+    rationale: >-
+      ROOT defines the TTree and RNTuple file formats used by podio for EDM4hep and EDM4eic files; the RNTuple binary
+      format has a versioned specification, files carry format and class versions checked on read, I/O tests cover
+      round trips, and uproot reads the files without ROOT.
+    evidence:
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/tree/ntuple/doc/BinaryFormatSpecification.md#L1-L28
+      - https://root.cern/about/versioning/
+      - https://github.com/scikit-hep/uproot5
+    gaps: []
+    actions: []
+  eic.environment:
+    level: 2
+    confidence: medium
+    rationale: >-
+      ROOT is built in eic-shell from a pinned version in eic/containers, whose CI builds the image and runs EICrecon
+      simulation and reconstruction jobs every six hours and on PRs. ROOT development versions or release candidates
+      are not built or tested in an eic container before release.
+    evidence:
+      - metrics:ci.uses_eic_shell = false
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/spack-environment/packages.yaml#L667-L671
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/.github/workflows/build-push.yml#L3-L9
+      - https://eic.github.io/tutorial-analysis/
+    gaps:
+      - No CI tests ROOT `master` or a release candidate in an eic container image.
+    actions:
+      - action: (EIC side) Add an eic/containers job that builds the eic_xl environment with the next ROOT release candidate and runs the EICrecon tests.
+        priority: medium
+        effort: M
+  eic.currency:
+    level: 3
+    confidence: medium
+    rationale: >-
+      eic-shell ships the latest ROOT release; 6.40.04 was pinned in eic/containers two days after its release, and
+      issues reported from the EIC stack (for example an RNTuple data race found with podio and JANA2) were fixed.
+      ROOT uses only generic EIC-stack components (XRootD, Pythia8) and keeps a compatibility workaround for XRootD
+      older than 5.8.4.
+    evidence:
+      - metrics:packaging.eic_shell_version = 6.40.04
+      - https://github.com/eic/containers/commit/3d05d87c22
+      - https://github.com/root-project/root/issues/22153
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/cmake/modules/SearchInstalledSoftware.cmake#L686-L697
+    gaps: []
+    actions: []
+  via.license:
+    level: 1
+    confidence: high
+    rationale: >-
+      ROOT is LGPL-2.1-or-later, but `LICENSE` is a notice with the text in `LGPL2_1.txt`, so GitHub reports
+      NOASSERTION; MathMore is GPL-only and RooFit has a BSD-style license, and source files carry no SPDX headers.
+    evidence:
+      - metrics:repo.license_spdx = NOASSERTION
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/LICENSE
+      - https://root.cern/about/license/
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/CONTRIBUTING.md#L25-L29
+    gaps:
+      - The license is not machine-detectable (SPDX NOASSERTION).
+      - Licensing differs across components (LGPL, GPL for MathMore, BSD-style for RooFit) without per-file SPDX identifiers.
+    actions:
+      - action: Put the full LGPL-2.1 text in `LICENSE` (moving the notice to the README) so GitHub detects `LGPL-2.1-or-later`, and add `LICENSES/` entries for GPL and RooFit parts.
+        priority: high
+        effort: S
+  via.citation:
+    level: 2
+    confidence: high
+    rationale: >-
+      The Zenodo-GitHub integration gives every release a DOI under concept DOI 10.5281/zenodo.848818, the README
+      gives the reference paper and BibTeX, and `README/CREDITS` lists contributors. CREDITS was last updated in
+      2023 although 58 authors were new in 12 months, and the README does not mention the DOI.
+    evidence:
+      - https://doi.org/10.5281/zenodo.848818
+      - https://doi.org/10.5281/zenodo.22124510
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/README.md#L39-L46
+      - https://github.com/root-project/root/blob/14a58f7421159e73840ff07d09a975b7145d7fcb/README/CREDITS
+    gaps:
+      - '`README/CREDITS` has not been updated since 2023; recent contributors are not credited.'
+      - No `CITATION.cff`, and the README does not cite the software DOI.
+    actions:
+      - action: Add `CITATION.cff` with the concept DOI and the reference paper, and update `README/CREDITS` at each release.
+        priority: medium
+        effort: S
+  via.adoption:
+    level: 3
+    confidence: high
+    rationale: >-
+      ROOT ships in eic-shell and is a dependency of 25 eic-spack packages, including the ePIC production chain
+      (EDM4eic, JANA2, EICrecon, npsim), and is used by experiments outside EIC.
+    evidence:
+      - metrics:packaging.in_eic_shell = true
+      - metrics:eic.eic_spack_dependents
+      - metrics:repo.forks = 1577
+    gaps: []
+    actions: []
+  via.support:
+    level: 2
+    confidence: medium
+    rationale: >-
+      The team page lists maintainers at CERN, Fermilab and GSI, and the Program of Work page states that the yearly
+      plan is presented at the CERN EP-SFT group and agreed with experiments and funders. No document states a
+      multi-institution maintenance commitment or a succession plan.
+    evidence:
+      - https://root.cern/about/team/
+      - https://root.cern/for_developers/program_of_work/
+    gaps:
+      - No documented multi-institution maintenance commitment or succession plan.
+    actions:
+      - action: Document on root.cern the institutions committed to maintenance, their areas, and how ownership transfers when a team member leaves.
+        priority: low
+        effort: S

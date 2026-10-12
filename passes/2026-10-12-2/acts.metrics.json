@@ -1,0 +1,550 @@
+{
+  "schema_version": 1,
+  "project": "acts",
+  "pass": "2026-10-12-2",
+  "repo_url": "https://github.com/acts-project/acts",
+  "subdir": null,
+  "collected_at": "2026-10-12T21:24:48+00:00",
+  "collector_version": "0.3.0",
+  "windows_months": {
+    "short": 12,
+    "long": 24
+  },
+  "git": {
+    "head_sha": "300b664a3d9c32ec928208e7eb18df40e7b2721b",
+    "head_date": "2026-10-12T18:35:12Z",
+    "last_commit_date": "2026-10-12T18:35:12Z",
+    "commits_total": 9483,
+    "commits_12m": 1137,
+    "commits_24m": 1933,
+    "authors_total": 137,
+    "authors_12m": 73,
+    "authors_24m": 87,
+    "new_authors_12m": 39,
+    "bus_factor_50_24m": 2,
+    "bus_factor_80_24m": 9,
+    "top_author_share_24m": 0.272,
+    "email_domains_24m": 11,
+    "first_parent_commits_12m": 1245,
+    "first_parent_pr_fraction_12m": 1.0,
+    "tags_total": 230,
+    "tags_24m": 60
+  },
+  "files": {
+    "readme": [
+      "README.md"
+    ],
+    "license": [
+      "LICENSE"
+    ],
+    "contributing": [
+      "CONTRIBUTING.md"
+    ],
+    "code_of_conduct": [
+      "CODE_OF_CONDUCT.md"
+    ],
+    "citation_cff": [
+      "CITATION.cff"
+    ],
+    "codemeta": [],
+    "zenodo_json": [
+      ".zenodo.json"
+    ],
+    "security": [],
+    "changelog": [],
+    "governance": [],
+    "codeowners": [
+      "CODEOWNERS"
+    ],
+    "authors": [
+      "AUTHORS"
+    ],
+    "pr_template": [
+      ".github/pull_request_template.md"
+    ],
+    "issue_templates": [
+      ".github/issue_template.md"
+    ],
+    "dependabot": [
+      ".github/dependabot.yml"
+    ],
+    "renovate": [],
+    "pre_commit": [
+      ".pre-commit-config.yaml"
+    ],
+    "clang_format": [
+      ".clang-format"
+    ],
+    "clang_tidy": [
+      ".clang-tidy"
+    ],
+    "editorconfig": [],
+    "python_lint": [],
+    "mypy": [],
+    "codecov": [
+      "codecov.yml"
+    ],
+    "doxygen": [
+      "CI/public_api/Doxyfile",
+      "docs/Doxyfile.in",
+      "docs/old/Doxyfile"
+    ],
+    "sphinx": [],
+    "mkdocs": [],
+    "dockerfile": [
+      ".devcontainer/Dockerfile"
+    ],
+    "apptainer_def": [],
+    "spack_env": [],
+    "conda_env": [],
+    "devcontainer": [
+      ".devcontainer/Dockerfile",
+      ".devcontainer/devcontainer.json",
+      ".devcontainer/setup.sh"
+    ],
+    "lockfile": [
+      "Detray/codegen/detray-sympy/uv.lock",
+      "Detray/python/detray/uv.lock",
+      "Traccc/extras/benchmark/uv.lock",
+      "Traccc/extras/cut_optimiser/uv.lock",
+      "Traccc/extras/event_trimmer/uv.lock"
+    ],
+    "gitlab_ci": [],
+    "other_ci": [],
+    "cmake": [
+      "CMakeLists.txt"
+    ],
+    "pyproject": [
+      "pyproject.toml"
+    ],
+    "setup_py": [],
+    "docs_dir": 362,
+    "examples_dir": 775,
+    "github_workflows": [
+      ".github/workflows/analysis.yml",
+      ".github/workflows/api-surface-label.yml",
+      ".github/workflows/builds.yml",
+      ".github/workflows/ccache-cleanup.yml",
+      ".github/workflows/checks.yml",
+      ".github/workflows/detray.yml",
+      ".github/workflows/devcontainer-ci.yml",
+      ".github/workflows/docs.yml",
+      ".github/workflows/labels.yml",
+      ".github/workflows/milestone.yml",
+      ".github/workflows/physmon-reference-upload.yml",
+      ".github/workflows/pr-lint.yml",
+      ".github/workflows/pypi.yml",
+      ".github/workflows/release.yml",
+      ".github/workflows/remove-automerge-label.yml",
+      ".github/workflows/report.yml",
+      ".github/workflows/sonarcloud.yml",
+      ".github/workflows/stale.yml",
+      ".github/workflows/traccc.yml",
+      ".github/workflows/trigger_athena.yml",
+      ".github/workflows/update-pip-requirements.yml"
+    ]
+  },
+  "code": {
+    "languages": {
+      "cpp": {
+        "files": 3661,
+        "lines": 628834
+      },
+      "python": {
+        "files": 323,
+        "lines": 66184
+      },
+      "cmake": {
+        "files": 285,
+        "lines": 14691
+      },
+      "shell": {
+        "files": 40,
+        "lines": 3642
+      },
+      "javascript": {
+        "files": 2,
+        "lines": 271
+      },
+      "c": {
+        "files": 1,
+        "lines": 133
+      }
+    },
+    "source_lines": 695422,
+    "largest_source_files": [
+      {
+        "path": "Tests/UnitTests/Core/Geometry/PortalLinkTests.cpp",
+        "lines": 3177
+      },
+      {
+        "path": "Tests/UnitTests/Core/Geometry/CylinderVolumeStackTests.cpp",
+        "lines": 2914
+      },
+      {
+        "path": "Python/Examples/python/reconstruction.py",
+        "lines": 2811
+      },
+      {
+        "path": "Detray/tests/integration_tests/cpu/propagator/jacobian_validation.cpp",
+        "lines": 1920
+      },
+      {
+        "path": "Tests/UnitTests/Core/Surfaces/BoundsRegressionTests.cpp",
+        "lines": 1854
+      }
+    ],
+    "test_files": 804,
+    "test_frameworks": [
+      "boost.test",
+      "ctest",
+      "gtest",
+      "pytest"
+    ],
+    "cxx_standard": [
+      "20"
+    ],
+    "requires_python": ">=3.11",
+    "site_specific_paths": [
+      "Examples/Scripts/Python/geomodel_G4.py: /eos/"
+    ]
+  },
+  "eic": {
+    "components_detected": {
+      "root": {
+        "files": 136,
+        "kind": "generic",
+        "examples": [
+          "CMakeLists.txt",
+          "Detray/plugins/algebra/smatrix/CMakeLists.txt",
+          "Detray/plugins/algebra/smatrix/include/algebra/impl/detail/smatrix_errorcheck.hpp"
+        ]
+      },
+      "geant4": {
+        "files": 46,
+        "kind": "domain",
+        "examples": [
+          "CMakeLists.txt",
+          "Examples/Algorithms/Geant4/include/ActsExamples/Geant4/AlgebraConverters.hpp",
+          "Examples/Algorithms/Geant4/include/ActsExamples/Geant4/EventStore.hpp"
+        ]
+      },
+      "dd4hep": {
+        "files": 41,
+        "kind": "domain",
+        "examples": [
+          "CMakeLists.txt",
+          "Examples/Detectors/DD4hepDetector/src/DD4hepDetector.cpp",
+          "Examples/Detectors/DD4hepDetector/src/DDG4DetectorConstruction.cpp"
+        ]
+      },
+      "eigen": {
+        "files": 40,
+        "kind": "generic",
+        "examples": [
+          "CMakeLists.txt",
+          "Core/include/Acts/Definitions/Algebra.hpp",
+          "Core/include/Acts/EventData/MultiTrajectory.hpp"
+        ]
+      },
+      "podio": {
+        "files": 33,
+        "kind": "domain",
+        "examples": [
+          "CMakeLists.txt",
+          "Examples/Io/EDM4hep/CMakeLists.txt",
+          "Examples/Io/EDM4hep/include/ActsExamples/Io/EDM4hep/EDM4hepMeasurementInputConverter.hpp"
+        ]
+      },
+      "covfie": {
+        "files": 25,
+        "kind": "domain",
+        "examples": [
+          "CMakeLists.txt",
+          "Detray/CMakeLists.txt",
+          "Detray/tests/include/detray/test/common/bfield.hpp"
+        ]
+      },
+      "edm4hep": {
+        "files": 23,
+        "kind": "domain",
+        "examples": [
+          "CMakeLists.txt",
+          "Examples/Io/EDM4hep/include/ActsExamples/Io/EDM4hep/EDM4hepMultiTrajectoryOutputConverter.hpp",
+          "Examples/Io/EDM4hep/include/ActsExamples/Io/EDM4hep/EDM4hepParticleOutputConverter.hpp"
+        ]
+      },
+      "hepmc3": {
+        "files": 23,
+        "kind": "domain",
+        "examples": [
+          "CMakeLists.txt",
+          "Examples/Algorithms/Generators/ActsExamples/Generators/EventGenerator.cpp",
+          "Examples/Algorithms/Generators/ActsExamples/Generators/EventGenerator.hpp"
+        ]
+      },
+      "uproot": {
+        "files": 13,
+        "kind": "generic",
+        "examples": [
+          "CI/root_event_diff_np.py",
+          "Examples/Scripts/Digitization/error_parameterisation.py",
+          "Examples/Scripts/MaterialMapping/material_comparison.py"
+        ]
+      },
+      "onnxruntime": {
+        "files": 5,
+        "kind": "generic",
+        "examples": [
+          "Examples/Scripts/Python/guntam_transformer_seeder.py",
+          "Plugins/Gnn/src/OnnxEdgeClassifier.cpp",
+          "Plugins/Onnx/include/ActsPlugins/Onnx/AmbiguityTrackClassifier.hpp"
+        ]
+      },
+      "pythia8": {
+        "files": 3,
+        "kind": "domain",
+        "examples": [
+          "CMakeLists.txt",
+          "Examples/Algorithms/GeneratorsPythia8/ActsExamples/Generators/Pythia8ProcessGenerator.cpp",
+          "Python/Examples/tests/test_examples.py"
+        ]
+      },
+      "fastjet": {
+        "files": 3,
+        "kind": "domain",
+        "examples": [
+          "CMakeLists.txt",
+          "Examples/Algorithms/Jets/include/ActsExamples/Jets/TruthJetAlgorithm.hpp",
+          "Examples/Algorithms/Jets/src/TruthJetAlgorithm.cpp"
+        ]
+      },
+      "awkward": {
+        "files": 3,
+        "kind": "generic",
+        "examples": [
+          "Examples/Scripts/generic_plotter.py",
+          "Python/Examples/tests/helpers/hash_root.py",
+          "Python/Examples/tests/test_data_augmentation.py"
+        ]
+      },
+      "eicrecon": {
+        "files": 1,
+        "kind": "domain",
+        "examples": [
+          ".github/workflows/builds.yml"
+        ]
+      }
+    },
+    "domain_components": [
+      "covfie",
+      "dd4hep",
+      "edm4hep",
+      "eicrecon",
+      "fastjet",
+      "geant4",
+      "hepmc3",
+      "podio",
+      "pythia8"
+    ],
+    "is_component": "acts",
+    "vendored_candidates": [
+      "Detray/extern/actsvg",
+      "Detray/extern/benchmark",
+      "Detray/extern/covfie",
+      "Detray/extern/eigen3",
+      "Detray/extern/fastor",
+      "Detray/extern/googletest",
+      "Detray/extern/nlohmann_json",
+      "Detray/extern/pybind11",
+      "Detray/extern/vc",
+      "Detray/extern/vecmem",
+      "Traccc/extern/acts",
+      "Traccc/extern/alpaka",
+      "Traccc/extern/cccl",
+      "Traccc/extern/covfie",
+      "Traccc/extern/dpl",
+      "Traccc/extern/googletest",
+      "Traccc/extern/rocThrust",
+      "Traccc/extern/tbb",
+      "Traccc/extern/vecmem",
+      "thirdparty/Annoy"
+    ],
+    "submodules": []
+  },
+  "ci": {
+    "workflow_count": 21,
+    "pr_triggered_workflows": [
+      ".github/workflows/analysis.yml",
+      ".github/workflows/builds.yml",
+      ".github/workflows/checks.yml",
+      ".github/workflows/detray.yml",
+      ".github/workflows/devcontainer-ci.yml",
+      ".github/workflows/docs.yml",
+      ".github/workflows/labels.yml",
+      ".github/workflows/milestone.yml",
+      ".github/workflows/pr-lint.yml",
+      ".github/workflows/remove-automerge-label.yml",
+      ".github/workflows/traccc.yml"
+    ],
+    "runs_on": [
+      "macos-26",
+      "macos-latest",
+      "self-hosted",
+      "ubuntu-latest",
+      "ubuntu-slim",
+      "ubuntu-wheel"
+    ],
+    "container_images": [
+      "${{",
+      "ghcr.io/acts-project/ubuntu2604:90",
+      "ghcr.io/acts-project/ubuntu2604:91",
+      "ghcr.io/acts-project/ubuntu2604_clang22:90",
+      "ghcr.io/acts-project/ubuntu2604_clang22:91",
+      "ghcr.io/eic/eic_ci_without_acts:nightly",
+      "registry.cern.ch/ghcr.io/acts-project/${{",
+      "registry.cern.ch/ghcr.io/acts-project/alma9-base:88",
+      "registry.cern.ch/ghcr.io/acts-project/ubuntu2604:90",
+      "registry.cern.ch/ghcr.io/acts-project/ubuntu2604:91",
+      "the",
+      "ubuntu2604_clang22"
+    ],
+    "uses_eic_shell": true,
+    "actions_used": [
+      "SonarSource/sonarqube-scan-action",
+      "actions/cache",
+      "actions/checkout",
+      "actions/download-artifact",
+      "actions/github-script",
+      "actions/labeler",
+      "actions/setup-python",
+      "actions/stale",
+      "actions/upload-artifact",
+      "amannn/action-semantic-pull-request",
+      "astral-sh/setup-uv",
+      "cvmfs-contrib/github-action-cvmfs",
+      "dorny/paths-filter",
+      "eic/docker-run-action",
+      "juliangruber/read-file-action",
+      "maxim-lobanov/setup-xcode",
+      "octokit/request-action",
+      "oras-project/setup-oras",
+      "peter-evans/create-or-update-comment",
+      "peter-evans/find-comment",
+      "peter-evans/repository-dispatch",
+      "pypa/gh-action-pypi-publish"
+    ],
+    "action_refs_not_sha_pinned": 0,
+    "other_ci": [],
+    "default_branch_runs": 50,
+    "default_branch_success_rate": 1.0,
+    "last_default_branch_run": "2026-10-12T19:11:09Z"
+  },
+  "repo": {
+    "full_name": "acts-project/acts",
+    "default_branch": "main",
+    "archived": false,
+    "fork": false,
+    "created_at": "2019-03-13T09:44:13Z",
+    "pushed_at": "2026-10-12T19:23:04Z",
+    "stars": 132,
+    "forks": 288,
+    "homepage": "https://acts-project.github.io",
+    "license_spdx": "MPL-2.0",
+    "topics": [
+      "particle-track-reconstruction",
+      "reconstruction",
+      "physics-experiment",
+      "simulation"
+    ],
+    "has_issues": true,
+    "has_discussions": true,
+    "open_issues": 108,
+    "open_prs": 139,
+    "default_branch_protected": true,
+    "rulesets": 1,
+    "languages_github": {
+      "C++": 0.87,
+      "Python": 0.063,
+      "Cuda": 0.021,
+      "CMake": 0.02,
+      "Jupyter Notebook": 0.013,
+      "HIP": 0.005,
+      "Shell": 0.005,
+      "C": 0.003
+    }
+  },
+  "community": {
+    "health_percentage": 75,
+    "files": {
+      "code_of_conduct": true,
+      "code_of_conduct_file": true,
+      "contributing": true,
+      "issue_template": true,
+      "license": true,
+      "pull_request_template": true,
+      "readme": true
+    }
+  },
+  "releases": {
+    "count_total": 229,
+    "count_24m": 61,
+    "latest_tag": "v48.1.0",
+    "latest_date": "2026-10-09T18:09:27Z",
+    "authors_24m": 1,
+    "with_notes_fraction_24m": 1.0
+  },
+  "issues": {
+    "created_12m": 65,
+    "sampled": false,
+    "closed_of_created_12m": 42,
+    "median_first_response_days_12m": 1.34,
+    "unanswered_fraction_12m": 0.169,
+    "labeled_fraction_12m": 0.646,
+    "open_total": 108,
+    "open_older_365d": 84
+  },
+  "prs": {
+    "created_12m": 908,
+    "sampled": true,
+    "merged_12m": 686,
+    "median_days_to_merge_12m": 2.9,
+    "reviewed_fraction_12m": 0.988,
+    "external_fraction_12m": 0.041,
+    "test_touching_fraction_12m": 0.402,
+    "distinct_reviewers_12m": 23,
+    "top_reviewer_share_12m": 0.339,
+    "distinct_mergers_12m": 7,
+    "open_total": 139,
+    "open_older_90d": 17
+  },
+  "packaging": {
+    "spack_name": "acts",
+    "eic_spack": {
+      "matches_repo": true,
+      "versions": []
+    },
+    "spack_builtin": {
+      "matches_repo": true,
+      "versions": [
+        "main",
+        "46.8.1",
+        "46.8.0",
+        "46.7.0",
+        "46.6.0"
+      ]
+    },
+    "in_eic_shell": true,
+    "eic_shell_version": "46.8.1",
+    "eic_spack_dependents": [
+      "eic-ip6",
+      "eicrecon",
+      "juggler",
+      "npdet"
+    ],
+    "conda_forge": null,
+    "pypi": null,
+    "latest_release_packaged": false
+  },
+  "errors": []
+}
