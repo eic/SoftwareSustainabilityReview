@@ -1,0 +1,438 @@
+schema_version: 1
+project: eic-shell
+pass: "2026-10-12"
+commit: 70c57ee44b025f000139d99cca38d681a82bdf10
+assessor: { agent: claude-code, model: claude-opus-5-5 }
+summary: >-
+  eic-shell is the official installer and launcher of the EIC software environment
+  (get.epic-eic.org redirects to it), but it has no license, no releases, no tests, and its only
+  workflow deploys GitHub Pages, so changes to the scripts are not exercised before users download
+  them from `main`. One human author made all commits in 24 months, no maintainers or owning group
+  are documented, and the advertised `-o/--organization` option is not parsed. 91.7% of
+  default-branch changes arrive through PRs under branch protection requiring one approval, and
+  Dependabot updates the GitHub Actions.
+criteria:
+  eng.change-control:
+    level: 2
+    confidence: high
+    rationale: >-
+      91.7% of first-parent commits in 12 months came from PRs and branch protection requires one
+      approving review, but only 66.7% of merged PRs were reviewed by someone else, admins are
+      exempt (PR #34 merged without review), and there is no CODEOWNERS.
+    evidence:
+      - metrics:git.first_parent_pr_fraction_12m = 0.917
+      - metrics:prs.reviewed_fraction_12m = 0.667
+      - metrics:repo.default_branch_protected = true
+      - https://github.com/eic/eic-shell/pull/34
+      - https://github.com/eic/.github/blob/3231e4d33f430f9806db8703b2feaafca084e18e/.github/pull_request_template.md
+    gaps:
+      - Fewer than 90% of merged PRs are reviewed by someone other than the author.
+      - Branch protection does not apply to administrators; no CODEOWNERS file.
+      - Review expectations are not documented in the repository.
+    actions:
+      - action: Enable "Do not allow bypassing the above settings" (enforce for admins) on `main` and add `.github/CODEOWNERS` naming two reviewers for `install.sh` and `install.py`.
+        priority: medium
+        effort: S
+  eng.ci:
+    level: 1
+    confidence: high
+    rationale: >-
+      The only workflow, `deploy.yml`, builds and deploys the GitHub Pages site on push to `main`;
+      no workflow runs on pull requests and nothing executes `install.sh` or the generated launcher.
+    evidence:
+      - https://github.com/eic/eic-shell/blob/70c57ee44b025f000139d99cca38d681a82bdf10/.github/workflows/deploy.yml#L1-L50
+      - metrics:ci.pr_triggered_workflows = []
+      - metrics:ci.default_branch_success_rate = 1.0
+    gaps:
+      - No PR-triggered workflow; the script served to users at get.epic-eic.org is never run in CI.
+    actions:
+      - action: Add `.github/workflows/test.yml` on `pull_request` and `push` that runs `install.sh` on `ubuntu-latest` and executes `./eic-shell -- eic-info`, and make it a required status check.
+        priority: medium
+        effort: S
+  eng.testing:
+    level: 0
+    confidence: high
+    rationale: >-
+      There are no test files or test framework; argument handling is untested, and `-o/--organization`
+      is listed in both help texts but not parsed by either case statement.
+    evidence:
+      - metrics:code.test_files = 0
+      - metrics:prs.test_touching_fraction_12m = 0.0
+      - https://github.com/eic/eic-shell/blob/70c57ee44b025f000139d99cca38d681a82bdf10/install.sh#L21-L69
+      - https://github.com/eic/eic-shell/blob/70c57ee44b025f000139d99cca38d681a82bdf10/install.sh#L229-L272
+    gaps:
+      - No automated tests of `install.sh`, the generated launchers, or `install.py`.
+    actions:
+      - action: Add `tests/` with bats tests for every `install.sh` and launcher option (including `-o`), the bind-path deduplication, and the generated `eic-shell` contents, run in CI.
+        priority: high
+        effort: M
+  eng.static-quality:
+    level: 0
+    confidence: high
+    rationale: >-
+      No shell or Python linter, formatter, or pre-commit configuration exists; `install.py` contains
+      an undefined name (`testing`) that a linter would flag.
+    evidence:
+      - metrics:files.pre_commit = []
+      - metrics:files.python_lint = []
+      - https://github.com/eic/eic-shell/blob/70c57ee44b025f000139d99cca38d681a82bdf10/install.py#L265-L266
+    gaps:
+      - No shellcheck, shfmt, or ruff configured or enforced.
+    actions:
+      - action: Add `.pre-commit-config.yaml` with shellcheck and ruff (as eic/containers does) and enable pre-commit.ci.
+        priority: high
+        effort: S
+  eng.modularity:
+    level: 0
+    confidence: medium
+    rationale: >-
+      The project is two loose scripts with no packaging: the 479-line `install.sh` embeds both
+      launchers as heredocs, and it and `install.py` hard-code site paths (`/gpfs02/eic/athena`,
+      `/apps/singularity/3.7.1`) and a legacy GitLab artifact URL with default version 3.0.1.
+    evidence:
+      - https://github.com/eic/eic-shell/blob/70c57ee44b025f000139d99cca38d681a82bdf10/install.sh#L107-L111
+      - https://github.com/eic/eic-shell/blob/70c57ee44b025f000139d99cca38d681a82bdf10/install.sh#L136-L140
+      - https://github.com/eic/eic-shell/blob/70c57ee44b025f000139d99cca38d681a82bdf10/install.py#L21-L35
+      - https://github.com/eic/eic-shell/issues/26
+    gaps:
+      - Launcher scripts are generated from heredocs inside `install.sh` instead of separate template files.
+      - Site-specific paths and a legacy download endpoint are hard-coded.
+    actions:
+      - action: Move the two launchers into template files (as proposed in PR #27) and remove the ATHENA-era `/gpfs02/eic/athena`, `/apps/singularity/3.7.1` and `install.py` GitLab-artifact code paths.
+        priority: high
+        effort: M
+  doc.user:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The README and the EIC tutorial give a working curl-based install and `./eic-shell` quick
+      start, but docker, wget and python3 (non-CVMFS fallback) are not named or versioned, most
+      options are documented only in `--help`, and the CI section is marked as outdated.
+    evidence:
+      - https://github.com/eic/eic-shell/blob/70c57ee44b025f000139d99cca38d681a82bdf10/README.md#L9-L37
+      - https://github.com/eic/eic-shell/blob/70c57ee44b025f000139d99cca38d681a82bdf10/README.md#L92-L106
+      - https://github.com/eic/tutorial-setting-up-environment/blob/2be97803de9f783b9a5b7fb6bbd90ab01bfac66c/episodes/02-eic-shell.md#L37-L60
+    gaps:
+      - Not all host dependencies are named with versions.
+      - Installer and launcher options are not documented in the README; the CI section and included-software list are stale.
+    actions:
+      - action: Add a README "Requirements" section (bash, curl or wget, apptainer >= 1 or singularity >= 3, Docker version, CVMFS optional) and an "Options" section for `install.sh` and `eic-shell`, and replace the outdated CI section with the `eic/run-cvmfs-osg-eic-shell` route.
+        priority: medium
+        effort: S
+  doc.developer:
+    level: 1
+    confidence: medium
+    rationale: >-
+      `install.sh` and `install.py` carry inline comments and a module docstring, but there is no
+      description of how the installer, generated launchers, `install.py` fallback and the Pages
+      hosting fit together.
+    evidence:
+      - https://github.com/eic/eic-shell/blob/70c57ee44b025f000139d99cca38d681a82bdf10/install.py#L1-L48
+      - https://github.com/eic/eic-shell/blob/70c57ee44b025f000139d99cca38d681a82bdf10/install.sh#L1-L8
+      - metrics:files.docs_dir = 0
+    gaps:
+      - No architecture overview and no generated reference documentation.
+    actions:
+      - action: Add `docs/architecture.md` describing the install flow (CVMFS detection, image selection, launcher generation, `--upgrade`, get.epic-eic.org hosting) and publish it with the existing Pages workflow.
+        priority: medium
+        effort: S
+  doc.contributing:
+    level: 1
+    confidence: low
+    rationale: >-
+      Only the eic organization PR and issue templates apply; the repository has no CONTRIBUTING
+      file describing how to test changes to the scripts or the PR process.
+    evidence:
+      - metrics:community.files.contributing = false
+      - metrics:community.files.pull_request_template = true
+      - https://github.com/eic/.github/tree/3231e4d33f430f9806db8703b2feaafca084e18e/.github/ISSUE_TEMPLATE
+    gaps:
+      - No `CONTRIBUTING.md` covering local testing of `install.sh`, conventions, and the PR process.
+    actions:
+      - action: Add `CONTRIBUTING.md` describing how to test `install.sh` locally (with and without CVMFS, apptainer and docker), the shell conventions, and PR review expectations.
+        priority: medium
+        effort: S
+  com.responsiveness:
+    level: 1
+    confidence: medium
+    rationale: >-
+      Median first response is 0.57 days, but half of the six issues opened in 12 months received
+      no response and none is labeled, and three open PRs are older than 90 days.
+    evidence:
+      - metrics:issues.median_first_response_days_12m = 0.57
+      - metrics:issues.unanswered_fraction_12m = 0.5
+      - metrics:issues.labeled_fraction_12m = 0.0
+      - metrics:prs.open_older_90d = 3
+      - https://github.com/eic/eic-shell/issues/19
+    gaps:
+      - New issues are not labeled or otherwise triaged; #19, #26 and #29 have no response.
+    actions:
+      - action: Label all open issues with the existing label set, close #19 (addressed by the apptainer support merged in #1), and merge or close PRs #18, #25 and #27.
+        priority: medium
+        effort: S
+  com.contributors:
+    level: 0
+    confidence: high
+    rationale: >-
+      One human author committed in 24 months; contributor PRs (#31, #39, #40) were closed or
+      remain open, and no external PR was merged in 12 months.
+    evidence:
+      - metrics:git.authors_24m = 1
+      - metrics:git.new_authors_12m = 0
+      - metrics:prs.external_fraction_12m = 0.0
+      - https://github.com/eic/eic-shell/pull/39
+    gaps:
+      - Only one active author in 24 months.
+    actions:
+      - action: Review and merge the open contributor PR #39 and recruit a second maintainer from another institution through the ePIC computing meetings.
+        priority: high
+        effort: S
+  com.bus-factor:
+    level: 1
+    confidence: high
+    rationale: >-
+      The top author wrote all non-bot commits in 24 months and is the only merger; one other person
+      reviews.
+    evidence:
+      - metrics:git.top_author_share_24m = 1.0
+      - metrics:prs.distinct_reviewers_12m = 1
+      - metrics:prs.distinct_mergers_12m = 1
+      - metrics:files.codeowners = []
+    gaps:
+      - Bus factor (50%) is 1 and only one person merges.
+      - No CODEOWNERS or maintainer list.
+    actions:
+      - action: Add `.github/CODEOWNERS` with two maintainers and have the second maintainer merge PRs.
+        priority: high
+        effort: S
+  com.governance:
+    level: 0
+    confidence: medium
+    rationale: >-
+      Discussion happens in public issues (#33), but no README section, CODEOWNERS or governance
+      file names the maintainers, the owning ePIC group, or a decision process; there are no
+      milestones.
+    evidence:
+      - metrics:files.governance = []
+      - metrics:files.codeowners = []
+      - https://github.com/eic/eic-shell/issues/33
+    gaps:
+      - Maintainers and owning group are not identified in the repository.
+    actions:
+      - action: Add a README "Maintainers" section naming the maintainers and the owning ePIC computing group, and stating how changes to defaults (image, organization, CVMFS repository) are decided.
+        priority: high
+        effort: S
+  com.conduct:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The eic organization issue-template configuration links the ePIC Mattermost for questions, but
+      no code of conduct applies to the repository or organization.
+    evidence:
+      - https://github.com/eic/.github/blob/3231e4d33f430f9806db8703b2feaafca084e18e/.github/ISSUE_TEMPLATE/config.yml#L1-L14
+      - metrics:community.files.code_of_conduct = false
+    gaps:
+      - No code of conduct with a reporting contact.
+    actions:
+      - action: Link the ePIC collaboration code of conduct with its reporting contact from the README, or add `CODE_OF_CONDUCT.md`.
+        priority: high
+        effort: S
+  dist.packaging:
+    level: 1
+    confidence: medium
+    rationale: >-
+      Installation is a documented `curl | bash` of `install.sh` from `main` (also at get.epic-eic.org),
+      but there is no package recipe in eic-spack, Spack, conda-forge or PyPI.
+    evidence:
+      - https://github.com/eic/eic-shell/blob/70c57ee44b025f000139d99cca38d681a82bdf10/README.md#L23-L27
+      - metrics:packaging.eic_spack = null
+      - metrics:packaging.in_eic_shell = false
+    gaps:
+      - No recipe in a domain package manager.
+    actions:
+      - action: After tagging releases, add an `eic-shell` package to eic-spack that installs `install.sh` at the released version.
+        priority: medium
+        effort: S
+  dist.releases:
+    level: 0
+    confidence: high
+    rationale: >-
+      There are no tags or releases; users and `eic-shell --upgrade` fetch `install.sh` from `main`.
+    evidence:
+      - metrics:git.tags_total = 0
+      - metrics:releases.count_total = 0
+      - https://github.com/eic/eic-shell/blob/70c57ee44b025f000139d99cca38d681a82bdf10/install.sh#L312-L313
+    gaps:
+      - No versioned releases, version scheme, or release notes.
+    actions:
+      - action: Adopt CalVer or SemVer, tag a release with generated notes at least every six months, and record the installer version in the generated launcher.
+        priority: high
+        effort: S
+  dist.dependencies:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The README states apptainer >= 1 or singularity >= 3, but docker, curl, wget and python3 are
+      undeclared, and the non-CVMFS path runs `install.py`, which calls `singularity pull` and a legacy
+      eicweb GitLab artifact URL.
+    evidence:
+      - https://github.com/eic/eic-shell/blob/70c57ee44b025f000139d99cca38d681a82bdf10/README.md#L12-L13
+      - https://github.com/eic/eic-shell/blob/70c57ee44b025f000139d99cca38d681a82bdf10/install.sh#L166-L182
+      - https://github.com/eic/eic-shell/blob/70c57ee44b025f000139d99cca38d681a82bdf10/install.py#L298-L314
+      - metrics:files.dependabot = [".github/dependabot.yml"]
+      - metrics:ci.action_refs_not_sha_pinned = 5
+    gaps:
+      - Host tools are not all declared with minimum versions.
+      - The fallback download depends on the legacy `install.py` and an eicweb GitLab artifact endpoint.
+    actions:
+      - action: Check for and document every required host tool with a minimum version at the start of `install.sh`, and replace the `install.py` fallback with a direct `apptainer pull` from the container registry.
+        priority: medium
+        effort: S
+  dist.reproducibility:
+    level: 2
+    confidence: medium
+    rationale: >-
+      The launcher records organization, container and version and can select a tagged image
+      (`--version YY.MM.0-stable`), but the installer itself is unversioned and `--upgrade` always
+      takes `main`, and the default image is `nightly`.
+    evidence:
+      - https://github.com/eic/eic-shell/blob/70c57ee44b025f000139d99cca38d681a82bdf10/install.sh#L213-L245
+      - https://github.com/eic/eic-shell/blob/70c57ee44b025f000139d99cca38d681a82bdf10/install.sh#L9-L12
+    gaps:
+      - The installer is not versioned, so the launcher that produced an environment cannot be recreated.
+      - No CI runs the installer in the environments it sets up.
+    actions:
+      - action: Tag installer releases and let `--upgrade` and get.epic-eic.org resolve to the latest tag, writing the installer version into the generated `eic-shell`.
+        priority: medium
+        effort: S
+  dist.portability:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The installer targets Linux (apptainer) and macOS (docker) but no platform is tested in CI,
+      Linux aarch64 is not detected (it checks for `arm64`, which Linux reports as `aarch64`), and
+      site-specific fallback paths remain.
+    evidence:
+      - https://github.com/eic/eic-shell/blob/70c57ee44b025f000139d99cca38d681a82bdf10/install.sh#L453-L475
+      - https://github.com/eic/eic-shell/blob/70c57ee44b025f000139d99cca38d681a82bdf10/install.sh#L360-L363
+      - https://github.com/eic/eic-shell/blob/70c57ee44b025f000139d99cca38d681a82bdf10/install.sh#L200-L200
+      - https://github.com/eic/eic-shell/issues/33
+    gaps:
+      - No CI on any platform.
+      - Linux aarch64 detection does not match `uname -m` output; macOS arm64 always runs amd64 images under emulation.
+    actions:
+      - action: Add a CI matrix of `ubuntu-latest` (apptainer) and `ubuntu-24.04-arm` (docker) that runs the installer, and match `aarch64` as well as `arm64` in the OS detection.
+        priority: medium
+        effort: S
+  eic.reuse:
+    level: 3
+    confidence: medium
+    rationale: >-
+      The project needs no domain functionality and has no parallel implementations, and it is the
+      component other EIC software reuses to install the environment (eic/containers delegates its
+      `install.sh` to it; eic/snippets batch scripts call it).
+    evidence:
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/install.sh#L1-L4
+      - https://github.com/eic/snippets/blob/0bb0b58c3da1e3da26941d3257bbb47cea8f2927/FullChainBnlFarmScript/submit.sh#L87
+    gaps: []
+    actions: []
+  eic.data-model:
+    level: null
+    not_applicable: The project is an installer and launcher and reads or writes no physics or detector data.
+    confidence: high
+    rationale: >-
+      Not applicable: the scripts only download container images and generate a launcher script.
+    evidence: []
+    gaps: []
+    actions: []
+  eic.environment:
+    level: 1
+    confidence: medium
+    rationale: >-
+      Launching eic-shell images is the documented purpose of the project, but no CI job runs the
+      installer or launcher against an eic container image.
+    evidence:
+      - metrics:ci.uses_eic_shell = false
+      - metrics:ci.container_images = []
+      - https://github.com/eic/eic-shell/blob/70c57ee44b025f000139d99cca38d681a82bdf10/.devcontainer/devcontainer.json#L1-L4
+    gaps:
+      - Compatibility with current eic_xl images is not tested in CI.
+    actions:
+      - action: Add a CI job that mounts CVMFS (`cvmfs-contrib/github-action-cvmfs`), installs with `-v nightly` and with a pinned stable tag, and runs `./eic-shell -- eic-info`.
+        priority: medium
+        effort: S
+  eic.currency:
+    level: 2
+    confidence: medium
+    rationale: >-
+      The installer defaults to the current `eicweb/eic_xl:nightly` image on CVMFS or Docker Hub
+      and the tutorial uses it, but ATHENA-era singularity 2.x, `/gpfs02/eic/athena` and GitLab-artifact
+      code paths remain, and the CVMFS repository question in #30 is open.
+    evidence:
+      - https://github.com/eic/eic-shell/blob/70c57ee44b025f000139d99cca38d681a82bdf10/install.sh#L131-L153
+      - https://github.com/eic/eic-shell/blob/70c57ee44b025f000139d99cca38d681a82bdf10/install.py#L23-L35
+      - https://github.com/eic/eic-shell/issues/30
+    gaps:
+      - Deprecated singularity 2.x and legacy image-location code paths are still in use.
+    actions:
+      - action: Remove the singularity 2.x `.simg` branch and the legacy `/cvmfs/eic.opensciencegrid.org/singularity/athena` and `/gpfs02` lookups, and decide #30.
+        priority: low
+        effort: S
+  via.license:
+    level: 0
+    confidence: high
+    rationale: >-
+      The repository has no LICENSE file and GitHub detects no license.
+    evidence:
+      - metrics:repo.license_spdx = null
+      - metrics:files.license = []
+    gaps:
+      - No license; the scripts are all rights reserved.
+    actions:
+      - action: Add a `LICENSE` file with an OSI-approved license (for example MIT or LGPL-3.0-or-later) agreed by the contributors.
+        priority: high
+        effort: S
+  via.citation:
+    level: 0
+    confidence: high
+    rationale: >-
+      There is no CITATION.cff, Zenodo DOI, codemeta or author list beyond a docstring in `install.py`.
+    evidence:
+      - metrics:files.citation_cff = []
+      - metrics:files.zenodo_json = []
+      - metrics:files.authors = []
+    gaps:
+      - No citation information or maintained contributor list.
+    actions:
+      - action: Add `CITATION.cff` listing all contributors and enable the Zenodo-GitHub integration.
+        priority: high
+        effort: S
+  via.adoption:
+    level: 3
+    confidence: medium
+    rationale: >-
+      get.epic-eic.org redirects to this installer, which the EIC tutorial and EICrecon documentation
+      prescribe, EIC batch production scripts call it, and an analysis of the SoLID experiment
+      outside EIC uses it.
+    evidence:
+      - https://github.com/eic/tutorial-setting-up-environment/blob/2be97803de9f783b9a5b7fb6bbd90ab01bfac66c/episodes/02-eic-shell.md#L44
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/docs/get-started/eic-shell.md#L16
+      - https://github.com/eic/EIC_SR_Geant4/blob/d1a2d8756147c7230498870caa6937baf86a6f5b/MCsamplingPrep/npsim_jlab.bash#L6
+      - https://github.com/search?q=%22get.epic-eic.org%22&type=code (code search; includes an analysis of the SoLID experiment)
+    gaps: []
+    actions: []
+  via.support:
+    level: 0
+    confidence: low
+    rationale: >-
+      The repository names no current maintainers, affiliations, owning ePIC group or funding; the
+      only named authors are in the `install.py` docstring (added 2021) and no longer commit.
+    evidence:
+      - https://github.com/eic/eic-shell/blob/70c57ee44b025f000139d99cca38d681a82bdf10/install.py#L10-L13
+      - metrics:git.authors_24m = 1
+    gaps:
+      - No identifiable current maintainers or institutional backing.
+    actions:
+      - action: State in the README the ePIC computing group responsible for eic-shell and the maintainers' institutions.
+        priority: high
+        effort: S

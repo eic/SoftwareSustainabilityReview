@@ -1,0 +1,238 @@
+{
+  "schema_version": 1,
+  "project": "ai-epic-background",
+  "pass": "2026-10-12",
+  "repo_url": "https://github.com/eic/ai-epic-background",
+  "subdir": null,
+  "collected_at": "2026-10-12T19:54:02+00:00",
+  "collector_version": "0.2.0",
+  "windows_months": {
+    "short": 12,
+    "long": 24
+  },
+  "git": {
+    "head_sha": "0681472bb513d7af20aa6c5507eef41d1624618e",
+    "head_date": "2026-09-29T17:09:15-04:00",
+    "last_commit_date": "2026-09-29T17:09:15-04:00",
+    "commits_total": 46,
+    "commits_12m": 46,
+    "commits_24m": 46,
+    "authors_total": 1,
+    "authors_12m": 1,
+    "authors_24m": 1,
+    "new_authors_12m": 1,
+    "bus_factor_50_24m": 1,
+    "bus_factor_80_24m": 1,
+    "top_author_share_24m": 1.0,
+    "email_domains_24m": 0,
+    "first_parent_commits_12m": 48,
+    "first_parent_pr_fraction_12m": 0.042,
+    "tags_total": 0,
+    "tags_24m": 0,
+    "first_parent_resolved_via_api": 48
+  },
+  "files": {
+    "readme": [
+      "README.md"
+    ],
+    "license": [],
+    "contributing": [],
+    "code_of_conduct": [],
+    "citation_cff": [],
+    "codemeta": [],
+    "zenodo_json": [],
+    "security": [],
+    "changelog": [],
+    "governance": [],
+    "codeowners": [],
+    "authors": [],
+    "pr_template": [],
+    "issue_templates": [],
+    "dependabot": [],
+    "renovate": [],
+    "pre_commit": [],
+    "clang_format": [],
+    "clang_tidy": [],
+    "editorconfig": [],
+    "python_lint": [],
+    "mypy": [],
+    "codecov": [],
+    "doxygen": [],
+    "sphinx": [],
+    "mkdocs": [],
+    "dockerfile": [],
+    "apptainer_def": [],
+    "spack_env": [],
+    "conda_env": [],
+    "devcontainer": [],
+    "lockfile": [],
+    "gitlab_ci": [],
+    "other_ci": [],
+    "cmake": [],
+    "pyproject": [
+      "pyproject.toml"
+    ],
+    "setup_py": [],
+    "docs_dir": 30,
+    "examples_dir": 0,
+    "github_workflows": [
+      ".github/workflows/documentation.yml"
+    ]
+  },
+  "code": {
+    "languages": {
+      "python": {
+        "files": 6,
+        "lines": 1247
+      },
+      "javascript": {
+        "files": 1,
+        "lines": 25
+      }
+    },
+    "source_lines": 1272,
+    "largest_source_files": [
+      {
+        "path": "analyses/csv_particle_analyses/csv_particle_analyses.py",
+        "lines": 357
+      },
+      {
+        "path": "scripts/podio_metadata.py",
+        "lines": 231
+      },
+      {
+        "path": "scripts/summarize_rucio_dids.py",
+        "lines": 227
+      },
+      {
+        "path": "scripts/merge_reco_particles_to_feather.py",
+        "lines": 171
+      },
+      {
+        "path": "analyses/time-vs-z-plots/background_analysis.py",
+        "lines": 146
+      }
+    ],
+    "test_files": 0,
+    "test_frameworks": [],
+    "cxx_standard": [],
+    "requires_python": ">=3.12",
+    "site_specific_paths": []
+  },
+  "eic": {
+    "components_detected": {
+      "uproot": {
+        "files": 2,
+        "kind": "generic",
+        "examples": [
+          "scripts/check_podio_files.py",
+          "scripts/podio_metadata.py"
+        ]
+      }
+    },
+    "domain_components": [],
+    "is_component": null,
+    "vendored_candidates": [],
+    "submodules": [
+      "https://github.com/JeffersonLab/msf-simulation-pipeline.git"
+    ]
+  },
+  "ci": {
+    "workflow_count": 1,
+    "pr_triggered_workflows": [],
+    "runs_on": [
+      "ubuntu-latest"
+    ],
+    "container_images": [],
+    "uses_eic_shell": false,
+    "actions_used": [
+      "actions/checkout",
+      "actions/deploy-pages",
+      "actions/setup-node",
+      "actions/upload-pages-artifact"
+    ],
+    "action_refs_not_sha_pinned": 4,
+    "other_ci": [],
+    "default_branch_runs": 44,
+    "default_branch_success_rate": 0.932,
+    "last_default_branch_run": "2026-09-29T21:09:20Z"
+  },
+  "repo": {
+    "full_name": "eic/ai-epic-background",
+    "default_branch": "main",
+    "archived": false,
+    "fork": false,
+    "created_at": "2026-05-11T22:46:37Z",
+    "pushed_at": "2026-09-29T21:09:18Z",
+    "stars": 0,
+    "forks": 1,
+    "homepage": null,
+    "license_spdx": null,
+    "topics": [],
+    "has_issues": true,
+    "has_discussions": false,
+    "open_issues": 0,
+    "open_prs": 1,
+    "default_branch_protected": false,
+    "rulesets": 0,
+    "languages_github": {
+      "Python": 1.0
+    }
+  },
+  "community": {
+    "health_percentage": 37,
+    "files": {
+      "code_of_conduct": false,
+      "code_of_conduct_file": false,
+      "contributing": false,
+      "issue_template": false,
+      "license": false,
+      "pull_request_template": true,
+      "readme": true
+    }
+  },
+  "releases": {
+    "count_total": 0,
+    "count_24m": 0,
+    "latest_tag": null,
+    "latest_date": null,
+    "authors_24m": 0,
+    "with_notes_fraction_24m": null
+  },
+  "issues": {
+    "created_12m": 0,
+    "sampled": false,
+    "closed_of_created_12m": 0,
+    "median_first_response_days_12m": null,
+    "unanswered_fraction_12m": null,
+    "labeled_fraction_12m": null,
+    "open_total": 0,
+    "open_older_365d": 0
+  },
+  "prs": {
+    "created_12m": 0,
+    "sampled": false,
+    "merged_12m": 0,
+    "median_days_to_merge_12m": null,
+    "reviewed_fraction_12m": null,
+    "external_fraction_12m": null,
+    "test_touching_fraction_12m": null,
+    "distinct_reviewers_12m": 0,
+    "top_reviewer_share_12m": null,
+    "distinct_mergers_12m": 0,
+    "open_total": 1,
+    "open_older_90d": 0
+  },
+  "packaging": {
+    "spack_name": "ai-epic-background",
+    "eic_spack": null,
+    "spack_builtin": null,
+    "in_eic_shell": false,
+    "eic_shell_version": null,
+    "eic_spack_dependents": [],
+    "conda_forge": null,
+    "pypi": null,
+    "latest_release_packaged": null
+  },
+  "errors": []
+}

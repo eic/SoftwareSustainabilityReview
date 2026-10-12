@@ -1,0 +1,448 @@
+schema_version: 1
+project: timeframebuilder
+pass: "2026-10-12"
+commit: 257e714ff960fa4348d52be4879923f8567b1038
+assessor: { agent: claude-code, model: claude-opus-5-5 }
+summary: >-
+  The repository has no license file (the README points to a LICENSE that does not exist), no code
+  of conduct, no citation metadata and no unit tests, and one author from one institution wrote
+  97.7% of commits in 24 months with 5.7% of merged PRs reviewed by someone else. Every PR and push
+  to `main` runs an end-to-end chain in `eic_xl:nightly` (merge, npsim, EICrecon, capybara report),
+  and the latest release v0.9.2 was packaged in eic-spack and shipped in eic-shell within a week.
+criteria:
+  eng.change-control:
+    level: 1
+    confidence: high
+    rationale: >-
+      All first-parent commits in 12 months came from PRs under an active ruleset that requires a PR,
+      but the ruleset requires zero approvals and only 5.7% of merged PRs had a review from someone
+      other than the author; most PRs are self-merged within hours.
+    evidence:
+      - metrics:git.first_parent_pr_fraction_12m = 1.0
+      - metrics:prs.reviewed_fraction_12m = 0.057
+      - metrics:repo.rulesets = 1
+      - https://github.com/eic/TimeframeBuilder/pull/101
+      - https://github.com/eic/.github/blob/3231e4d33f430f9806db8703b2feaafca084e18e/.github/pull_request_template.md
+    gaps:
+      - Fewer than 50% of merged PRs are reviewed by someone other than the author.
+      - The ruleset sets `required_approving_review_count` to 0; no CODEOWNERS exists.
+    actions:
+      - action: Set the `main` ruleset to require one approving review and have a second person review every PR.
+        priority: high
+        effort: S
+  eng.ci:
+    level: 1
+    confidence: high
+    rationale: >-
+      `linux-eic-shell.yml` builds in eic-shell on every PR and push to `main` (87.5% default-branch
+      success) and runs merges, npsim and EICrecon end to end, but there is no test suite: the jobs
+      only check that output files exist and the capybara comparison produces a report without
+      failing on differences.
+    evidence:
+      - https://github.com/eic/TimeframeBuilder/blob/257e714ff960fa4348d52be4879923f8567b1038/.github/workflows/linux-eic-shell.yml#L3-L8
+      - https://github.com/eic/TimeframeBuilder/blob/257e714ff960fa4348d52be4879923f8567b1038/.github/workflows/linux-eic-shell.yml#L106-L125
+      - https://github.com/eic/TimeframeBuilder/blob/257e714ff960fa4348d52be4879923f8567b1038/.github/workflows/linux-eic-shell.yml#L421-L431
+      - metrics:ci.default_branch_success_rate = 0.875
+    gaps:
+      - CI runs no test suite; end-to-end jobs pass whenever output files are written.
+      - Passing CI is not a required status check in the ruleset.
+    actions:
+      - action: Add a `ctest` step to the build job in `linux-eic-shell.yml` once unit tests exist (see eng.testing).
+        priority: medium
+        effort: S
+      - action: Make the capybara job fail when the HepMC3-first and EDM4hep-first EICrecon outputs differ beyond a tolerance.
+        priority: medium
+        effort: M
+  eng.testing:
+    level: 1
+    confidence: high
+    rationale: >-
+      There are no test files or test framework; the only automated checks are CI smoke runs on
+      sample data and a capybara comparison report, and the README's `test_standalone` binary does
+      not exist in the build.
+    evidence:
+      - metrics:code.test_files = 0
+      - metrics:prs.test_touching_fraction_12m = 0.057
+      - https://github.com/eic/TimeframeBuilder/blob/257e714ff960fa4348d52be4879923f8567b1038/README.md#L540-L550
+      - https://github.com/eic/TimeframeBuilder/issues/30
+    gaps:
+      - No unit tests for the time-offset, bunch-crossing, reference-remapping or config-parsing code.
+    actions:
+      - action: Add Catch2 unit tests for `DataSource::UpdateTimeOffset`, `CommandLineParser` and EDM4hep reference remapping, registered with `ctest`.
+        priority: high
+        effort: M
+  eng.static-quality:
+    level: 0
+    confidence: high
+    rationale: >-
+      No formatter, linter, static analyzer or pre-commit configuration exists, and
+      `CMakeLists.txt` sets no warning flags.
+    evidence:
+      - https://github.com/eic/TimeframeBuilder/blob/257e714ff960fa4348d52be4879923f8567b1038/CMakeLists.txt#L1-L103
+    gaps:
+      - No formatter or linter is configured or enforced, and compiler warnings are not enabled.
+    actions:
+      - action: Add `.clang-format` and `.pre-commit-config.yaml` with clang-format, enable pre-commit.ci, and add `-Wall -Wextra` to `CMakeLists.txt`.
+        priority: high
+        effort: S
+  eng.modularity:
+    level: 2
+    confidence: medium
+    rationale: >-
+      CMake with C++20 builds one executable from abstract `DataSource`/`DataHandler` interfaces with
+      EDM4hep and HepMC3 backends, configuration lives in YAML and CLI options, and the largest file
+      has 506 lines; the code is not installable as a reusable library and `CMakeLists.txt`
+      hard-codes `link_directories(/opt/local/lib)`.
+    evidence:
+      - metrics:code.cxx_standard = ["20"]
+      - https://github.com/eic/TimeframeBuilder/blob/257e714ff960fa4348d52be4879923f8567b1038/include/DataHandler.h#L9-L31
+      - https://github.com/eic/TimeframeBuilder/blob/257e714ff960fa4348d52be4879923f8567b1038/CMakeLists.txt#L9-L12
+      - https://github.com/eic/TimeframeBuilder/blob/257e714ff960fa4348d52be4879923f8567b1038/CMakeLists.txt#L103
+    gaps:
+      - Only the executable is installed; no library or exported CMake package config allows reuse of the data sources and handlers.
+    actions:
+      - action: Build the sources into a `timeframebuilder` library with installed headers and `install(EXPORT ...)` package config, and remove `link_directories(/opt/local/lib)`.
+        priority: medium
+        effort: M
+  doc.user:
+    level: 1
+    confidence: high
+    rationale: >-
+      The README documents build steps, all CLI and YAML options and usage patterns, but it lists
+      dependencies without versions (except CMake 3.16), tells users to run `./build.sh` while the
+      script is `make.sh`, does not mention eic-shell, and no example ships with input data.
+    evidence:
+      - https://github.com/eic/TimeframeBuilder/blob/257e714ff960fa4348d52be4879923f8567b1038/README.md#L17-L38
+      - https://github.com/eic/TimeframeBuilder/blob/257e714ff960fa4348d52be4879923f8567b1038/README.md#L80-L120
+      - https://github.com/eic/TimeframeBuilder/blob/257e714ff960fa4348d52be4879923f8567b1038/README.md#L513-L528
+    gaps:
+      - Dependency versions and the eic-shell route are missing, and the build instruction names a non-existent `build.sh`.
+      - No runnable quick-start example with obtainable input files.
+    actions:
+      - action: Add an "Installation" section covering the preinstalled `timeframe_builder` in eic-shell and from-source builds with minimum podio, EDM4hep, HepMC3, ROOT and yaml-cpp versions; fix `build.sh` to `make.sh`.
+        priority: medium
+        effort: S
+      - action: Add a quick-start that runs `configs/config_ci.yml` on the XRootD sample files used in CI.
+        priority: medium
+        effort: S
+  doc.developer:
+    level: 1
+    confidence: high
+    rationale: >-
+      The abstract interfaces in `DataSource.h` and `DataHandler.h` carry Doxygen-style comments and
+      the README has an architecture section, but there is no generated API reference and the
+      architecture section names a `MergedCollections` structure and file roles that no longer match
+      the code.
+    evidence:
+      - https://github.com/eic/TimeframeBuilder/blob/257e714ff960fa4348d52be4879923f8567b1038/include/DataHandler.h#L9-L60
+      - https://github.com/eic/TimeframeBuilder/blob/257e714ff960fa4348d52be4879923f8567b1038/README.md#L430-L476
+      - metrics:files.doxygen = []
+    gaps:
+      - No generated API documentation; the architecture overview is out of date.
+    actions:
+      - action: Add a Doxyfile and a job that publishes the API docs next to the existing GitHub Pages reports, and update the README architecture section to the DataSource/DataHandler design.
+        priority: medium
+        effort: S
+  doc.contributing:
+    level: 1
+    confidence: high
+    rationale: >-
+      The README's "Development and Contributing" section lists the code structure and a test
+      command for a binary that does not exist; there is no CONTRIBUTING file, and only the eic
+      organization PR template applies.
+    evidence:
+      - https://github.com/eic/TimeframeBuilder/blob/257e714ff960fa4348d52be4879923f8567b1038/README.md#L530-L556
+      - metrics:community.files.contributing = false
+      - metrics:community.files.pull_request_template = true
+    gaps:
+      - No CONTRIBUTING describing eic-shell setup, build, tests, coding conventions and the PR process.
+    actions:
+      - action: Add `CONTRIBUTING.md` covering eic-shell setup, `make.sh`, running the CI chain locally, coding conventions and PR review.
+        priority: high
+        effort: S
+  com.responsiveness:
+    level: 0
+    confidence: medium
+    rationale: >-
+      6 of the 10 issues opened in 12 months received no response and none were labeled; most open
+      issues are the maintainer's own to-do items.
+    evidence:
+      - metrics:issues.unanswered_fraction_12m = 0.6
+      - metrics:issues.median_first_response_days_12m = 19.44
+      - metrics:issues.labeled_fraction_12m = 0.0
+      - metrics:issues.open_older_365d = 5
+    gaps:
+      - The majority of issues opened in 12 months received no response; no labels are used.
+    actions:
+      - action: Respond to and label every open issue, closing or scheduling the five older than one year.
+        priority: high
+        effort: S
+  com.contributors:
+    level: 1
+    confidence: high
+    rationale: >-
+      Two people authored commits in 24 months, all from one e-mail domain, and no PR from outside
+      the maintainer group was merged in 12 months.
+    evidence:
+      - metrics:git.authors_24m = 2
+      - metrics:git.email_domains_24m = 1
+      - metrics:prs.external_fraction_12m = 0.0
+    gaps:
+      - Fewer than 4 active authors and a single institution.
+    actions:
+      - action: Recruit a co-developer from another ePIC institution through the ePIC simulation/background working group and merge their PRs.
+        priority: high
+        effort: M
+  com.bus-factor:
+    level: 1
+    confidence: high
+    rationale: >-
+      The top author wrote 97.7% of commits in 24 months and made the only release, while two people
+      reviewed and three merged PRs in 12 months; no CODEOWNERS or maintainer list exists.
+    evidence:
+      - metrics:git.top_author_share_24m = 0.977
+      - metrics:git.bus_factor_50_24m = 1
+      - metrics:prs.distinct_reviewers_12m = 2
+      - metrics:prs.distinct_mergers_12m = 3
+      - metrics:releases.authors_24m = 1
+    gaps:
+      - Bus factor 1 and no CODEOWNERS or maintainer list naming at least two people.
+    actions:
+      - action: Add `CODEOWNERS` naming two maintainers and have the second maintainer author and review changes to `src/`.
+        priority: high
+        effort: S
+  com.governance:
+    level: 0
+    confidence: medium
+    rationale: >-
+      Decisions are discussed in some public issues (#88), but the README only says to "contact the
+      development team" and no CODEOWNERS or governance file names maintainers, a decision process,
+      or an owning ePIC group.
+    evidence:
+      - https://github.com/eic/TimeframeBuilder/blob/257e714ff960fa4348d52be4879923f8567b1038/README.md#L561-L563
+      - https://github.com/eic/TimeframeBuilder/issues/88
+    gaps:
+      - Maintainers are not identified in the README or a CODEOWNERS file.
+    actions:
+      - action: Add a "Maintainers" section to the README naming the maintainers and the owning ePIC working group.
+        priority: high
+        effort: S
+  com.conduct:
+    level: 1
+    confidence: high
+    rationale: >-
+      The README directs questions to the issue tracker, but no code of conduct exists in the
+      repository or the eic organization.
+    evidence:
+      - https://github.com/eic/TimeframeBuilder/blob/257e714ff960fa4348d52be4879923f8567b1038/README.md#L561-L563
+      - metrics:community.files.code_of_conduct = false
+    gaps:
+      - No code of conduct with a reporting contact applies.
+    actions:
+      - action: Add `CODE_OF_CONDUCT.md` linking the ePIC collaboration code of conduct and its reporting contact.
+        priority: high
+        effort: S
+  dist.packaging:
+    level: 3
+    confidence: high
+    rationale: >-
+      The eic-spack recipe provides v0.9.0, v0.9.1 and v0.9.2, and eic/containers ships v0.9.2 in
+      eic-shell; the v0.9.2 recipe and container updates landed 0 and 5 days after the release.
+    evidence:
+      - metrics:packaging.eic_spack.versions = ["main", "0.9.2", "0.9.1", "0.9.0"]
+      - metrics:packaging.in_eic_shell = true
+      - metrics:packaging.eic_shell_version = 0.9.2
+      - https://github.com/eic/eic-spack/blob/5b666599332b0974af162067e1a075d1661a3580/spack_repo/eic/packages/timeframebuilder/package.py
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/spack-environment/packages.yaml#L728-L730
+    gaps: []
+    actions: []
+  dist.releases:
+    level: 1
+    confidence: high
+    rationale: >-
+      Three tags (v0.9.0, v0.9.1, v0.9.2) exist, but only v0.9.2 has a GitHub release with notes, no
+      version scheme is documented, and there is no changelog.
+    evidence:
+      - metrics:git.tags_24m = 3
+      - metrics:releases.count_24m = 1
+      - https://github.com/eic/TimeframeBuilder/releases/tag/v0.9.2
+    gaps:
+      - No documented version scheme; v0.9.0 and v0.9.1 have no release notes.
+    actions:
+      - action: State SemVer in the README and publish a GitHub release with generated notes for every tag.
+        priority: medium
+        effort: S
+  dist.dependencies:
+    level: 1
+    confidence: high
+    rationale: >-
+      ROOT, podio, EDM4hep, yaml-cpp, HepMC3 and Arrow are found with `find_package` without
+      version constraints, there is no Dependabot or Renovate configuration, and actions are
+      referenced by tag or `@main`.
+    evidence:
+      - https://github.com/eic/TimeframeBuilder/blob/257e714ff960fa4348d52be4879923f8567b1038/CMakeLists.txt#L14-L27
+      - metrics:files.dependabot = []
+      - metrics:ci.action_refs_not_sha_pinned = 69
+    gaps:
+      - No minimum versions declared for any dependency.
+    actions:
+      - action: Add minimum `VERSION` arguments to every `find_package` in `CMakeLists.txt` matching the current eic-shell versions.
+        priority: medium
+        effort: S
+  dist.reproducibility:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The README lists prerequisites in prose, and the seed and configuration are written into
+      HepMC3 output, but no environment specification or eic-shell version is documented, the
+      default seed is drawn from `random_device`, and EDM4hep output does not record the seed or
+      configuration.
+    evidence:
+      - https://github.com/eic/TimeframeBuilder/blob/257e714ff960fa4348d52be4879923f8567b1038/README.md#L17-L30
+      - https://github.com/eic/TimeframeBuilder/blob/257e714ff960fa4348d52be4879923f8567b1038/src/HepMC3DataHandler.cc#L65-L77
+      - https://github.com/eic/TimeframeBuilder/blob/257e714ff960fa4348d52be4879923f8567b1038/src/TimeframeBuilder.cc#L8
+      - https://github.com/eic/TimeframeBuilder/issues/81
+    gaps:
+      - No documented machine-readable environment, and EDM4hep outputs carry no seed or configuration.
+    actions:
+      - action: Document running in a named eic-shell release in the README and write the seed and configuration into the EDM4hep output's podio metadata.
+        priority: medium
+        effort: S
+  dist.portability:
+    level: 1
+    confidence: high
+    rationale: >-
+      CI builds only with the eic-shell compiler on `ubuntu-24.04` x86_64; no second compiler,
+      architecture or OS is tested.
+    evidence:
+      - metrics:ci.runs_on = ["ubuntu-24.04"]
+      - https://github.com/eic/TimeframeBuilder/blob/257e714ff960fa4348d52be4879923f8567b1038/.github/workflows/linux-eic-shell.yml#L29-L40
+    gaps:
+      - Builds are tested with a single OS and compiler.
+    actions:
+      - action: Add a job to `linux-eic-shell.yml` that builds with `CXX=clang++` in eic-shell.
+        priority: medium
+        effort: S
+  eic.reuse:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The code uses EDM4hep types, podio ObjectIDs and HepMC3 I/O, but EDM4hep files are read and
+      written through raw ROOT branches instead of podio readers/writers (issue #57 asks for a podio
+      backend), and the HepMC3 backend duplicates the shipped HEPMC_Merger without a documented
+      justification.
+    evidence:
+      - https://github.com/eic/TimeframeBuilder/blob/257e714ff960fa4348d52be4879923f8567b1038/README.md#L432-L437
+      - https://github.com/eic/TimeframeBuilder/blob/257e714ff960fa4348d52be4879923f8567b1038/src/EDM4hepDataHandler.cc#L296-L332
+      - https://github.com/eic/TimeframeBuilder/issues/57
+      - metrics:eic.components_detected
+    gaps:
+      - EDM4hep I/O reimplements podio's ROOT layout instead of using podio readers and writers.
+      - The overlap with HEPMC_Merger (SignalBackgroundMerger) is not justified in the documentation.
+    actions:
+      - action: Implement the EDM4hep backend with `podio::ROOTReader`/`ROOTWriter` frames (issue #57) and remove the raw branch I/O.
+        priority: medium
+        effort: M
+      - action: Document in the README how the HepMC3 mode relates to HEPMC_Merger and when each should be used.
+        priority: medium
+        effort: S
+  eic.data-model:
+    level: 2
+    confidence: medium
+    rationale: >-
+      Inputs and outputs are EDM4hep podio-layout ROOT files and HepMC3 ROOT trees, and CI runs
+      EICrecon and npsim on the outputs; no data-model version is declared or checked and no
+      round-trip test exists.
+    evidence:
+      - https://github.com/eic/TimeframeBuilder/blob/257e714ff960fa4348d52be4879923f8567b1038/.github/workflows/linux-eic-shell.yml#L333-L348
+      - https://github.com/eic/TimeframeBuilder/blob/257e714ff960fa4348d52be4879923f8567b1038/.github/workflows/linux-eic-shell.yml#L249-L262
+      - https://github.com/eic/TimeframeBuilder/blob/257e714ff960fa4348d52be4879923f8567b1038/src/EDM4hepDataHandler.cc#L460-L492
+    gaps:
+      - The EDM4hep version is neither recorded nor checked on read, and there is no I/O round-trip test.
+    actions:
+      - action: Check the input `podio_metadata` EDM4hep version against the linked EDM4hep and add a round-trip test reading merged output with uproot.
+        priority: medium
+        effort: M
+  eic.environment:
+    level: 1
+    confidence: medium
+    rationale: >-
+      Every CI job builds and runs in `eic_xl:nightly` through `eic/run-cvmfs-osg-eic-shell`, but the
+      README does not mention eic-shell for building or running.
+    evidence:
+      - metrics:ci.uses_eic_shell = true
+      - https://github.com/eic/TimeframeBuilder/blob/257e714ff960fa4348d52be4879923f8567b1038/.github/workflows/linux-eic-shell.yml#L34-L40
+    gaps:
+      - Building and running in eic-shell is not documented.
+    actions:
+      - action: Add an eic-shell section to the README covering the preinstalled `timeframe_builder` and building from source inside eic-shell.
+        priority: medium
+        effort: S
+  eic.currency:
+    level: 2
+    confidence: medium
+    rationale: >-
+      v0.9.2 is built and shipped in the current eic-shell (podio 1.8, EDM4hep 1.1, HepMC3 3.3.0) and
+      CI passes against the nightly image; the raw-branch I/O depends on podio's internal ROOT
+      layout, and there is no record of adapting to new component releases.
+    evidence:
+      - metrics:packaging.eic_shell_version = 0.9.2
+      - https://github.com/eic/TimeframeBuilder/actions/runs/36627862539
+    gaps:
+      - No evidence of adapting to component releases within one eic-shell cycle; I/O relies on podio internal branch naming.
+    actions:
+      - action: Replace hard-coded podio branch names (`_MCParticles_daughters`, `GPIntValues`) with podio API calls so podio layout changes do not break merging.
+        priority: medium
+        effort: M
+  via.license:
+    level: 0
+    confidence: high
+    rationale: >-
+      No LICENSE file exists and GitHub detects no license, although the README refers to "the
+      LICENSE file found in the top-level directory".
+    evidence:
+      - metrics:repo.license_spdx = null
+      - https://github.com/eic/TimeframeBuilder/blob/257e714ff960fa4348d52be4879923f8567b1038/README.md#L557-L559
+    gaps:
+      - No license; the code is all rights reserved.
+    actions:
+      - action: Add a `LICENSE` file with an OSI-approved license and declare it in the eic-spack recipe.
+        priority: high
+        effort: S
+  via.citation:
+    level: 0
+    confidence: high
+    rationale: No CITATION.cff, Zenodo DOI, codemeta or citation request exists.
+    evidence: []
+    gaps:
+      - No citation information.
+    actions:
+      - action: Add `CITATION.cff` with the authors and enable the Zenodo-GitHub integration.
+        priority: high
+        effort: S
+  via.adoption:
+    level: 3
+    confidence: medium
+    rationale: >-
+      TimeframeBuilder ships in eic-shell through the eic/containers spack environment; a code
+      search found no use in EIC benchmarks, campaigns or other repositories beyond packaging.
+    evidence:
+      - metrics:packaging.in_eic_shell = true
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/spack-environment/xl/spack.yaml#L137
+    gaps: []
+    actions: []
+  via.support:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The main author's affiliation is identifiable from commit e-mail domains and a public
+      profile, but no institutional commitment, funding or owning ePIC body is stated.
+    evidence:
+      - metrics:git.email_domains_24m = 1
+      - metrics:git.top_author_share_24m = 0.977
+    gaps:
+      - Maintenance responsibility is not assigned within the EIC or ePIC structure in the documentation.
+    actions:
+      - action: State the owning ePIC working group and maintainer institutions in the README.
+        priority: medium
+        effort: S

@@ -1,0 +1,359 @@
+{
+  "schema_version": 1,
+  "project": "jana2",
+  "pass": "2026-10-12",
+  "repo_url": "https://github.com/JeffersonLab/JANA2",
+  "subdir": null,
+  "collected_at": "2026-10-12T20:00:27+00:00",
+  "collector_version": "0.2.0",
+  "windows_months": {
+    "short": 12,
+    "long": 24
+  },
+  "git": {
+    "head_sha": "dc56dab0216cc1864ed9ee30dde06a34383c926f",
+    "head_date": "2026-08-24T13:57:39-04:00",
+    "last_commit_date": "2026-08-24T13:57:39-04:00",
+    "commits_total": 2574,
+    "commits_12m": 140,
+    "commits_24m": 585,
+    "authors_total": 20,
+    "authors_12m": 4,
+    "authors_24m": 8,
+    "new_authors_12m": 1,
+    "bus_factor_50_24m": 1,
+    "bus_factor_80_24m": 1,
+    "top_author_share_24m": 0.909,
+    "email_domains_24m": 3,
+    "first_parent_commits_12m": 32,
+    "first_parent_pr_fraction_12m": 0.844,
+    "tags_total": 29,
+    "tags_24m": 10,
+    "first_parent_resolved_via_api": 5
+  },
+  "files": {
+    "readme": [
+      "README.md"
+    ],
+    "license": [
+      "LICENSE"
+    ],
+    "contributing": [],
+    "code_of_conduct": [],
+    "citation_cff": [
+      "CITATION.cff"
+    ],
+    "codemeta": [],
+    "zenodo_json": [],
+    "security": [],
+    "changelog": [],
+    "governance": [],
+    "codeowners": [],
+    "authors": [],
+    "pr_template": [],
+    "issue_templates": [],
+    "dependabot": [],
+    "renovate": [],
+    "pre_commit": [],
+    "clang_format": [
+      "src/python/externals/pybind11-2.10.3/.clang-format"
+    ],
+    "clang_tidy": [
+      "src/python/externals/pybind11-2.10.3/.clang-tidy"
+    ],
+    "editorconfig": [],
+    "python_lint": [],
+    "mypy": [],
+    "codecov": [],
+    "doxygen": [
+      "docs/doxygen/Doxyfile",
+      "src/python/externals/pybind11-2.10.3/docs/Doxyfile"
+    ],
+    "sphinx": [],
+    "mkdocs": [],
+    "dockerfile": [],
+    "apptainer_def": [],
+    "spack_env": [],
+    "conda_env": [],
+    "devcontainer": [],
+    "lockfile": [],
+    "gitlab_ci": [],
+    "other_ci": [],
+    "cmake": [
+      "CMakeLists.txt"
+    ],
+    "pyproject": [],
+    "setup_py": [],
+    "docs_dir": 105,
+    "examples_dir": 0,
+    "github_workflows": [
+      ".github/workflows/build_documentation.yml",
+      ".github/workflows/test_dependency_matrix.yml",
+      ".github/workflows/test_integration_epic.yml",
+      ".github/workflows/test_integration_gluex.yml",
+      ".github/workflows/test_platform_farm_cuda.yml",
+      ".github/workflows/test_platform_mac.yml",
+      ".github/workflows/test_platform_ubuntu.yml",
+      ".github/workflows/trigger-gitlab.yml"
+    ]
+  },
+  "code": {
+    "languages": {
+      "cpp": {
+        "files": 335,
+        "lines": 43955
+      },
+      "python": {
+        "files": 19,
+        "lines": 3803
+      },
+      "cmake": {
+        "files": 82,
+        "lines": 2161
+      },
+      "shell": {
+        "files": 5,
+        "lines": 208
+      }
+    },
+    "source_lines": 47758,
+    "largest_source_files": [
+      {
+        "path": "scripts/jana-generate.py",
+        "lines": 1226
+      },
+      {
+        "path": "src/libraries/JANA/Geometry/JGeometryXML.cc",
+        "lines": 1086
+      },
+      {
+        "path": "src/libraries/JANA/Engine/JExecutionEngine.cc",
+        "lines": 869
+      },
+      {
+        "path": "scripts/jana-control.py",
+        "lines": 805
+      },
+      {
+        "path": "src/plugins/janaview/jv_mainframe.cc",
+        "lines": 776
+      }
+    ],
+    "test_files": 50,
+    "test_frameworks": [
+      "catch2",
+      "ctest"
+    ],
+    "cxx_standard": [
+      "17"
+    ],
+    "requires_python": null,
+    "site_specific_paths": [
+      "src/libraries/JANA/Geometry/JGeometry.h: /home/joe/"
+    ]
+  },
+  "eic": {
+    "components_detected": {
+      "root": {
+        "files": 17,
+        "kind": "generic",
+        "examples": [
+          "CMakeLists.txt",
+          "scripts/jana-generate.py",
+          "src/examples/misc/InteractiveStreamingExample/CMakeLists.txt"
+        ]
+      },
+      "podio": {
+        "files": 15,
+        "kind": "domain",
+        "examples": [
+          "CMakeLists.txt",
+          "src/examples/misc/PodioFileReader/CMakeLists.txt",
+          "src/examples/misc/PodioFileReader/PodioFileReader.cc"
+        ]
+      },
+      "eicrecon": {
+        "files": 6,
+        "kind": "domain",
+        "examples": [
+          ".github/workflows/test_integration_epic.yml",
+          "src/examples/tutorial_with_lightweight_datamodel/03_protocluster_factory/Protocluster_factory_epic.h",
+          "src/examples/tutorial_with_podio_datamodel/03_protocluster_factory/Protocluster_factory_epic.h"
+        ]
+      },
+      "epic": {
+        "files": 1,
+        "kind": "domain",
+        "examples": [
+          ".github/workflows/test_integration_epic.yml"
+        ]
+      },
+      "npsim": {
+        "files": 1,
+        "kind": "domain",
+        "examples": [
+          ".github/workflows/test_integration_epic.yml"
+        ]
+      },
+      "uproot": {
+        "files": 1,
+        "kind": "generic",
+        "examples": [
+          "src/examples/misc/InteractiveStreamingExample/python/streamDet_Uproot.py"
+        ]
+      }
+    },
+    "domain_components": [
+      "eicrecon",
+      "epic",
+      "npsim",
+      "podio"
+    ],
+    "is_component": "jana2",
+    "vendored_candidates": [
+      "src/external/catch2",
+      "src/external/md5",
+      "src/external/tomlplusplus",
+      "src/python/externals/pybind11-2.10.3"
+    ],
+    "submodules": []
+  },
+  "ci": {
+    "workflow_count": 8,
+    "pr_triggered_workflows": [
+      ".github/workflows/build_documentation.yml",
+      ".github/workflows/test_dependency_matrix.yml",
+      ".github/workflows/test_integration_epic.yml",
+      ".github/workflows/test_integration_gluex.yml",
+      ".github/workflows/test_platform_farm_cuda.yml",
+      ".github/workflows/test_platform_mac.yml",
+      ".github/workflows/test_platform_ubuntu.yml",
+      ".github/workflows/trigger-gitlab.yml"
+    ],
+    "runs_on": [
+      "self-hosted",
+      "ubuntu-20.04",
+      "ubuntu-22.04",
+      "ubuntu-24.04",
+      "ubuntu-latest"
+    ],
+    "container_images": [
+      "nbrei/jana2_env_everything_except_cuda",
+      "platform-release: eic_xl:nightly"
+    ],
+    "uses_eic_shell": true,
+    "actions_used": [
+      "actions/checkout",
+      "actions/configure-pages",
+      "actions/deploy-pages",
+      "actions/download-artifact",
+      "actions/upload-artifact",
+      "actions/upload-pages-artifact",
+      "cvmfs-contrib/github-action-cvmfs",
+      "eic/run-cvmfs-osg-eic-shell",
+      "eic/trigger-gitlab-ci"
+    ],
+    "action_refs_not_sha_pinned": 29,
+    "other_ci": [],
+    "default_branch_runs": 50,
+    "default_branch_success_rate": 0.88,
+    "last_default_branch_run": "2026-08-24T18:01:25Z"
+  },
+  "repo": {
+    "full_name": "JeffersonLab/JANA2",
+    "default_branch": "master",
+    "archived": false,
+    "fork": false,
+    "created_at": "2018-01-16T14:41:03Z",
+    "pushed_at": "2026-08-24T18:03:34Z",
+    "stars": 9,
+    "forks": 15,
+    "homepage": "https://jeffersonlab.github.io/JANA2/",
+    "license_spdx": "NOASSERTION",
+    "topics": [],
+    "has_issues": true,
+    "has_discussions": true,
+    "open_issues": 50,
+    "open_prs": 3,
+    "default_branch_protected": true,
+    "rulesets": 0,
+    "languages_github": {
+      "C++": 0.838,
+      "Python": 0.082,
+      "CMake": 0.038,
+      "Jupyter Notebook": 0.016,
+      "C": 0.011,
+      "Shell": 0.008,
+      "Dockerfile": 0.003,
+      "Cuda": 0.003
+    }
+  },
+  "community": {
+    "health_percentage": 75,
+    "files": {
+      "code_of_conduct": true,
+      "code_of_conduct_file": true,
+      "contributing": true,
+      "issue_template": false,
+      "license": true,
+      "pull_request_template": false,
+      "readme": true
+    }
+  },
+  "releases": {
+    "count_total": 27,
+    "count_24m": 10,
+    "latest_tag": "v2026.03.01",
+    "latest_date": "2026-08-24T18:06:14Z",
+    "authors_24m": 2,
+    "with_notes_fraction_24m": 1.0
+  },
+  "issues": {
+    "created_12m": 11,
+    "sampled": false,
+    "closed_of_created_12m": 5,
+    "median_first_response_days_12m": 0.53,
+    "unanswered_fraction_12m": 0.545,
+    "labeled_fraction_12m": 0.0,
+    "open_total": 50,
+    "open_older_365d": 44
+  },
+  "prs": {
+    "created_12m": 30,
+    "sampled": false,
+    "merged_12m": 26,
+    "median_days_to_merge_12m": 3.96,
+    "reviewed_fraction_12m": 0.0,
+    "external_fraction_12m": 0.154,
+    "test_touching_fraction_12m": 0.308,
+    "distinct_reviewers_12m": 0,
+    "top_reviewer_share_12m": null,
+    "distinct_mergers_12m": 1,
+    "open_total": 3,
+    "open_older_90d": 0
+  },
+  "packaging": {
+    "spack_name": "jana2",
+    "eic_spack": {
+      "matches_repo": true,
+      "versions": [
+        "master",
+        "2026.03.01",
+        "2026.03.00",
+        "2026.02.00",
+        "2.4.3"
+      ]
+    },
+    "spack_builtin": null,
+    "in_eic_shell": true,
+    "eic_shell_version": "2026.03.01",
+    "eic_spack_dependents": [
+      "eicrecon",
+      "ejana"
+    ],
+    "conda_forge": null,
+    "pypi": null,
+    "latest_release_packaged": true
+  },
+  "errors": []
+}

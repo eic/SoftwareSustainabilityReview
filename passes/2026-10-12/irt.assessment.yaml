@@ -1,0 +1,457 @@
+schema_version: 1
+project: irt
+pass: '2026-10-12'
+commit: 1479e6079cbe79f02afcbaba3b70be358c1962e7
+assessor: { agent: claude-code, model: claude-opus-5-5 }
+summary: >-
+  The main risks are the absence of any automated tests, a README that declares itself obsolete and
+  describes the retired ATHENA/jug_xl workflow, and missing contribution, governance, citation and
+  version-scheme documentation. Established practices are PR-based changes (88.9%) with required GCC/Clang
+  builds and clang-tidy checks in `eic_xl:nightly`, and an eic-spack `irt2` recipe that shipped release
+  2.2.3 in eic-shell within a day, where EICrecon and the epic geometry use it for RICH particle identification.
+criteria:
+  eng.change-control:
+    level: 1
+    confidence: high
+    rationale: >-
+      88.9% of first-parent commits in 12 months came through PRs, but only 38.9% of merged PRs had a
+      review by someone other than the author; branch protection requires status checks but no approving review.
+    evidence:
+      - metrics:git.first_parent_pr_fraction_12m = 0.889
+      - metrics:prs.reviewed_fraction_12m = 0.389
+      - metrics:repo.default_branch_protected = true
+      - https://github.com/eic/irt/pull/62
+      - https://github.com/eic/irt/pull/66
+    gaps:
+      - Fewer than 50% of merged PRs are reviewed by a non-author (e.g. #61, #62, #66 merged without review).
+      - Branch protection on `main` requires no approving review and is not enforced for admins.
+      - No CODEOWNERS file.
+    actions:
+      - action: Add `required_pull_request_reviews` with one approval to the `main` branch protection and enable `enforce_admins`.
+        priority: medium
+        effort: S
+      - action: Add `.github/CODEOWNERS` naming at least two reviewers for `source/` and `include/`.
+        priority: medium
+        effort: S
+  eng.ci:
+    level: 1
+    confidence: high
+    rationale: >-
+      `linux-eic-shell.yml` builds and installs with GCC and Clang on every PR and push and these jobs are
+      required checks, but there are no tests to run and only 61.9% of recent default-branch runs succeeded.
+    evidence:
+      - https://github.com/eic/irt/blob/1479e6079cbe79f02afcbaba3b70be358c1962e7/.github/workflows/linux-eic-shell.yml#L3-L9
+      - https://github.com/eic/irt/blob/1479e6079cbe79f02afcbaba3b70be358c1962e7/.github/workflows/linux-eic-shell.yml#L24-L38
+      - metrics:ci.default_branch_success_rate = 0.619
+      - https://github.com/eic/irt/actions/runs/22971027531
+    gaps:
+      - CI runs no tests; the build step is `cmake --build` and `cmake --install` only.
+      - The clang-tidy job failed on every `main` push from 2026-01-25 to 2026-05-17 (8 consecutive runs).
+      - No integration or downstream check (e.g. building EICrecon's RICH-IRT plugin against the new build).
+    actions:
+      - action: Add a `ctest --test-dir build --output-on-failure` step to the build job once tests exist (see eng.testing).
+        priority: high
+        effort: S
+      - action: Add a job that builds EICrecon with `-DIRT2_ROOT` pointing at the installed artifact in `eic_xl:nightly`.
+        priority: medium
+        effort: M
+  eng.testing:
+    level: 0
+    confidence: high
+    rationale: >-
+      The repository contains no test files, no test framework and no `enable_testing()`; issue #37
+      ("Unit testing") has been open since 2023-06.
+    evidence:
+      - metrics:code.test_files = 0
+      - metrics:prs.test_touching_fraction_12m = 0.0
+      - https://github.com/eic/irt/issues/37
+    gaps:
+      - No unit tests for the surface intersection, ray-tracing or reconstruction algorithms.
+      - No regression test against reference PID outputs.
+    actions:
+      - action: Add Catch2 unit tests (registered with `ctest`) for `SphericalSurface`, `FlatSurface` and the `IRT` ray-tracing solution.
+        priority: high
+        effort: M
+      - action: Add an end-to-end test that runs `ReconstructionFactory` on a small stored event file and checks the PID result.
+        priority: high
+        effort: M
+  eng.static-quality:
+    level: 1
+    confidence: high
+    rationale: >-
+      `.clang-tidy` is applied to changed files on every PR as a required check and the library builds with
+      `-Wall` and has sanitizer options, but no formatter is configured (`FormatStyle: none`) and clang-tidy findings do not fail CI.
+    evidence:
+      - https://github.com/eic/irt/blob/1479e6079cbe79f02afcbaba3b70be358c1962e7/.clang-tidy#L1-L25
+      - https://github.com/eic/irt/blob/1479e6079cbe79f02afcbaba3b70be358c1962e7/.github/workflows/linux-eic-shell.yml#L75-L102
+      - https://github.com/eic/irt/blob/1479e6079cbe79f02afcbaba3b70be358c1962e7/CMakeLists.txt#L17-L21
+      - https://github.com/eic/irt/blob/1479e6079cbe79f02afcbaba3b70be358c1962e7/CMakeLists.txt#L129
+    gaps:
+      - No `.clang-format` or other formatter, and no format check in CI or pre-commit.
+      - The sanitizer options exist but no CI job enables them.
+    actions:
+      - action: Add `.clang-format` and a `.pre-commit-config.yaml` with the clang-format hook, and enable pre-commit.ci.
+        priority: medium
+        effort: S
+  eng.modularity:
+    level: 1
+    confidence: medium
+    rationale: >-
+      CMake builds and installs `libIRT2` with an exported `IRT2Config.cmake`, but the standard is set by
+      overwriting `CMAKE_CXX_FLAGS` with a C++11 fallback although the code uses C++17, and a process-wide
+      `CherenkovDetectorCollection::m_Instance` singleton holds global state.
+    evidence:
+      - https://github.com/eic/irt/blob/1479e6079cbe79f02afcbaba3b70be358c1962e7/CMakeLists.txt#L40-L54
+      - https://github.com/eic/irt/blob/1479e6079cbe79f02afcbaba3b70be358c1962e7/CMakeLists.txt#L178-L225
+      - https://github.com/eic/irt/blob/1479e6079cbe79f02afcbaba3b70be358c1962e7/include/CherenkovDetectorCollection.h#L26-L29
+      - https://github.com/eic/irt/blob/1479e6079cbe79f02afcbaba3b70be358c1962e7/evaluation/CMakeLists.txt#L29-L36
+    gaps:
+      - C++17 is not required (`CMAKE_CXX_STANDARD` unset; falls back to `-std=c++11`) and user `CMAKE_CXX_FLAGS` are discarded.
+      - Global singleton state in `CherenkovDetectorCollection`.
+      - The `EVALUATION` subproject links a non-existent `IRT` target and the retired `DD4pod` library, and the build adds `${CMAKE_INSTALL_PREFIX}/include` to include paths.
+    actions:
+      - action: Replace the flag logic in `CMakeLists.txt` with `set(CMAKE_CXX_STANDARD 17)` and `CMAKE_CXX_STANDARD_REQUIRED ON`.
+        priority: medium
+        effort: S
+      - action: Remove or port `evaluation/` and drop `${CMAKE_INSTALL_PREFIX}/include` from `include_directories`.
+        priority: medium
+        effort: S
+  doc.user:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The README has CMake build and run commands, but it opens with "THIS README is OBSOLETE" and describes
+      the retired ATHENA, eicd and `jug_xl` workflow; IRT2, its dependencies and the JSON configuration are not documented.
+    evidence:
+      - https://github.com/eic/irt/blob/1479e6079cbe79f02afcbaba3b70be358c1962e7/README.md#L1-L4
+      - https://github.com/eic/irt/blob/1479e6079cbe79f02afcbaba3b70be358c1962e7/README.md#L67-L108
+      - https://github.com/eic/irt/issues/21
+    gaps:
+      - No current installation instructions with dependency versions (ROOT 6, optional nlohmann_json 3.11.2) or an eic-shell route.
+      - No runnable quick-start example for the IRT2 API; CMake options and the JSON configuration format are undocumented.
+    actions:
+      - action: Rewrite `README.md` for IRT2 with eic-shell and from-source builds, dependency versions, CMake options and a minimal usage example.
+        priority: high
+        effort: S
+  doc.developer:
+    level: 1
+    confidence: medium
+    rationale: >-
+      Public headers carry scattered inline comments and the README introduction describes the
+      mass-hypothesis approach, but there is no Doxygen or other generated API reference and no architecture overview of IRT2.
+    evidence:
+      - https://github.com/eic/irt/blob/1479e6079cbe79f02afcbaba3b70be358c1962e7/include/IRT.h#L9-L40
+      - https://github.com/eic/irt/blob/1479e6079cbe79f02afcbaba3b70be358c1962e7/README.md#L40-L62
+      - metrics:files.doxygen = []
+    gaps:
+      - Most public classes and methods (e.g. `ReconstructionFactory`, `CherenkovDetectorCollection`) have no API comments.
+      - No generated API docs and no architecture document.
+    actions:
+      - action: Add a `Doxyfile` and `docs/architecture.md` describing the detector, radiator, surface and reconstruction classes and their data flow.
+        priority: medium
+        effort: M
+  doc.contributing:
+    level: 1
+    confidence: high
+    rationale: >-
+      Only the eic organization PR template and issue templates apply; there is no CONTRIBUTING file
+      describing setup, building, conventions or the PR process.
+    evidence:
+      - metrics:community.files.contributing = false
+      - https://github.com/eic/.github/blob/3231e4d33f430f9806db8703b2feaafca084e18e/.github/pull_request_template.md
+    gaps:
+      - No CONTRIBUTING file covering eic-shell setup, build, conventions and PR process.
+      - No newcomer issues labeled (`good first issue` label exists but is unused).
+    actions:
+      - action: Add `CONTRIBUTING.md` covering eic-shell setup, CMake build, clang-tidy expectations and the PR/release process.
+        priority: medium
+        effort: S
+  com.responsiveness:
+    level: 1
+    confidence: low
+    rationale: >-
+      No issues were opened in 12 months, and all 6 open issues are older than one year with five of them
+      never answered; non-bot PRs merge in a median of 0.45 days, but PR #41 has been open since 2024-05.
+    evidence:
+      - metrics:issues.created_12m = 0
+      - metrics:issues.open_older_365d = 6
+      - metrics:prs.median_days_to_merge_12m = 0.45
+      - https://github.com/eic/irt/pull/41
+    gaps:
+      - All open issues are older than one year (#4, #14, #21, #36, #37, #40) and none is labeled.
+      - Three open PRs are older than 90 days without review.
+    actions:
+      - action: Triage the six open issues and three stale PRs, labeling or closing each.
+        priority: medium
+        effort: S
+  com.contributors:
+    level: 1
+    confidence: high
+    rationale: >-
+      Three authors from two email domains committed in 24 months, with no new authors in 12 months and no
+      merged PRs from outside the maintainer group.
+    evidence:
+      - metrics:git.authors_24m = 3
+      - metrics:git.email_domains_24m = 2
+      - metrics:git.new_authors_12m = 0
+      - metrics:prs.external_fraction_12m = 0.0
+    gaps:
+      - Fewer than 4 active authors in 24 months.
+      - No external PRs merged in 12 months.
+    actions:
+      - action: Present IRT2 at an ePIC PID or reconstruction meeting and recruit a co-developer from a third institution.
+        priority: high
+        effort: M
+  com.bus-factor:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The 50% bus factor is 2 (top author 44.4%) with four reviewers and four mergers, and two people made
+      releases, but no CODEOWNERS or maintainer list in the repository names owners.
+    evidence:
+      - metrics:git.bus_factor_50_24m = 2
+      - metrics:git.top_author_share_24m = 0.444
+      - metrics:prs.distinct_reviewers_12m = 4
+      - metrics:releases.authors_24m = 2
+      - metrics:files.codeowners = []
+    gaps:
+      - No maintainer list or CODEOWNERS names at least two people.
+    actions:
+      - action: Add `.github/CODEOWNERS` naming two owners for the library code and the build/CI files.
+        priority: high
+        effort: S
+  com.governance:
+    level: 0
+    confidence: medium
+    rationale: >-
+      Changes are discussed in public PRs, but neither the README nor a CODEOWNERS file names the maintainers,
+      and there is no decision process, roadmap or milestone.
+    evidence:
+      - metrics:files.governance = []
+      - https://github.com/eic/irt/blob/1479e6079cbe79f02afcbaba3b70be358c1962e7/README.md#L1-L20
+    gaps:
+      - Maintainers are not identified in the repository.
+      - No documented decision process, maintainer path, roadmap or milestones.
+    actions:
+      - action: Add a "Maintainers" section to `README.md` naming the maintainers and the owning ePIC group.
+        priority: high
+        effort: S
+  com.conduct:
+    level: 1
+    confidence: high
+    rationale: >-
+      The eic organization issue-template configuration links the ePIC Mattermost and meetings for questions,
+      but no code of conduct applies to the repository or the organization.
+    evidence:
+      - https://github.com/eic/.github/blob/3231e4d33f430f9806db8703b2feaafca084e18e/.github/ISSUE_TEMPLATE/config.yml
+      - metrics:community.files.code_of_conduct = false
+    gaps:
+      - No code of conduct with a reporting contact.
+    actions:
+      - action: Add `CODE_OF_CONDUCT.md` linking the ePIC code of conduct and a reporting contact, or add it once in `eic/.github`.
+        priority: high
+        effort: S
+  dist.packaging:
+    level: 3
+    confidence: high
+    rationale: >-
+      The eic-spack `irt2` recipe provides 2.2.3, added the day after the release, and eic-shell ships irt2
+      2.2.3 alongside irt 1.0.10; the collector checked only the `irt` recipe, hence `latest_release_packaged = false`.
+    evidence:
+      - https://github.com/eic/eic-spack/blob/5b666599332b0974af162067e1a075d1661a3580/spack_repo/eic/packages/irt2/package.py#L20-L23
+      - metrics:packaging.in_eic_shell = true
+      - metrics:releases.latest_tag = v2.2.3
+    gaps: []
+    actions: []
+  dist.releases:
+    level: 1
+    confidence: high
+    rationale: >-
+      Ten releases in 24 months each have generated release notes, but no version scheme is documented and
+      the CMake project version (2.2.0) does not match the released tag v2.2.3.
+    evidence:
+      - metrics:git.tags_24m = 10
+      - metrics:releases.with_notes_fraction_24m = 1.0
+      - https://github.com/eic/irt/releases/tag/v2.2.3
+      - https://github.com/eic/irt/blob/1479e6079cbe79f02afcbaba3b70be358c1962e7/CMakeLists.txt#L3-L6
+    gaps:
+      - No documented version scheme, including how the parallel 1.0.x (`v1` branch) and 2.x lines are numbered.
+      - '`project(IRT2 VERSION ...)` is not updated per release, so `IRT2ConfigVersion.cmake` reports 2.2.0.'
+    actions:
+      - action: State SemVer and the 1.x/2.x maintenance policy in `README.md` and bump `project(IRT2 VERSION ...)` in each release PR.
+        priority: medium
+        effort: S
+  dist.dependencies:
+    level: 1
+    confidence: medium
+    rationale: >-
+      ROOT 6 and nlohmann_json 3.11.2 are declared with minimum versions and Dependabot updates GitHub Actions,
+      but the optional `evaluation/` build depends on the undeclared, retired `DD4pod`, and `DrcPidFast` is copied code without version or license.
+    evidence:
+      - https://github.com/eic/irt/blob/1479e6079cbe79f02afcbaba3b70be358c1962e7/CMakeLists.txt#L31
+      - https://github.com/eic/irt/blob/1479e6079cbe79f02afcbaba3b70be358c1962e7/CMakeLists.txt#L138
+      - https://github.com/eic/irt/blob/1479e6079cbe79f02afcbaba3b70be358c1962e7/evaluation/CMakeLists.txt#L26-L36
+      - https://github.com/eic/irt/blob/1479e6079cbe79f02afcbaba3b70be358c1962e7/delphes/include/DrcPidFast.h#L1-L2
+      - https://github.com/eic/irt/blob/1479e6079cbe79f02afcbaba3b70be358c1962e7/.github/dependabot.yml#L7-L11
+    gaps:
+      - '`evaluation/` uses `DD4pod` and EDM4eic headers without `find_package` and links a non-existent `IRT` target.'
+      - '`DrcPidFast` is copied third-party code with no version or provenance beyond an author line.'
+    actions:
+      - action: Delete `evaluation/` (or port it to EDM4hep via `find_package(podio)`/`find_package(EDM4hep)`) and record the origin and version of `DrcPidFast`.
+        priority: medium
+        effort: S
+  dist.reproducibility:
+    level: 1
+    confidence: medium
+    rationale: >-
+      CI builds in the unpinned `eic_xl:nightly` image, and the README describes an obsolete `jug_xl` setup;
+      no eic-shell version is documented for any release.
+    evidence:
+      - https://github.com/eic/irt/blob/1479e6079cbe79f02afcbaba3b70be358c1962e7/.github/workflows/linux-eic-shell.yml#L32-L38
+      - https://github.com/eic/irt/blob/1479e6079cbe79f02afcbaba3b70be358c1962e7/README.md#L70-L72
+    gaps:
+      - No documented eic-shell version or machine-readable environment tied to releases.
+      - Configuration and calibration inputs used for outputs are not recorded with the output.
+    actions:
+      - action: Document in `README.md` the eic-shell release each IRT2 version is built and validated in.
+        priority: medium
+        effort: S
+  dist.portability:
+    level: 1
+    confidence: high
+    rationale: >-
+      CI builds with GCC and Clang on Linux x86_64 and no site paths are present, but no tests run on either
+      toolchain, so the two-configuration condition is met for builds only.
+    evidence:
+      - metrics:ci.runs_on = ["ubuntu-latest"]
+      - https://github.com/eic/irt/blob/1479e6079cbe79f02afcbaba3b70be358c1962e7/.github/workflows/linux-eic-shell.yml#L24-L27
+      - metrics:code.site_specific_paths = []
+    gaps:
+      - No tests run on any configuration.
+      - Only Linux x86_64 is built.
+    actions:
+      - action: Run the new ctest suite in each matrix entry of `linux-eic-shell.yml`.
+        priority: medium
+        effort: S
+  eic.reuse:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The library is a supported component that EICrecon and the epic dRICH/pfRICH geometry reuse, but
+      in-tree readers still use the retired dd4pod format and a private Geant4 event tree instead of EDM4hep, without documented justification.
+    evidence:
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/src/detectors/RICH-IRT/CMakeLists.txt#L16-L17
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/src/DRICH_geo.cpp#L20-L24
+      - https://github.com/eic/irt/blob/1479e6079cbe79f02afcbaba3b70be358c1962e7/evaluation/CMakeLists.txt#L26
+      - https://github.com/eic/irt/blob/1479e6079cbe79f02afcbaba3b70be358c1962e7/source/GeantImport.cc#L11-L31
+    gaps:
+      - '`evaluation/` reads dd4pod collections rather than EDM4hep/podio.'
+      - The standalone `GeantImport` event tree format is not justified against EDM4hep in the documentation.
+    actions:
+      - action: Remove the dd4pod-based `evaluation/` and document why the standalone `CherenkovEvent` tree is needed alongside EDM4hep input.
+        priority: medium
+        effort: S
+  eic.data-model:
+    level: 1
+    confidence: medium
+    rationale: >-
+      Geometry, events and calibrations are read and written as ROOT-dictionary-serialized IRT classes (tree
+      `t`, branch `e`) and a JSON configuration, with no schema documentation; EDM4eic output is produced by EICrecon, not by IRT.
+    evidence:
+      - https://github.com/eic/irt/blob/1479e6079cbe79f02afcbaba3b70be358c1962e7/source/GeantImport.cc#L22-L28
+      - https://github.com/eic/irt/blob/1479e6079cbe79f02afcbaba3b70be358c1962e7/source/ReconstructionFactory.cc#L193-L200
+    gaps:
+      - The ROOT object layout of `CherenkovDetectorCollection`/`CherenkovEvent` and the JSON configuration keys are undocumented.
+    actions:
+      - action: Document the `CherenkovDetectorCollection` file layout and the JSON configuration keys in `docs/formats.md`.
+        priority: medium
+        effort: S
+  eic.environment:
+    level: 1
+    confidence: high
+    rationale: >-
+      CI builds in `eic_xl:nightly` through `eic/run-cvmfs-osg-eic-shell` on every PR, but the README documents
+      only the obsolete `jug_xl`/ATHENA setup and no stable eic-shell release is tested.
+    evidence:
+      - metrics:ci.uses_eic_shell = true
+      - https://github.com/eic/irt/blob/1479e6079cbe79f02afcbaba3b70be358c1962e7/.github/workflows/linux-eic-shell.yml#L32-L38
+      - https://github.com/eic/irt/blob/1479e6079cbe79f02afcbaba3b70be358c1962e7/README.md#L67-L80
+    gaps:
+      - Building and using IRT2 in current eic-shell is not documented.
+      - No tests run in the eic container.
+    actions:
+      - action: Add an eic-shell build section to `README.md` and run the ctest suite in the `eic_xl:nightly` job.
+        priority: medium
+        effort: S
+  eic.currency:
+    level: 2
+    confidence: medium
+    rationale: >-
+      The library builds against current `eic_xl:nightly` and eic-shell ships the latest release, which
+      EICrecon requires (`IRT2_VERSION_MIN 2.2.0`); the in-tree evaluation code still targets the retired dd4pod and eicd stack.
+    evidence:
+      - https://github.com/eic/irt/actions/runs/37070737817
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/CMakeLists.txt#L70-L71
+      - https://github.com/eic/irt/blob/1479e6079cbe79f02afcbaba3b70be358c1962e7/evaluation/CMakeLists.txt#L26
+    gaps:
+      - Code paths for the retired dd4pod data model remain in `evaluation/` and the README.
+    actions:
+      - action: Remove the dd4pod/eicd-era `evaluation/` code and README sections.
+        priority: low
+        effort: S
+  via.license:
+    level: 1
+    confidence: medium
+    rationale: >-
+      LGPL-3.0 is detected and compatible with ROOT and nlohmann_json, but the license is not stated in CMake
+      or package metadata and the copied `DrcPidFast` code carries no license statement.
+    evidence:
+      - metrics:repo.license_spdx = LGPL-3.0
+      - https://github.com/eic/irt/blob/1479e6079cbe79f02afcbaba3b70be358c1962e7/LICENSE#L1-L3
+      - https://github.com/eic/irt/blob/1479e6079cbe79f02afcbaba3b70be358c1962e7/delphes/include/DrcPidFast.h#L1-L2
+    gaps:
+      - License not declared in package metadata.
+      - Third-party `DrcPidFast` code has no recorded license.
+    actions:
+      - action: Add `LICENSE.spdx` or a `license("LGPL-3.0-or-later")` entry in the eic-spack `irt2` recipe, and record the license of `DrcPidFast`.
+        priority: medium
+        effort: S
+  via.citation:
+    level: 0
+    confidence: high
+    rationale: >-
+      There is no CITATION.cff, Zenodo metadata, DOI, reference publication or author list.
+    evidence: []
+    gaps:
+      - No citation metadata or author list.
+    actions:
+      - action: Add `CITATION.cff` with the authors and enable the Zenodo-GitHub integration for release DOIs.
+        priority: high
+        effort: S
+  via.adoption:
+    level: 3
+    confidence: high
+    rationale: >-
+      IRT ships in eic-shell and is a dependency of EICrecon, whose RICH-IRT plugin uses IRT2, and the epic
+      dRICH and pfRICH geometry plugins build IRT2 optics; it is part of the ePIC reconstruction chain.
+    evidence:
+      - metrics:packaging.eic_spack_dependents = ["eicrecon"]
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/src/detectors/RICH-IRT/CMakeLists.txt#L16-L17
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/src/DRICH_geo.cpp#L20-L24
+    gaps: []
+    actions: []
+  via.support:
+    level: 1
+    confidence: medium
+    rationale: >-
+      Maintainers are identifiable through the eic-spack recipe and commit email domains, but the repository
+      names no owning ePIC working group, institutional commitment or funding.
+    evidence:
+      - https://github.com/eic/eic-spack/blob/5b666599332b0974af162067e1a075d1661a3580/spack_repo/eic/packages/irt2/package.py#L20-L23
+      - metrics:git.email_domains_24m = 2
+    gaps:
+      - No owning ePIC body, institutional commitment or funding acknowledgement documented.
+    actions:
+      - action: State the owning ePIC PID/reconstruction working group and maintainer institutions in `README.md`.
+        priority: medium
+        effort: S

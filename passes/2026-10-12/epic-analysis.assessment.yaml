@@ -1,0 +1,447 @@
+schema_version: 1
+project: epic-analysis
+pass: "2026-10-12"
+commit: 4cd611b5bbb868ba5a05c4f217b6fd77834a3266
+assessor: { agent: claude-code, model: claude-opus-5-5 }
+summary: >-
+  The project shows no commits in 12 months (metrics:git.commits_12m = 0), every recorded
+  default-branch and PR CI run fails at the build step in the eic image, all 22 open issues are
+  older than one year, and there are no unit tests, formatter, linter, citation metadata, or code of conduct.
+  Changes reach `main` through branch-protected PRs with a required approval, the README and
+  tutorials document an eic-shell workflow, and CI runs a full download-analysis-postprocess chain on
+  sample fast- and full-simulation data.
+criteria:
+  eng.change-control:
+    level: 2
+    confidence: low
+    rationale: >-
+      The only first-parent change in 12 months came through PR #294 with an approving review, and
+      branch protection requires one approval; level 3 is not met because protection does not apply
+      to administrators and was bypassed for a direct push in April 2025 and a merge with a failing required check.
+    evidence:
+      - metrics:git.first_parent_pr_fraction_12m = 1.0
+      - metrics:repo.default_branch_protected = true
+      - https://github.com/eic/epic-analysis/pull/294
+      - https://github.com/eic/epic-analysis/commit/8840aca
+      - https://github.com/eic/.github/blob/3231e4d33f430f9806db8703b2feaafca084e18e/.github/pull_request_template.md
+    gaps:
+      - Branch protection has `enforce_admins` disabled; commit 8840aca (2025-04-27) was pushed directly to `main`.
+      - PR #294 was merged while the required `collect` check was failing.
+      - No `CODEOWNERS`; the 12-month sample is a single PR.
+    actions:
+      - action: Enable "Do not allow bypassing the above settings" (enforce for administrators) on the `main` protection rule.
+        priority: medium
+        effort: S
+      - action: Add `.github/CODEOWNERS` naming at least two reviewers for `src/`, `macro/ci/`, and `.github/`.
+        priority: medium
+        effort: S
+  eng.ci:
+    level: 1
+    confidence: high
+    rationale: >-
+      `ci.yml` runs on every PR and push to `main` and executes analysis and postprocessing macros on
+      sample data, but every recorded default-branch run fails at the build jobs.
+    evidence:
+      - https://github.com/eic/epic-analysis/blob/4cd611b5bbb868ba5a05c4f217b6fd77834a3266/.github/workflows/ci.yml#L6-L10
+      - https://github.com/eic/epic-analysis/blob/4cd611b5bbb868ba5a05c4f217b6fd77834a3266/.github/workflows/ci.yml#L178-L222
+      - metrics:ci.default_branch_success_rate = 0.0
+      - https://github.com/eic/epic-analysis/actions/runs/21193851680
+    gaps:
+      - Fewer than 80% of default-branch runs succeed; `build_all` and `build_no_delphes` fail on `main` and on open PRs.
+    actions:
+      - action: Fix the build failures in `build_all` and `build_no_delphes` (merge or rework PR #295 and replace `-L/usr/local/lib` per issue #292) so `main` CI passes.
+        priority: high
+        effort: M
+  eng.testing:
+    level: 1
+    confidence: high
+    rationale: >-
+      There are no unit tests; CI runs analysis and postprocess macros on downloaded sample files as
+      smoke tests, which currently do not execute because the build jobs fail.
+    evidence:
+      - metrics:code.test_files = 0
+      - https://github.com/eic/epic-analysis/blob/4cd611b5bbb868ba5a05c4f217b6fd77834a3266/.github/workflows/ci.yml#L229-L289
+      - https://github.com/eic/epic-analysis/issues/291
+    gaps:
+      - No unit tests for `Kinematics` reconstruction methods, `Weights`, or `Histos`.
+      - CI produces plots but compares nothing against reference values, and its smoke tests are not running.
+    actions:
+      - action: Add a test executable (Catch2, available in eic-shell) that checks `Kinematics::CalculateDIS` for each method on fixed four-vectors, run from `ci.yml`.
+        priority: medium
+        effort: M
+  eng.static-quality:
+    level: 0
+    confidence: high
+    rationale: >-
+      No formatter, linter, or static analyzer is configured, and the Makefile sets
+      `-Wno-deprecated` without enabling `-Wall`.
+    evidence:
+      - https://github.com/eic/epic-analysis/blob/4cd611b5bbb868ba5a05c4f217b6fd77834a3266/Makefile#L13-L15
+      - metrics:files.clang_format = []
+      - metrics:files.pre_commit = []
+    gaps:
+      - No formatter or linter configuration and no compiler warning flags.
+    actions:
+      - action: Add `.clang-format` and `.pre-commit-config.yaml` with clang-format, enable pre-commit.ci, and add `-Wall -Wextra` to `FLAGS` in the Makefile.
+        priority: high
+        effort: S
+  eng.modularity:
+    level: 1
+    confidence: high
+    rationale: >-
+      A Makefile builds a shared library with ROOT dictionaries, but the C++ standard is unspecified,
+      the compiler and `/usr/local/lib` are hard-coded, there is no install target, and analyses are
+      driven by interpreted ROOT macros.
+    evidence:
+      - https://github.com/eic/epic-analysis/blob/4cd611b5bbb868ba5a05c4f217b6fd77834a3266/Makefile#L13-L33
+      - https://github.com/eic/epic-analysis/blob/4cd611b5bbb868ba5a05c4f217b6fd77834a3266/README.md#L92-L94
+      - https://github.com/eic/epic-analysis/blob/4cd611b5bbb868ba5a05c4f217b6fd77834a3266/README.md#L189-L192
+      - metrics:code.cxx_standard = []
+    gaps:
+      - No declared C++ standard, no install or export target, and hard-coded `-L/usr/local/lib` (issue #292).
+    actions:
+      - action: Replace the Makefile with CMake that sets `CMAKE_CXX_STANDARD 20`, uses `find_package` for ROOT, podio, EDM4eic and fmt, and installs the library and headers.
+        priority: medium
+        effort: M
+  doc.user:
+    level: 1
+    confidence: high
+    rationale: >-
+      The README covers eic-shell setup, Delphes installation, `make` targets and build options, and
+      links ordered tutorials, but names no dependency versions and the tutorials need S3 credentials to obtain input data.
+    evidence:
+      - https://github.com/eic/epic-analysis/blob/4cd611b5bbb868ba5a05c4f217b6fd77834a3266/README.md#L39-L121
+      - https://github.com/eic/epic-analysis/blob/4cd611b5bbb868ba5a05c4f217b6fd77834a3266/tutorial/README.md#L1-L20
+      - https://github.com/eic/epic-analysis/blob/4cd611b5bbb868ba5a05c4f217b6fd77834a3266/s3tools/README.md#L10-L15
+    gaps:
+      - No dependency versions (eic-shell release, Delphes, ROOT) are named.
+      - No quick-start runnable without S3 credentials.
+    actions:
+      - action: State the tested eic-shell release and Delphes tag in the README, and add a quick-start that runs `tutorial/analysis_template.C` on a public input file (for example via xrootd).
+        priority: medium
+        effort: S
+  doc.developer:
+    level: 1
+    confidence: high
+    rationale: >-
+      Public headers carry inline comments, `doc/kinematics.md` documents the reconstruction methods,
+      and the README has a class flowchart, but there is no generated API reference.
+    evidence:
+      - https://github.com/eic/epic-analysis/blob/4cd611b5bbb868ba5a05c4f217b6fd77834a3266/src/Analysis.h#L44-L70
+      - https://github.com/eic/epic-analysis/blob/4cd611b5bbb868ba5a05c4f217b6fd77834a3266/doc/kinematics.md
+      - https://github.com/eic/epic-analysis/blob/4cd611b5bbb868ba5a05c4f217b6fd77834a3266/README.md#L31-L34
+      - metrics:files.doxygen = []
+    gaps:
+      - No generated API documentation (Doxygen or similar).
+    actions:
+      - action: Add a `Doxyfile` covering `src/` and a GitHub Pages workflow that publishes it from `main`.
+        priority: medium
+        effort: S
+  doc.contributing:
+    level: 1
+    confidence: high
+    rationale: >-
+      The README "Contributions" section says where to put macros and to open PRs, and the eic
+      organization supplies PR and issue templates, but there is no description of build, test, or coding conventions.
+    evidence:
+      - https://github.com/eic/epic-analysis/blob/4cd611b5bbb868ba5a05c4f217b6fd77834a3266/README.md#L296-L314
+      - metrics:community.files.contributing = false
+      - metrics:community.files.pull_request_template = true
+    gaps:
+      - No `CONTRIBUTING` covering development setup, running the CI macros locally, and coding conventions.
+    actions:
+      - action: Add `CONTRIBUTING.md` covering eic-shell setup, `make`, running the `macro/ci` macros locally, code style, and the PR review process.
+        priority: medium
+        effort: S
+  com.responsiveness:
+    level: 0
+    confidence: low
+    rationale: >-
+      There were no commits in 12 months while 22 issues are open, all older than one year, and PR
+      #297 (December 2025) has no review or comment.
+    evidence:
+      - metrics:git.commits_12m = 0
+      - metrics:issues.open_older_365d = 22
+      - metrics:prs.open_older_90d = 10
+      - https://github.com/eic/epic-analysis/pull/297
+    gaps:
+      - No development activity in 12 months; open issues and PRs are not triaged and no triage process is documented.
+    actions:
+      - action: Review the 22 open issues and 10 open PRs, close stale ones, and label the rest.
+        priority: high
+        effort: S
+  com.contributors:
+    level: 1
+    confidence: high
+    rationale: >-
+      Two authors committed in 24 months and none in 12 months; no institutional affiliation is
+      measurable.
+    evidence:
+      - metrics:git.authors_24m = 2
+      - metrics:git.authors_12m = 0
+      - metrics:git.email_domains_24m = 0
+    gaps:
+      - Fewer than 4 active authors in 24 months and no merged external PRs in 12 months.
+    actions:
+      - action: Review and merge or close the open contributor PRs (#295, #297, #288, #278) and present the project at an ePIC SIDIS or analysis meeting to recruit co-developers.
+        priority: high
+        effort: M
+  com.bus-factor:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The bus factor (50%) is 1, but the one merged PR in the period was approved by a second person.
+    evidence:
+      - metrics:git.bus_factor_50_24m = 1
+      - metrics:git.top_author_share_24m = 0.5
+      - metrics:releases.authors_24m = 0
+      - https://github.com/eic/epic-analysis/pull/294
+    gaps:
+      - Bus factor below 2 and no maintainer list or `CODEOWNERS`.
+    actions:
+      - action: Add `CODEOWNERS` or a README maintainer section naming at least two maintainers.
+        priority: high
+        effort: S
+  com.governance:
+    level: 0
+    confidence: high
+    rationale: >-
+      Neither the README nor a CODEOWNERS file names maintainers, and there is no decision process,
+      roadmap, or milestones.
+    evidence:
+      - metrics:files.governance = []
+      - metrics:files.codeowners = []
+    gaps:
+      - Maintainers are not identified and no governance, milestones, or ePIC ownership is documented.
+    actions:
+      - action: Add a "Maintainers" section to the README naming the maintainers and the owning ePIC working group.
+        priority: high
+        effort: S
+  com.conduct:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The eic organization issue-template configuration links the ePIC Mattermost for questions, but
+      no code of conduct applies.
+    evidence:
+      - https://github.com/eic/.github/blob/3231e4d33f430f9806db8703b2feaafca084e18e/.github/ISSUE_TEMPLATE/config.yml#L1-L14
+      - metrics:community.files.code_of_conduct = false
+    gaps:
+      - No code of conduct with a reporting contact.
+    actions:
+      - action: Add `CODE_OF_CONDUCT.md` linking the ePIC collaboration code of conduct and reporting contact, and a "Getting help" README section.
+        priority: high
+        effort: S
+  dist.packaging:
+    level: 1
+    confidence: medium
+    rationale: >-
+      A from-source Makefile build is documented, but there is no package recipe in eic-spack, Spack,
+      or conda-forge.
+    evidence:
+      - https://github.com/eic/epic-analysis/blob/4cd611b5bbb868ba5a05c4f217b6fd77834a3266/README.md#L83-L117
+      - metrics:packaging.eic_spack = null
+      - metrics:packaging.in_eic_shell = false
+    gaps:
+      - No recipe in eic-spack or another domain package manager.
+    actions:
+      - action: Once a CMake install exists, add an `epic-analysis` recipe to eic-spack for the latest release.
+        priority: medium
+        effort: M
+  dist.releases:
+    level: 1
+    confidence: high
+    rationale: >-
+      Eight tags exist, but the latest, v0.6.0, is from December 2022 and none were made in 24 months.
+    evidence:
+      - metrics:releases.count_24m = 0
+      - metrics:releases.latest_date = 2022-12-27T17:41:33Z
+      - metrics:files.changelog = []
+    gaps:
+      - Fewer than 2 releases per year, no documented version scheme, and no changelog.
+    actions:
+      - action: State SemVer in the README and tag a release with generated notes once `main` CI passes, then at least every six months.
+        priority: medium
+        effort: S
+  dist.dependencies:
+    level: 1
+    confidence: high
+    rationale: >-
+      `deps/README.md` lists the dependencies and the subrepo `.gitrepo` files record adage and
+      delphes_EIC commits, but Delphes is cloned from its default branch, no versions are constrained, and `mstwpdf` is vendored without a source version.
+    evidence:
+      - https://github.com/eic/epic-analysis/blob/4cd611b5bbb868ba5a05c4f217b6fd77834a3266/deps/README.md#L8-L17
+      - https://github.com/eic/epic-analysis/blob/4cd611b5bbb868ba5a05c4f217b6fd77834a3266/deps/install_delphes.sh#L9-L18
+      - metrics:eic.vendored_candidates = [deps/adage, deps/delphes_EIC, deps/mstwpdf]
+      - metrics:ci.action_refs_not_sha_pinned = 44
+    gaps:
+      - No minimum versions for ROOT, podio, EDM4eic, fmt, or Delphes; Delphes is unpinned.
+      - Vendored `mstwpdf` has no recorded upstream version or source URL.
+    actions:
+      - action: Pin Delphes to a release tag in `deps/install_delphes.sh` and declare minimum versions of ROOT, podio, EDM4eic and fmt in the build files.
+        priority: medium
+        effort: S
+  dist.reproducibility:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The README directs users to eic-shell and CI names an eic container, but no eic-shell version is
+      pinned and the random seed is hard-coded in source rather than recorded in outputs.
+    evidence:
+      - https://github.com/eic/epic-analysis/blob/4cd611b5bbb868ba5a05c4f217b6fd77834a3266/README.md#L53-L61
+      - https://github.com/eic/epic-analysis/blob/4cd611b5bbb868ba5a05c4f217b6fd77834a3266/.github/workflows/ci.yml#L40-L42
+      - https://github.com/eic/epic-analysis/blob/4cd611b5bbb868ba5a05c4f217b6fd77834a3266/src/Kinematics.cxx#L86
+    gaps:
+      - No pinned eic-shell release; CI uses the floating `jug_xl:nightly` tag.
+      - Seed and configuration are not written to output files.
+    actions:
+      - action: Document the eic-shell release used for each tag and write the config file contents and seed into each output ROOT file.
+        priority: medium
+        effort: S
+  dist.portability:
+    level: 1
+    confidence: high
+    rationale: >-
+      CI builds only on Linux x86_64 with GCC (the Makefile hard-codes `g++`), and the data-access
+      and HPC tooling assume the BNL S3 endpoint and JLab Slurm.
+    evidence:
+      - metrics:ci.runs_on = [ubuntu-latest]
+      - https://github.com/eic/epic-analysis/blob/4cd611b5bbb868ba5a05c4f217b6fd77834a3266/Makefile#L13
+      - https://github.com/eic/epic-analysis/blob/4cd611b5bbb868ba5a05c4f217b6fd77834a3266/s3tools/add-host.sh#L12
+      - https://github.com/eic/epic-analysis/blob/4cd611b5bbb868ba5a05c4f217b6fd77834a3266/hpc/README.md#L16-L18
+    gaps:
+      - Single compiler and OS tested; S3 host and JLab xrootd prefix hard-coded in scripts.
+    actions:
+      - action: Use `CXX ?= g++` in the Makefile and add a Clang build job to `ci.yml`; make the S3 host and xrootd prefix configurable.
+        priority: medium
+        effort: S
+  eic.reuse:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The project uses ROOT, fmt, and (optionally) podio, EDM4hep and EDM4eic, but reads ePIC files
+      through hard-coded TTree branch names and recomputes DIS kinematics that EICrecon already provides as `InclusiveKinematics*` collections.
+    evidence:
+      - https://github.com/eic/epic-analysis/blob/4cd611b5bbb868ba5a05c4f217b6fd77834a3266/src/AnalysisEpic.cxx#L17-L35
+      - https://github.com/eic/epic-analysis/blob/4cd611b5bbb868ba5a05c4f217b6fd77834a3266/src/Kinematics.h#L255-L261
+      - https://github.com/eic/epic-analysis/blob/4cd611b5bbb868ba5a05c4f217b6fd77834a3266/src/AnalysisEpicPodio.cxx#L186-L192
+      - metrics:eic.domain_components = [edm4eic, edm4hep, eicrecon, fastjet, podio]
+    gaps:
+      - Raw TTreeReader access to EDM4eic branches instead of the podio API; no documented reason for recomputing EICrecon kinematics.
+      - Vendors `mstwpdf` while LHAPDF ships in eic-shell.
+    actions:
+      - action: Port `AnalysisEpic` to `podio::ROOTReader` frames with EDM4eic collections (issue #272) and document when local kinematics replace `InclusiveKinematics*`.
+        priority: medium
+        effort: M
+  eic.data-model:
+    level: 1
+    confidence: medium
+    rationale: >-
+      Inputs include EDM4eic podio files, but outputs are ROOT files of `TObjArray` histograms, streamed
+      project classes (`Histos`, `BinSet`), and flat trees whose schema is not documented.
+    evidence:
+      - https://github.com/eic/epic-analysis/blob/4cd611b5bbb868ba5a05c4f217b6fd77834a3266/README.md#L213-L222
+      - https://github.com/eic/epic-analysis/blob/4cd611b5bbb868ba5a05c4f217b6fd77834a3266/README.md#L266-L276
+    gaps:
+      - Output schema (SidisTree, HFSTree, ParticleTree branches) is not documented, and `Histos` objects need the project dictionary to read.
+    actions:
+      - action: Add `doc/output.md` listing every branch of SidisTree, HFSTree and ParticleTree with units.
+        priority: medium
+        effort: S
+  eic.environment:
+    level: 0
+    confidence: medium
+    rationale: >-
+      The README documents building in eic-shell, but every recorded CI build in the eic image fails,
+      and the C++20 compatibility fix (PR #295) and `/usr/local` path fix (issue #292) remain unmerged.
+    evidence:
+      - https://github.com/eic/epic-analysis/blob/4cd611b5bbb868ba5a05c4f217b6fd77834a3266/README.md#L53-L61
+      - https://github.com/eic/epic-analysis/actions/runs/21193851680
+      - https://github.com/eic/epic-analysis/pull/295
+      - https://github.com/eic/epic-analysis/issues/292
+    gaps:
+      - No public evidence of a successful build in a current eic-shell image.
+      - CI targets the legacy `jug_xl:nightly` image name rather than `eic_xl`.
+    actions:
+      - action: Switch `ci.yml` to `platform-release` `eic_xl:nightly` and fix the build so `build_all` and `build_no_delphes` pass.
+        priority: high
+        effort: M
+  eic.currency:
+    level: 1
+    confidence: medium
+    rationale: >-
+      Known incompatibilities with the current stack have been open for more than 6 months: issue
+      #292 (May 2024), PR #295 for C++20 builds (January 2025), and the optional podio reader uses `podio::EventStore`, which podio removed before 1.0.
+    evidence:
+      - https://github.com/eic/epic-analysis/issues/292
+      - https://github.com/eic/epic-analysis/pull/295
+      - https://github.com/eic/epic-analysis/blob/4cd611b5bbb868ba5a05c4f217b6fd77834a3266/src/AnalysisEpicPodio.h#L8-L9
+    gaps:
+      - Does not build against the current eic-shell stack (ROOT C++20, podio 1.8).
+    actions:
+      - action: Merge the C++20 fixes from PR #295, remove `-L/usr/local/lib`, and replace `podio::EventStore` with `podio::ROOTReader` frames.
+        priority: high
+        effort: M
+  via.license:
+    level: 1
+    confidence: medium
+    rationale: >-
+      LGPL-3.0 is detected and source files carry SPDX headers, but the default build links GPL-3.0
+      Delphes into the LGPL library and the vendored `mstwpdf` carries no license statement.
+    evidence:
+      - metrics:repo.license_spdx = LGPL-3.0
+      - https://github.com/eic/epic-analysis/blob/4cd611b5bbb868ba5a05c4f217b6fd77834a3266/LICENSE.spdx
+      - https://github.com/eic/epic-analysis/blob/4cd611b5bbb868ba5a05c4f217b6fd77834a3266/Makefile#L38-L45
+      - https://github.com/delphes/delphes/blob/5062a27e58a6e1e090da91c078c0e12dfb379b46/COPYING
+    gaps:
+      - The default build links a GPL-3.0 dependency into an LGPL-3.0 library.
+      - No license recorded for `deps/mstwpdf`.
+    actions:
+      - action: Document in the README that builds with Delphes are distributed under GPL-3.0 (or default to `EXCLUDE_DELPHES`), and record the `mstwpdf` license in `deps/README.md`.
+        priority: medium
+        effort: S
+  via.citation:
+    level: 0
+    confidence: high
+    rationale: >-
+      There is no citation file, DOI, or citation request.
+    evidence:
+      - metrics:files.citation_cff = []
+      - metrics:files.zenodo_json = []
+    gaps:
+      - No citation information.
+    actions:
+      - action: Add `CITATION.cff` listing the contributors and enable the Zenodo-GitHub integration.
+        priority: high
+        effort: S
+  via.adoption:
+    level: 1
+    confidence: medium
+    rationale: >-
+      Public use is limited to a SIDIS asymmetry project that consumes its `SidisTree` format; no EIC
+      repository, benchmark, or campaign depends on it.
+    evidence:
+      - https://github.com/search?q=SidisTree&type=code (code search; one external SIDIS asymmetry project reads SidisTree)
+      - metrics:packaging.in_eic_shell = false
+      - metrics:packaging.eic_spack_dependents = []
+    gaps:
+      - No use as a dependency of another EIC repository or in benchmarks or campaigns.
+    actions:
+      - action: Contribute a SIDIS kinematics benchmark that uses the project to physics_benchmarks, and list known users in the README.
+        priority: medium
+        effort: M
+  via.support:
+    level: 0
+    confidence: medium
+    rationale: >-
+      No maintainer affiliations, owning working group, or funding acknowledgement are stated, and
+      there were no commits in 12 months.
+    evidence:
+      - metrics:git.commits_12m = 0
+      - https://github.com/eic/epic-analysis/blob/4cd611b5bbb868ba5a05c4f217b6fd77834a3266/README.md#L1-L34
+    gaps:
+      - No identifiable maintainer affiliations or institutional commitment.
+    actions:
+      - action: State the maintainers, their institutions, and the owning ePIC working group in the README.
+        priority: high
+        effort: S

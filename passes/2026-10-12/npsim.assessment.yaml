@@ -1,0 +1,488 @@
+schema_version: 1
+project: npsim
+pass: "2026-10-12"
+commit: ca28828f22e9fbeefc42636ed08dd35f084246d2
+assessor: { agent: claude-code, model: claude-opus-5-5 }
+summary: >-
+  The repository has no license (issue #1 open since 2022), no citation metadata, a 13-line README
+  without install or usage instructions, and one author wrote 73% of commits in 24 months while the
+  eic-spack recipe names a single maintainer. 97.5% of default-branch changes arrive through PRs
+  under a ruleset requiring approval, and CI builds with GCC and Clang (ASan/UBSan) in eic-shell,
+  runs ctest, and runs end-to-end ePIC simulations compared against the previous main output with
+  capybara. npsim ships in eic-shell, its eic-spack recipe is updated on each release day, and it
+  is the simulation step of ePIC production campaigns and of epic and EICrecon CI.
+criteria:
+  eng.change-control:
+    level: 2
+    confidence: high
+    rationale: >-
+      97.5% of first-parent commits in 12 months came from PRs and an active ruleset requires one
+      approving review and a status check, but only 80% of merged PRs were reviewed, and
+      administrators bypass the ruleset (PRs #84, #90, #92 merged without an approval).
+    evidence:
+      - metrics:git.first_parent_pr_fraction_12m = 0.975
+      - metrics:prs.reviewed_fraction_12m = 0.8
+      - metrics:repo.rulesets = 2
+      - metrics:repo.default_branch_protected = true
+      - https://github.com/eic/npsim/pull/90
+      - https://github.com/eic/.github/blob/3231e4d33f430f9806db8703b2feaafca084e18e/.github/pull_request_template.md
+    gaps:
+      - Fewer than 90% of merged PRs are reviewed by someone other than the author.
+      - Ruleset bypass is set to "always" for organization admins, the admin role and one team.
+      - No CODEOWNERS file.
+    actions:
+      - action: Remove the "always" bypass actors from the "Default" ruleset (or set them to pull-request-only) so every PR needs an approval.
+        priority: medium
+        effort: S
+      - action: Add `.github/CODEOWNERS` naming at least two reviewers for `src/plugins/`, `src/python/`, `src/geocad/` and `src/tools/`.
+        priority: medium
+        effort: S
+  eng.ci:
+    level: 2
+    confidence: high
+    rationale: >-
+      `linux-eic-shell.yml` runs on every PR and push to `main`, builds with g++ and clang++, runs
+      ctest, and runs npsim end-to-end on gun and DIS samples, but 86.8% of default-branch runs
+      succeeded, and the only required check (`build-artifacts-page`) is skipped, which GitHub
+      reports as success, when upstream jobs fail.
+    evidence:
+      - https://github.com/eic/npsim/blob/ca28828f22e9fbeefc42636ed08dd35f084246d2/.github/workflows/linux-eic-shell.yml#L3-L11
+      - https://github.com/eic/npsim/blob/ca28828f22e9fbeefc42636ed08dd35f084246d2/.github/workflows/linux-eic-shell.yml#L54-L78
+      - https://github.com/eic/npsim/blob/ca28828f22e9fbeefc42636ed08dd35f084246d2/.github/workflows/linux-eic-shell.yml#L351-L359
+      - metrics:ci.default_branch_success_rate = 0.868
+      - https://github.com/eic/npsim/actions/runs/37413334041
+    gaps:
+      - Default-branch success rate is below 90%.
+      - The required check `build-artifacts-page` is skipped (counted as passing) when build or simulation jobs fail, and the convert-to-step/dot jobs are not upstream of it.
+    actions:
+      - action: "Add an aggregating job with `if: always()` that fails when any of `build`, `npsim-gun`, `npsim-dis`, `convert-to-step` or `convert-to-dot` failed, and make it the required status check."
+        priority: medium
+        effort: S
+  eng.testing:
+    level: 1
+    confidence: high
+    rationale: >-
+      ctest runs five tests in CI, covering one helper in `src/tools` and the geocad STEP exporter,
+      and CI runs npsim end-to-end with a capybara comparison to the previous main output; none of
+      the six DDG4 plugins or the `npsim.py` front-end has a unit test.
+    evidence:
+      - https://github.com/eic/npsim/blob/ca28828f22e9fbeefc42636ed08dd35f084246d2/src/tools/tests/unit_settings.cxx#L6-L18
+      - https://github.com/eic/npsim/blob/ca28828f22e9fbeefc42636ed08dd35f084246d2/src/geocad/tests/CMakeLists.txt#L1-L22
+      - https://github.com/eic/npsim/blob/ca28828f22e9fbeefc42636ed08dd35f084246d2/.github/workflows/linux-eic-shell.yml#L129-L150
+      - metrics:code.test_files = 3
+      - metrics:prs.test_touching_fraction_12m = 0.0
+      - metrics:files.codecov = []
+    gaps:
+      - No unit tests for `EICInteractionVertexBoost`, `EICInteractionVertexSmear`, `Geant4TVEicParticleHandler`, `OpticalPhotonEfficiencyStackingAction` or the VolumeDispatch plugins.
+      - The capybara comparison produces reports but does not fail CI on output differences.
+      - No coverage measurement.
+    actions:
+      - action: Add ctest tests that run each DDG4 plugin through a minimal `ddsim`/`npsim` steering on a small test geometry and assert its effect (vertex shift, kept particles, photon suppression).
+        priority: medium
+        effort: M
+  eng.static-quality:
+    level: 1
+    confidence: high
+    rationale: >-
+      `.clang-format` exists but is not enforced, CodeQL default setup (extended suite) runs on PRs,
+      and ASan/UBSan builds run in CI; `-Wall -Wextra -Werror -pedantic` applies only to non-Release
+      builds while CI builds only Release.
+    evidence:
+      - metrics:files.clang_format = [".clang-format"]
+      - metrics:files.pre_commit = []
+      - https://github.com/eic/npsim/blob/ca28828f22e9fbeefc42636ed08dd35f084246d2/CMakeLists.txt#L34-L37
+      - https://github.com/eic/npsim/blob/ca28828f22e9fbeefc42636ed08dd35f084246d2/.github/workflows/linux-eic-shell.yml#L59-L75
+      - https://github.com/eic/npsim/blob/ca28828f22e9fbeefc42636ed08dd35f084246d2/src/geocad/CMakeLists.txt#L37-L41
+    gaps:
+      - clang-format is not checked in CI or pre-commit.
+      - CI compiles in Release, where `-Werror` is not set; the latest main build emits compiler warnings.
+    actions:
+      - action: Add `.pre-commit-config.yaml` with clang-format (and ruff for `src/python`) and enable pre-commit.ci, or add a `clang-format --dry-run --Werror` CI job.
+        priority: medium
+        effort: S
+      - action: Add a `RelWithDebInfo` entry to the CI build matrix so `-Wall -Wextra -Werror -pedantic` applies in CI.
+        priority: medium
+        effort: S
+  eng.modularity:
+    level: 1
+    confidence: medium
+    rationale: >-
+      CMake builds separate plugin, geocad, tool and Python components with C++20 and exports
+      `NPDetTargets`, but `npsim.py` hard-codes detector-specific settings (filters, actions, a DIRC
+      quantum-efficiency table) after option parsing, so steering files cannot override them.
+    evidence:
+      - https://github.com/eic/npsim/blob/ca28828f22e9fbeefc42636ed08dd35f084246d2/CMakeLists.txt#L8-L14
+      - https://github.com/eic/npsim/blob/ca28828f22e9fbeefc42636ed08dd35f084246d2/CMakeLists.txt#L233-L258
+      - https://github.com/eic/npsim/blob/ca28828f22e9fbeefc42636ed08dd35f084246d2/src/python/npsim.py#L29-L29
+      - https://github.com/eic/npsim/blob/ca28828f22e9fbeefc42636ed08dd35f084246d2/src/python/npsim.py#L82-L151
+      - https://github.com/eic/npsim/issues/55
+    gaps:
+      - Detector configuration (RICH/DIRC filters, actions, QE curve) is compiled into `npsim.py` and overrides user steering.
+      - "`write_basic_package_version_file` uses the undefined `NPDet_VERSION`, and `project()` declares 1.0.0 at release v1.9.0."
+    actions:
+      - action: Move the DIRC QE table to the epic geometry (issue #55) and apply npsim defaults before `RUNNER.parseOptions()` so steering files and CLI options override them.
+        priority: medium
+        effort: M
+      - action: Set `project(npsim VERSION ...)` to the release version and use `${PROJECT_VERSION}` in `write_basic_package_version_file`.
+        priority: low
+        effort: S
+  doc.user:
+    level: 0
+    confidence: high
+    rationale: >-
+      The README lists the tools and their origin but does not explain how to install, build or run
+      npsim; usage is taught only in a separate EIC tutorial that the README does not link.
+    evidence:
+      - https://github.com/eic/npsim/blob/ca28828f22e9fbeefc42636ed08dd35f084246d2/README.md#L1-L13
+      - https://github.com/eic/tutorial-simulations-using-npsim-and-geant4/blob/ea47457a1907b3dffe13b8f01789aa22998371fa/episodes/01-single-particle-simulations.md
+      - metrics:files.examples_dir = 0
+    gaps:
+      - README has no installation, build or run instructions.
+      - No dependency list with versions and no quick-start example.
+    actions:
+      - action: Add README sections for using npsim in eic-shell, building from source (DD4hep >= 1.18, Geant4, ROOT, fmt, nlohmann_json, optional OpenCASCADE), and a one-command `npsim --compactFile ... -G -N 10` quick start.
+        priority: high
+        effort: S
+      - action: Link the npsim simulation tutorial and document the options and defaults that `npsim.py` adds on top of `ddsim`.
+        priority: high
+        effort: S
+  doc.developer:
+    level: 1
+    confidence: high
+    rationale: >-
+      Plugin headers carry Doxygen-style comments and `Geant4TVEicParticleHandler.md` documents one
+      plugin in detail, but there is no generated API reference and no architecture overview.
+    evidence:
+      - https://github.com/eic/npsim/blob/ca28828f22e9fbeefc42636ed08dd35f084246d2/src/plugins/include/npdet/EICInteractionVertexBoost.h#L5-L40
+      - https://github.com/eic/npsim/blob/ca28828f22e9fbeefc42636ed08dd35f084246d2/src/plugins/src/Geant4TVEicParticleHandler.md
+      - metrics:files.doxygen = []
+    gaps:
+      - No Doxygen configuration or generated API docs.
+      - No overview of how `npsim.py`, the DDG4 plugins, geocad and the tools relate.
+    actions:
+      - action: Add a `Doxyfile` and publish the API docs to the existing GitHub Pages site from `linux-eic-shell.yml`.
+        priority: medium
+        effort: S
+      - action: Add `docs/architecture.md` describing the npsim front-end, each plugin's role in the DDG4 chain, and the geometry tools.
+        priority: medium
+        effort: S
+  doc.contributing:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The eic organization PR and issue templates apply and `.devcontainer/README.md` gives
+      container setup and a CMake build, but there is no CONTRIBUTING file covering tests,
+      conventions or the PR process.
+    evidence:
+      - metrics:community.files.contributing = false
+      - metrics:community.files.pull_request_template = true
+      - https://github.com/eic/npsim/blob/ca28828f22e9fbeefc42636ed08dd35f084246d2/.devcontainer/README.md#L1-L41
+      - https://github.com/eic/.github/tree/3231e4d33f430f9806db8703b2feaafca084e18e/.github/ISSUE_TEMPLATE
+    gaps:
+      - No `CONTRIBUTING.md` describing running ctest and the CI simulations, coding conventions (`.clang-format`) and the PR process.
+    actions:
+      - action: Add `CONTRIBUTING.md` covering eic-shell/devcontainer setup, `cmake`/`ctest`, running clang-format, and PR review and capybara-report expectations.
+        priority: medium
+        effort: S
+  com.responsiveness:
+    level: 1
+    confidence: low
+    rationale: >-
+      Median first response to the six issues opened in 12 months was 27 days, no new issue is
+      labeled, and 5 of 8 open issues are older than one year.
+    evidence:
+      - metrics:issues.median_first_response_days_12m = 27.06
+      - metrics:issues.open_older_365d = 5
+      - metrics:issues.labeled_fraction_12m = 0.0
+      - metrics:prs.open_older_90d = 9
+      - https://github.com/eic/npsim/issues/6
+    gaps:
+      - Median first response exceeds 14 days.
+      - More than half of open issues are older than one year (#1, #4, #6, #30, #31), including #6, which asks for CI that now exists.
+      - Nine open PRs are older than 90 days.
+    actions:
+      - action: Respond to #47 and #55, close #6 as done, and label or close #1, #4, #30 and #31.
+        priority: medium
+        effort: S
+      - action: Review, merge or close the nine open PRs older than 90 days (including #60 and #72).
+        priority: medium
+        effort: S
+  com.contributors:
+    level: 1
+    confidence: medium
+    rationale: >-
+      Five authors committed in 24 months, but no institutional affiliation is recorded
+      (0 identifiable email domains) and no PR from outside the maintainer group was merged in 12
+      months.
+    evidence:
+      - metrics:git.authors_24m = 5
+      - metrics:git.new_authors_12m = 1
+      - metrics:git.email_domains_24m = 0
+      - metrics:prs.external_fraction_12m = 0.0
+    gaps:
+      - No external PRs merged in 12 months.
+      - Contributing institutions are not documented.
+    actions:
+      - action: Add an AUTHORS or README contributors section with institutions, and review the open contributor PR #60.
+        priority: medium
+        effort: S
+  com.bus-factor:
+    level: 1
+    confidence: high
+    rationale: >-
+      The top author wrote 73% of commits in 24 months, while four people review and two merge; no
+      CODEOWNERS or maintainer list exists, and eic-spack names one maintainer.
+    evidence:
+      - metrics:git.bus_factor_50_24m = 1
+      - metrics:git.top_author_share_24m = 0.733
+      - metrics:prs.distinct_reviewers_12m = 4
+      - metrics:prs.distinct_mergers_12m = 2
+      - metrics:releases.authors_24m = 2
+      - https://github.com/eic/eic-spack/blob/f1d95b7003672622cfb690071398f1caa0d3d836/spack_repo/eic/packages/npsim/package.py#L21
+    gaps:
+      - Bus factor (50%) is 1.
+      - No CODEOWNERS or maintainer list naming at least two people.
+    actions:
+      - action: Add `.github/CODEOWNERS` with two owners per component and add a second maintainer to the eic-spack recipe.
+        priority: high
+        effort: S
+  com.governance:
+    level: 0
+    confidence: medium
+    rationale: >-
+      Changes are discussed in public PRs and issues, but neither the README nor a CODEOWNERS file
+      names maintainers, and there is no decision process, roadmap or milestone.
+    evidence:
+      - metrics:files.governance = []
+      - metrics:files.codeowners = []
+      - https://github.com/eic/npsim/issues/55
+    gaps:
+      - Maintainers are not identified in the repository.
+      - No documented decision process, maintainer path or owning ePIC group.
+    actions:
+      - action: Add a "Maintainers" README section naming the maintainers and the owning ePIC working group, and stating how decisions on npsim defaults are made.
+        priority: high
+        effort: S
+  com.conduct:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The eic organization issue-template configuration links the ePIC Mattermost for questions, but
+      no code of conduct applies to the repository or the organization.
+    evidence:
+      - https://github.com/eic/.github/blob/3231e4d33f430f9806db8703b2feaafca084e18e/.github/ISSUE_TEMPLATE/config.yml
+      - metrics:community.files.code_of_conduct = false
+    gaps:
+      - No code of conduct with a reporting contact.
+    actions:
+      - action: Add `CODE_OF_CONDUCT.md` with a reporting contact, or link the ePIC collaboration code of conduct from the README.
+        priority: high
+        effort: S
+  dist.packaging:
+    level: 3
+    confidence: high
+    rationale: >-
+      The eic-spack recipe provides the latest release 1.9.0 and was updated on the release day of
+      each of the last three releases, and eic-shell ships npsim (1.8.0).
+    evidence:
+      - metrics:packaging.in_eic_shell = true
+      - metrics:packaging.eic_shell_version = 1.8.0
+      - metrics:packaging.latest_release_packaged = true
+      - https://github.com/eic/eic-spack/commit/f1d95b7003672622cfb690071398f1caa0d3d836
+      - https://github.com/eic/eic-spack/commit/8fc28f931a
+    gaps: []
+    actions: []
+  dist.releases:
+    level: 1
+    confidence: high
+    rationale: >-
+      Thirteen releases with generated notes appeared in 24 months, but no version scheme is
+      documented, and the CMake project version is 1.0.0 at v1.9.0.
+    evidence:
+      - metrics:releases.count_24m = 13
+      - metrics:releases.with_notes_fraction_24m = 1.0
+      - https://github.com/eic/npsim/releases/tag/v1.9.0
+      - https://github.com/eic/npsim/blob/ca28828f22e9fbeefc42636ed08dd35f084246d2/CMakeLists.txt#L3-L5
+    gaps:
+      - No documented version scheme; project version does not match tags.
+    actions:
+      - action: State SemVer in the README and bump `project(npsim VERSION ...)` with each tag.
+        priority: medium
+        effort: S
+  dist.dependencies:
+    level: 1
+    confidence: high
+    rationale: >-
+      Only DD4hep has a minimum version (1.18); fmt, nlohmann_json, OpenCASCADE, ROOT and spdlog have
+      none, clipp 1.2.3 (last released 2019) is vendored, and 43 action references are not SHA-pinned.
+    evidence:
+      - https://github.com/eic/npsim/blob/ca28828f22e9fbeefc42636ed08dd35f084246d2/CMakeLists.txt#L159-L221
+      - https://github.com/eic/npsim/blob/ca28828f22e9fbeefc42636ed08dd35f084246d2/src/tools/include/clipp.h#L1-L8
+      - metrics:files.dependabot = [".github/dependabot.yml"]
+      - metrics:ci.action_refs_not_sha_pinned = 43
+      - metrics:files.security = []
+    gaps:
+      - Most `find_package` calls have no minimum version.
+      - Vendored clipp 1.2.3 is unmaintained upstream while eic-shell ships CLI11.
+    actions:
+      - action: Add `VERSION` arguments to the `find_package` calls for ROOT, fmt, nlohmann_json and OpenCASCADE.
+        priority: medium
+        effort: S
+      - action: Replace `src/tools/include/clipp.h` with `find_package(CLI11)` from eic-shell.
+        priority: medium
+        effort: M
+  dist.reproducibility:
+    level: 1
+    confidence: medium
+    rationale: >-
+      A devcontainer pins the `eicweb/eic_ci:nightly` image and CI sets `--random.seed`, but the
+      image is an unversioned nightly, the repository documents no eic-shell release per npsim
+      release, and recording of seeds and configuration in outputs is not documented.
+    evidence:
+      - https://github.com/eic/npsim/blob/ca28828f22e9fbeefc42636ed08dd35f084246d2/.devcontainer/devcontainer.json#L3
+      - https://github.com/eic/npsim/blob/ca28828f22e9fbeefc42636ed08dd35f084246d2/.github/workflows/linux-eic-shell.yml#L114-L123
+    gaps:
+      - No versioned environment (pinned eic-shell release) is documented for running npsim.
+      - No documentation of how seeds and steering configuration are recorded in output files.
+    actions:
+      - action: Document in the README which eic-shell release ships each npsim release and how the seed and steering options are stored in the EDM4hep output metadata.
+        priority: medium
+        effort: S
+  dist.portability:
+    level: 2
+    confidence: high
+    rationale: >-
+      CI builds and runs ctest with GCC and Clang, no site paths appear in the code, and ePIC
+      campaigns run npsim on distributed resources, but CI covers only Linux x86_64 and accelerator
+      use is not addressed.
+    evidence:
+      - https://github.com/eic/npsim/blob/ca28828f22e9fbeefc42636ed08dd35f084246d2/.github/workflows/linux-eic-shell.yml#L56-L60
+      - metrics:ci.runs_on = ["ubuntu-latest"]
+      - metrics:code.site_specific_paths = []
+      - https://github.com/eic/simulation_campaign_hepmc3/blob/3244c0a9ef7a82de3ef35ec213b6c2b42f81af96/scripts/run.sh#L255-L261
+    gaps:
+      - No aarch64 or macOS CI, although CMake contains Darwin handling.
+      - No statement on accelerator support.
+    actions:
+      - action: Add an `ubuntu-24.04-arm` build job using the arm64 eic-shell image, and state in the README that GPU offload is provided by Geant4 (not npsim) where applicable.
+        priority: low
+        effort: S
+  eic.reuse:
+    level: 3
+    confidence: medium
+    rationale: >-
+      npsim is built on DD4hep DDSim/DDG4 and Geant4, the one copied DD4hep helper is justified in
+      the source (not installed upstream), and npsim is itself the EIC-supported simulation front-end
+      used by epic and EICrecon CI and ePIC campaigns.
+    evidence:
+      - metrics:eic.components_detected.dd4hep.files = 23
+      - https://github.com/eic/npsim/blob/ca28828f22e9fbeefc42636ed08dd35f084246d2/src/plugins/src/Geant4TVEicParticleHandler.cxx#L22-L25
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/.github/workflows/linux-eic-shell.yml#L640-L667
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/.github/workflows/linux-eic-shell.yml#L489-L514
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/.github/workflows/convert-to-step.yml#L33-L40
+    gaps: []
+    actions: []
+  eic.data-model:
+    level: 2
+    confidence: high
+    rationale: >-
+      npsim reads DD4hep compact XML and HepMC3 and writes EDM4hep through DD4hep's podio output;
+      no data-model version is checked and no round-trip test exists in the repository.
+    evidence:
+      - https://github.com/eic/npsim/blob/ca28828f22e9fbeefc42636ed08dd35f084246d2/.github/workflows/linux-eic-shell.yml#L190-L197
+      - https://github.com/eic/npsim/blob/ca28828f22e9fbeefc42636ed08dd35f084246d2/src/python/npsim.py#L15-L22
+    gaps:
+      - No EDM4hep version check and no I/O round-trip test.
+    actions:
+      - action: Add a CI step that opens the produced `.edm4hep.root` with uproot and checks the podio/EDM4hep version metadata and the expected collections.
+        priority: medium
+        effort: S
+  eic.environment:
+    level: 2
+    confidence: medium
+    rationale: >-
+      CI builds, tests and runs npsim in `eic_xl:nightly` through `eic/run-cvmfs-osg-eic-shell`, and
+      the devcontainer README documents building in the `eic_ci` image; no pinned stable eic-shell
+      release is tested.
+    evidence:
+      - metrics:ci.uses_eic_shell = true
+      - https://github.com/eic/npsim/blob/ca28828f22e9fbeefc42636ed08dd35f084246d2/.github/workflows/linux-eic-shell.yml#L43-L47
+      - https://github.com/eic/npsim/blob/ca28828f22e9fbeefc42636ed08dd35f084246d2/.devcontainer/README.md#L1-L41
+    gaps:
+      - CI tests only the nightly image, not a pinned stable eic-shell release.
+    actions:
+      - action: Add a `platform-release` matrix over a pinned `eic_xl:<stable>` and `eic_xl:nightly` in `.github/workflows/linux-eic-shell.yml`.
+        priority: medium
+        effort: S
+  eic.currency:
+    level: 3
+    confidence: medium
+    rationale: >-
+      eic-shell ships npsim 1.8.0, CI builds every PR and push against the nightly stack, and the
+      latest main build shows no DD4hep, Geant4 or ROOT deprecation warnings; ROOT and Python
+      warnings were fixed in #57 and #85.
+    evidence:
+      - metrics:packaging.eic_shell_version = 1.8.0
+      - https://github.com/eic/npsim/actions/runs/37413334041
+      - https://github.com/eic/npsim/pull/57
+      - https://github.com/eic/npsim/pull/85
+    gaps: []
+    actions: []
+  via.license:
+    level: 0
+    confidence: high
+    rationale: >-
+      The repository has no LICENSE file and GitHub detects no license; issue #1 asking for one has
+      been open since November 2022.
+    evidence:
+      - metrics:repo.license_spdx = null
+      - metrics:files.license = []
+      - https://github.com/eic/npsim/issues/1
+    gaps:
+      - No license; the code is all rights reserved.
+    actions:
+      - action: Add a `LICENSE` file with an OSI-approved license compatible with DD4hep (LGPL-3.0) and the vendored MIT clipp, agreed by the copyright holders.
+        priority: high
+        effort: S
+  via.citation:
+    level: 0
+    confidence: high
+    rationale: >-
+      There is no CITATION.cff, Zenodo DOI, codemeta or author list.
+    evidence:
+      - metrics:files.citation_cff = []
+      - metrics:files.zenodo_json = []
+      - metrics:files.authors = []
+    gaps:
+      - No citation information or contributor list.
+    actions:
+      - action: Add `CITATION.cff` listing the contributors and enable the Zenodo-GitHub integration.
+        priority: high
+        effort: S
+  via.adoption:
+    level: 3
+    confidence: high
+    rationale: >-
+      npsim ships in eic-shell and is the simulation step of ePIC production campaigns and of the
+      epic and EICrecon CI, and `npdet_to_step` is used in epic CI.
+    evidence:
+      - metrics:packaging.in_eic_shell = true
+      - https://github.com/eic/simulation_campaign_hepmc3/blob/3244c0a9ef7a82de3ef35ec213b6c2b42f81af96/scripts/run.sh#L255-L261
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/.github/workflows/linux-eic-shell.yml#L489-L514
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/.github/workflows/convert-to-step.yml#L33-L40
+    gaps: []
+    actions: []
+  via.support:
+    level: 1
+    confidence: low
+    rationale: >-
+      A maintainer is identifiable through the eic-spack recipe, but the repository states no owning
+      ePIC working group, institutional commitment or funding.
+    evidence:
+      - https://github.com/eic/eic-spack/blob/f1d95b7003672622cfb690071398f1caa0d3d836/spack_repo/eic/packages/npsim/package.py#L21
+    gaps:
+      - No maintenance responsibility within the EIC/ePIC structure is documented.
+    actions:
+      - action: State in the README the ePIC working group responsible for npsim and the maintainers' institutions.
+        priority: medium
+        effort: S

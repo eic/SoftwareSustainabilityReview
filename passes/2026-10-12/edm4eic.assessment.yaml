@@ -1,0 +1,493 @@
+schema_version: 1
+project: edm4eic
+pass: '2026-10-12'
+commit: 9b48c1d15c44ec7bf8a599be0df60606fc3f1828
+assessor: { agent: claude-code, model: claude-opus-5-5 }
+summary: >-
+  The main risks are that CI builds but never runs the project's ctest suite, that no formatter,
+  linter, code of conduct, contribution guide or documented version scheme exists, and that 21 of 25
+  open issues are older than one year. Established practices are PR-only changes with branch protection
+  requiring one approving review and the `build-test` check (95.8% of merged PRs reviewed), weekly and
+  per-PR builds in eic-shell nightly with a downstream eic_container/benchmark trigger, and eic-spack
+  packaging that ships the latest release (8.10.0) in eic-shell.
+criteria:
+  eng.change-control:
+    level: 3
+    confidence: high
+    rationale: >-
+      All first-parent commits in 12 months came through PRs and 95.8% of merged PRs were reviewed by a
+      non-author; branch protection on `main` requires one approving and code-owner review (enforced for
+      admins), and a PR template sets expectations.
+    evidence:
+      - metrics:git.first_parent_pr_fraction_12m = 1.0
+      - metrics:prs.reviewed_fraction_12m = 0.958
+      - metrics:repo.default_branch_protected = true
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/.github/CODEOWNERS#L1
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/.github/pull_request_template.md#L1-L19
+    gaps: []
+    actions: []
+  eng.ci:
+    level: 1
+    confidence: high
+    rationale: >-
+      `linux-eic-shell.yml` builds and installs on every PR, push and weekly (97.6% success on `main`) and
+      triggers the downstream eic_container and benchmark pipelines, but it never runs `ctest`, so the
+      project's own tests are not executed.
+    evidence:
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/.github/workflows/linux-eic-shell.yml#L3-L25
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/.github/workflows/linux-eic-shell.yml#L37-L66
+      - metrics:ci.default_branch_success_rate = 0.976
+      - https://eicweb.phy.anl.gov/containers/eic_container/-/pipelines/150013
+    gaps:
+      - The build-test job runs `cmake --build build -- install` only; the `write_events`/`read_events` ctest tests are never executed.
+      - The downstream eicweb/eic_container and benchmark statuses failed on the assessed commit and are not required checks.
+      - The legacy `.gitlab-ci.yml` targets a `master` branch and the retired juggler pipeline and does not run.
+    actions:
+      - action: Add `ctest --test-dir build --output-on-failure` to the `run:` block of the build-test step in `.github/workflows/linux-eic-shell.yml`.
+        priority: high
+        effort: S
+      - action: Delete the unused `.gitlab-ci.yml`.
+        priority: low
+        effort: S
+  eng.testing:
+    level: 1
+    confidence: high
+    rationale: >-
+      The only tests are a write/read round trip of one `RawTrackerHit` collection out of 52 defined types,
+      and CI does not run them.
+    evidence:
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/test/CMakeLists.txt#L17-L32
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/test/write_events.h#L16-L51
+      - metrics:code.test_files = 4
+      - metrics:prs.test_touching_fraction_12m = 0.083
+    gaps:
+      - Tests cover one of 52 datatypes and components; the utils headers (`vector_utils.h`, `analysis_utils.h`) have no tests.
+      - Tests are not run in CI.
+      - No backward-compatibility test that reads files written by earlier releases (issue #92 open since 2024-08).
+    actions:
+      - action: Run ctest in `linux-eic-shell.yml` (see eng.ci) so the existing round-trip test gates every PR.
+        priority: high
+        effort: S
+      - action: Extend `test/write_events.h` and `test/read_events.h` to write and read back one object of every datatype and link type.
+        priority: medium
+        effort: M
+      - action: Add unit tests for `utils/include/edm4eic/vector_utils.h` and `analysis_utils.h`.
+        priority: medium
+        effort: S
+  eng.static-quality:
+    level: 0
+    confidence: high
+    rationale: >-
+      No formatter, linter, static analyzer or pre-commit configuration exists, and no warning flags are set
+      in the CMake files.
+    evidence: []
+    gaps:
+      - No `.clang-format`, `.clang-tidy`, `.pre-commit-config.yaml` or YAML lint for `edm4eic.yaml`.
+      - No compiler warning flags; `utils/CMakeLists.txt` only disables warnings for `edm4eic_event_merge`.
+    actions:
+      - action: Add `.pre-commit-config.yaml` with clang-format for `utils/` and `test/` and a YAML linter for `edm4eic.yaml`, and enable pre-commit.ci.
+        priority: high
+        effort: S
+      - action: Add `-Wall -Wextra` to the `write_events`, `read_events` and generated datamodel targets.
+        priority: high
+        effort: S
+  eng.modularity:
+    level: 2
+    confidence: medium
+    rationale: >-
+      The data model is generated by podio from one YAML file, built with C++20 through CMake, and installs
+      exported `EDM4EIC::` targets with a package config; the installed config does not declare its
+      dependencies and no architecture document exists beyond the type diagram.
+    evidence:
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/CMakeLists.txt#L33-L43
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/CMakeLists.txt#L72-L86
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/CMakeLists.txt#L164-L194
+      - metrics:code.cxx_standard = ["17", "20"]
+    gaps:
+      - "`cmake/EDM4EICConfig.cmake.in` does not call `find_dependency` for podio, EDM4HEP or ROOT, so consumers must locate them first."
+      - "`utils/src/event_merge.cpp` and its CLI11 lookup are only built for podio < 0.17.4, which the required podio 1.2 excludes (dead code)."
+      - No design or architecture document beyond the README type diagram.
+    actions:
+      - action: Add `find_dependency(podio 1.2)`, `find_dependency(EDM4HEP)` and `find_dependency(ROOT 6)` to `cmake/EDM4EICConfig.cmake.in`.
+        priority: medium
+        effort: S
+      - action: Remove `utils/src/event_merge.cpp` and its CMake block, or port it to `podio::Frame`.
+        priority: low
+        effort: S
+  doc.user:
+    level: 1
+    confidence: high
+    rationale: >-
+      The README gives generic CMake build commands and links a hosted Doxygen site, but names no
+      dependencies or versions, has no eic-shell route, and has no runnable example.
+    evidence:
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/README.md#L14-L23
+      - https://eic.github.io/EDM4eic/
+    gaps:
+      - README does not list podio >= 1.2, EDM4hep >= 0.10.3 or ROOT 6 as dependencies.
+      - No eic-shell or Spack install route documented.
+      - No example showing how to read or write EDM4eic collections.
+    actions:
+      - action: Add an "Installation" section to `README.md` naming podio, EDM4hep and ROOT with minimum versions and the `eic-shell` and `spack install edm4eic` routes.
+        priority: medium
+        effort: S
+      - action: Add a short C++ and uproot example reading an EDM4eic collection, linked from the README.
+        priority: medium
+        effort: S
+  doc.developer:
+    level: 2
+    confidence: medium
+    rationale: >-
+      Most members in `edm4eic.yaml` carry inline descriptions with units, Doxygen API docs are
+      generated and deployed to GitHub Pages from `main` by CI, and the README carries a type-relation
+      diagram; design conventions (covariance coordinate systems, units, links) are not documented.
+    evidence:
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/edm4eic.yaml#L253-L274
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/.github/workflows/linux-eic-shell.yml#L68-L112
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/README.md#L6
+    gaps:
+      - No documentation of the data-model conventions (coordinate systems of covariances, parameter ordering), which issues #168, #169 and #68 raise.
+      - 11 components have no `Description`, and the Doxyfile uses obsolete tags.
+    actions:
+      - action: Add `docs/conventions.md` covering units, covariance coordinate systems, parameter ordering and the association-to-link transition, and include it in the Doxygen input.
+        priority: medium
+        effort: M
+  doc.contributing:
+    level: 1
+    confidence: medium
+    rationale: >-
+      Only a PR template exists; there is no CONTRIBUTING file, at repository or organization level,
+      describing setup, testing, conventions or the schema-version bump.
+    evidence:
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/.github/pull_request_template.md#L1-L19
+      - metrics:community.files.contributing = false
+    gaps:
+      - No `CONTRIBUTING.md` describing eic-shell setup, build, ctest and the rule to bump `schema_version` with the CMake version.
+      - No issue templates.
+    actions:
+      - action: Add `CONTRIBUTING.md` covering eic-shell setup, build, `ctest`, naming and units conventions for new datatypes, and the version-bump rule.
+        priority: medium
+        effort: S
+      - action: Add `.github/ISSUE_TEMPLATE/` with "new datatype proposal" and "bug report" templates.
+        priority: medium
+        effort: S
+  com.responsiveness:
+    level: 1
+    confidence: medium
+    rationale: >-
+      Median first response is 0.99 days, but 21 of 25 open issues are older than one year and 12.5% of new
+      issues were labeled.
+    evidence:
+      - metrics:issues.median_first_response_days_12m = 0.99
+      - metrics:issues.open_older_365d = 21
+      - metrics:issues.labeled_fraction_12m = 0.125
+      - metrics:prs.open_older_90d = 10
+    gaps:
+      - More than half of open issues are older than one year (for example #25, #28, #34, #49, #50).
+      - New issues are not labeled or otherwise triaged.
+    actions:
+      - action: Close or label each of the 21 open issues older than one year, and label every new issue on arrival.
+        priority: medium
+        effort: S
+  com.contributors:
+    level: 2
+    confidence: medium
+    rationale: >-
+      Nine authors from two e-mail domains committed in 24 months and 8.3% of merged PRs came from outside
+      the maintainer group; level 3 needs 10 authors from 3 institutions and 20% external PRs.
+    evidence:
+      - metrics:git.authors_24m = 9
+      - metrics:git.email_domains_24m = 2
+      - metrics:git.new_authors_12m = 3
+      - metrics:prs.external_fraction_12m = 0.083
+    gaps:
+      - Fewer than 10 authors and fewer than 3 institutions in 24 months.
+      - External PRs are 8.3% of merged PRs, below 20%.
+    actions:
+      - action: Invite detector and analysis groups that propose datatypes in issues (for example #119, #127) to submit the PRs themselves.
+        priority: medium
+        effort: M
+  com.bus-factor:
+    level: 2
+    confidence: medium
+    rationale: >-
+      Bus factor (50%) is 2 with a top-author share of 43.2%, six people reviewed and two merged in 12
+      months, and CODEOWNERS assigns `edm4eic.yaml` to the `@eic/epic-admin` team; bus factor 3 is not met.
+    evidence:
+      - metrics:git.bus_factor_50_24m = 2
+      - metrics:git.top_author_share_24m = 0.432
+      - metrics:prs.distinct_reviewers_12m = 6
+      - metrics:prs.distinct_mergers_12m = 2
+      - metrics:releases.authors_24m = 2
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/.github/CODEOWNERS#L1
+    gaps:
+      - Bus factor (50%) is 2, below 3.
+      - CODEOWNERS names a team whose membership is not publicly listed; CMake, utils and tests have no owners.
+      - Release procedure (version bump in `CMakeLists.txt` and `schema_version`, tag, eic-spack update) is not documented.
+    actions:
+      - action: Extend `.github/CODEOWNERS` to cover `CMakeLists.txt`, `utils/` and `test/` with two named maintainers each.
+        priority: medium
+        effort: S
+      - action: Add `RELEASING.md` describing the version bump, tag, GitHub release and eic-spack update.
+        priority: medium
+        effort: S
+  com.governance:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The approving team for `edm4eic.yaml` is identifiable from CODEOWNERS and datatype proposals are
+      discussed in public issues, but there is no documented decision process or path to maintainership.
+    evidence:
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/.github/CODEOWNERS#L1
+      - https://github.com/eic/EDM4eic/issues/164
+    gaps:
+      - No governance document stating who approves data-model changes and how.
+      - No milestones or roadmap; open proposals (#111, #127) have no target release.
+    actions:
+      - action: Add `GOVERNANCE.md` stating that the ePIC admin team approves schema changes, how proposals are decided, and how one becomes a maintainer.
+        priority: medium
+        effort: S
+  com.conduct:
+    level: 0
+    confidence: high
+    rationale: >-
+      No code of conduct exists in the repository or the `eic/.github` organization repository, and the
+      README names no support channel.
+    evidence: []
+    gaps:
+      - No code of conduct with a reporting contact.
+      - No documented support channel.
+    actions:
+      - action: Add `CODE_OF_CONDUCT.md` (or link the ePIC collaboration code of conduct) with a reporting contact.
+        priority: high
+        effort: S
+      - action: Add a "Getting help" section to `README.md` linking the ePIC Mattermost channel for the data model.
+        priority: high
+        effort: S
+  dist.packaging:
+    level: 3
+    confidence: high
+    rationale: >-
+      The eic-spack recipe carries every release through 8.10.0, which was added on the release day, and
+      eic-shell ships 8.10.0.
+    evidence:
+      - metrics:packaging.eic_spack.versions = ["main", "8.10.0", "8.9.0", "8.8.0", "8.7.0"]
+      - metrics:packaging.in_eic_shell = true
+      - metrics:packaging.eic_shell_version = 8.10.0
+      - https://github.com/eic/eic-spack/commit/3300e7e4dcf3c28b08ac9fc01c553edf935a5b63
+    gaps: []
+    actions: []
+  dist.releases:
+    level: 1
+    confidence: medium
+    rationale: >-
+      Twelve releases in 24 months, all with generated notes, but no version scheme is documented and
+      minor releases carry breaking changes (C++20 requirement in 8.7.0, TrackParameters theta/phi swap in
+      8.10.0).
+    evidence:
+      - metrics:releases.count_24m = 12
+      - metrics:releases.with_notes_fraction_24m = 1.0
+      - https://github.com/eic/EDM4eic/releases/tag/v8.10.0
+      - https://github.com/eic/EDM4eic/pull/149
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/edm4eic.yaml#L5-L13
+    gaps:
+      - No documented version scheme; `edm4eic.yaml` only defines the schema-version encoding and patch invariance.
+      - No changelog or migration notes for breaking changes; no release workflow.
+    actions:
+      - action: State in `README.md` which changes require a major, minor or patch bump, and follow it for schema-breaking changes.
+        priority: medium
+        effort: S
+  dist.dependencies:
+    level: 1
+    confidence: medium
+    rationale: >-
+      podio (1.2), EDM4hep (1.0 or 0.10.3) and ROOT (6) are found with minimum versions and Dependabot
+      updates actions, but CLI11 is looked up without a version only for unreachable code and the installed
+      config does not propagate dependencies.
+    evidence:
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/CMakeLists.txt#L56-L69
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/utils/CMakeLists.txt#L4-L5
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/.github/dependabot.yml#L6-L11
+      - metrics:ci.action_refs_not_sha_pinned = 11
+    gaps:
+      - "`find_package(CLI11 CONFIG)` has no version and serves only code gated on podio < 0.17.4."
+      - Installed `EDM4EICConfig.cmake` declares no dependencies; issue #117 reports an undeclared nlohmann_json requirement outside eic-shell.
+      - "`eic/run-cvmfs-osg-eic-shell@main` is pinned to a branch; no `SECURITY.md`."
+    actions:
+      - action: Remove the CLI11 lookup with the dead `event_merge` target and add `find_dependency` calls to `cmake/EDM4EICConfig.cmake.in`.
+        priority: medium
+        effort: S
+  dist.reproducibility:
+    level: 1
+    confidence: medium
+    rationale: >-
+      CI builds in the `eic_xl:nightly` image and podio records the schema version in output files, but
+      the image is unpinned and no environment for building or using a release is documented.
+    evidence:
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/.github/workflows/linux-eic-shell.yml#L19-L21
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/edm4eic.yaml#L13
+    gaps:
+      - The eic-shell version that each release is built and tested with is not documented.
+      - No pinned container image in CI.
+    actions:
+      - action: Document in `README.md` the eic-shell release that first ships each EDM4eic version, and add a CI job pinned to the current stable eic-shell.
+        priority: medium
+        effort: S
+  dist.portability:
+    level: 1
+    confidence: high
+    rationale: >-
+      CI builds only on Linux x86_64 with the eic-shell default compiler; no site paths are present, but
+      Clang, aarch64 and macOS are untested even though `CMakeLists.txt` has an Apple branch.
+    evidence:
+      - metrics:ci.runs_on = ["ubuntu-latest"]
+      - metrics:code.site_specific_paths = []
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/CMakeLists.txt#L48-L50
+    gaps:
+      - Only one OS, architecture and compiler is tested.
+    actions:
+      - action: Add a matrix to build-test in `linux-eic-shell.yml` that also builds with `CXX=clang++` and on `ubuntu-24.04-arm`.
+        priority: medium
+        effort: S
+  eic.reuse:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The model extends EDM4hep through podio and is itself reused by EICrecon, algorithms and juggler, but
+      it defines its own ReconstructedParticle, Vertex, Cluster, CalorimeterHit, TrackerHit, Track and Cov2f-Cov6f
+      types alongside EDM4hep equivalents, and keeps its own association datatypes next to podio links, without
+      per-type justification.
+    evidence:
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/CMakeLists.txt#L72-L82
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/edm4eic.yaml#L23-L26
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/edm4eic.yaml#L253-L276
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/edm4eic.yaml#L601-L612
+      - metrics:packaging.eic_spack_dependents = ["algorithms", "eicrecon", "juggler"]
+    gaps:
+      - Types duplicating EDM4hep (ReconstructedParticle, Vertex, Cluster, CalorimeterHit, Cov3f/4f/6f) have no documented justification.
+      - MCReco*Association datatypes remain alongside the podio-based MCReco*Link types (issue #111 open).
+    actions:
+      - action: Document, per datatype that has an EDM4hep counterpart, why the EDM4eic version is needed, or replace it with the EDM4hep type.
+        priority: medium
+        effort: M
+      - action: Deprecate and schedule removal of the MCReco*Association datatypes in favor of the link types.
+        priority: medium
+        effort: M
+  eic.data-model:
+    level: 2
+    confidence: medium
+    rationale: >-
+      The project defines the EIC-standard podio/EDM4eic schema, declares `schema_version` and checks it
+      against the CMake version at configure time; the round-trip test covers one type, is not run in CI,
+      and files from older versions are reported unreadable.
+    evidence:
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/CMakeLists.txt#L14-L31
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/test/read_events.h#L71-L95
+      - https://github.com/eic/EDM4eic/issues/81
+    gaps:
+      - Round-trip I/O test covers only `RawTrackerHit` and does not run in CI.
+      - Reading files written by older schema versions is not tested (issues #81 and #92 open since 2024).
+    actions:
+      - action: Add a CI job that reads a stored file from the previous release with the PR build, using podio schema evolution.
+        priority: medium
+        effort: M
+  eic.environment:
+    level: 1
+    confidence: high
+    rationale: >-
+      CI builds in `eic_xl:nightly` through `eic/run-cvmfs-osg-eic-shell` every PR and week, but the README
+      does not document building or using EDM4eic in eic-shell and no stable release is tested.
+    evidence:
+      - metrics:ci.uses_eic_shell = true
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/.github/workflows/linux-eic-shell.yml#L17-L25
+    gaps:
+      - README has no eic-shell instructions.
+      - CI tests only the nightly image, not a pinned stable eic-shell release.
+    actions:
+      - action: Add an eic-shell section to `README.md` (EDM4eic is preinstalled; building a development version inside eic-shell).
+        priority: medium
+        effort: S
+      - action: "Add a matrix entry with `platform-release: eic_xl:<current stable>` to build-test in `linux-eic-shell.yml`."
+        priority: medium
+        effort: S
+  eic.currency:
+    level: 3
+    confidence: medium
+    rationale: >-
+      It requires podio 1.2 and EDM4hep 1.0 against the podio 1.8 and EDM4hep 1.1 that eic-shell ships,
+      builds weekly against the nightly, and added EDM4hep 1.0 support one day after its release; build
+      logs show no deprecation warnings from podio or EDM4hep.
+    evidence:
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/CMakeLists.txt#L56-L65
+      - https://github.com/eic/EDM4eic/pull/147
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/.github/workflows/linux-eic-shell.yml#L10-L11
+      - metrics:packaging.eic_shell_version = 8.10.0
+    gaps: []
+    actions: []
+  via.license:
+    level: 2
+    confidence: medium
+    rationale: >-
+      LGPL-3.0 is detected and source files carry SPDX headers, but `LICENSE.spdx` describes the Juggler
+      package, tests and `EDM4eicVersion.h.in` are Apache-2.0, and the EDM4hep-derived sections of
+      `edm4eic.yaml` are not identified.
+    evidence:
+      - metrics:repo.license_spdx = LGPL-3.0
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/edm4eic.yaml#L1-L3
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/LICENSE.spdx#L1-L5
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/test/write_events.h#L1
+    gaps:
+      - "`LICENSE.spdx` names PackageName Juggler and the juggler homepage."
+      - Third-party content (EDM4hep-derived datatypes, MIT-licensed `docs/doxygen-awesome.css`) is not recorded in a license inventory.
+      - No documented contribution terms (inbound = outbound or DCO).
+    actions:
+      - action: Correct `LICENSE.spdx` to describe EDM4eic, and add REUSE metadata recording the Apache-2.0 and MIT files.
+        priority: low
+        effort: S
+      - action: State inbound = outbound licensing in a `CONTRIBUTING.md`.
+        priority: low
+        effort: S
+  via.citation:
+    level: 2
+    confidence: medium
+    rationale: >-
+      Zenodo mints a DOI for each release since v8.3.0 under concept DOI 10.5281/zenodo.17242837 with 17
+      creators, and datatypes carry `Author` fields; there is no reference publication and the README does
+      not show the DOI.
+    evidence:
+      - https://doi.org/10.5281/zenodo.17242837
+      - https://doi.org/10.5281/zenodo.21242445
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/edm4eic.yaml#L253-L255
+    gaps:
+      - No reference publication or software paper.
+      - No `CITATION.cff`; the README does not link the DOI.
+    actions:
+      - action: Add `CITATION.cff` with the concept DOI and a DOI badge in `README.md`, and cite an EDM4eic description in an ePIC software publication.
+        priority: medium
+        effort: M
+  via.adoption:
+    level: 3
+    confidence: high
+    rationale: >-
+      EDM4eic ships in eic-shell and is a dependency of EICrecon, algorithms and juggler, so it is part of
+      the ePIC reconstruction and simulation-campaign output.
+    evidence:
+      - metrics:packaging.in_eic_shell = true
+      - metrics:packaging.eic_spack_dependents = ["algorithms", "eicrecon", "juggler"]
+    gaps: []
+    actions: []
+  via.support:
+    level: 2
+    confidence: low
+    rationale: >-
+      CODEOWNERS assigns approval of `edm4eic.yaml` to the `@eic/epic-admin` team in the ePIC organization,
+      but no multi-institution maintenance commitment or succession plan is documented.
+    evidence:
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/.github/CODEOWNERS#L1
+    gaps:
+      - The README does not name the owning ePIC body, maintainers or their institutions.
+      - No succession or transition plan.
+    actions:
+      - action: State in `README.md` the owning ePIC body, the maintainers' institutions and what happens when a maintainer leaves.
+        priority: medium
+        effort: S

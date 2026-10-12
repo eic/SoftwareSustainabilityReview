@@ -1,0 +1,465 @@
+schema_version: 1
+project: epic
+pass: '2026-10-12'
+commit: 2e1d4f73eed9201b8d1ad925497fee96fe55726b
+assessor: { agent: claude-code, model: claude-opus-5-5 }
+summary: >-
+  The main risks are a default branch that passed CI in 68% of recent runs (remote XRootD input
+  timeouts in the npsim-dis jobs), no CODEOWNERS or maintainer list with all 24-month releases cut by
+  one person, and missing user and developer documentation (no dependency versions, no eic-shell
+  route, no API reference or architecture overview). Established practices are protected-branch PR
+  review (98.7% of changes via PRs, 97.3% reviewed), eic-shell CI with GCC/Clang builds, per-configuration
+  geometry and overlap checks, npsim and EICrecon end-to-end jobs with capybara comparisons, monthly
+  releases with Zenodo DOIs, and same-day eic-spack packaging that ships every release in eic-shell.
+criteria:
+  eng.change-control:
+    level: 3
+    confidence: high
+    rationale: >-
+      98.7% of first-parent commits in 12 months came through PRs and 97.3% of merged PRs had a
+      non-author review; the default branch is protected and CONTRIBUTING.md and a PR template document
+      the one-reviewer requirement.
+    evidence:
+      - metrics:git.first_parent_pr_fraction_12m = 0.987
+      - metrics:prs.reviewed_fraction_12m = 0.973
+      - metrics:repo.default_branch_protected = true
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/.github/CONTRIBUTING.md#L12-L26
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/.github/pull_request_template.md#L1-L19
+    gaps: []
+    actions: []
+  eng.ci:
+    level: 1
+    confidence: high
+    rationale: >-
+      `linux-eic-shell.yml` builds on every PR, merge-group and push to main with geometry, overlap,
+      npsim and EICrecon jobs and required status checks, but only 68% of recent default-branch runs
+      succeeded, below the 80% needed for level 2.
+    evidence:
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/.github/workflows/linux-eic-shell.yml#L1-L11
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/.github/workflows/linux-eic-shell.yml#L50-L102
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/.github/workflows/linux-eic-shell.yml#L709-L735
+      - metrics:ci.default_branch_success_rate = 0.68
+      - https://github.com/eic/epic/actions/runs/37795970966
+    gaps:
+      - Default-branch success rate is 68%; recent failures are `npsim-dis` jobs timing out on remote XRootD input (`TNetXNGFile::Open` socket timeout) and a `dawn-view-slices` job.
+    actions:
+      - action: Cache the `npsim-dis` HepMC3 input files with `actions/cache` (or retry the XRootD read) in `.github/workflows/linux-eic-shell.yml` so remote-server timeouts no longer fail main.
+        priority: high
+        effort: S
+  eng.testing:
+    level: 2
+    confidence: medium
+    rationale: >-
+      Every PR builds all 77 configurations (including per-subsystem `*_only` configurations) and runs
+      `checkGeometry`, `g4GeometryScan`, TGeo and Geant4 overlap checks and npsim/EICrecon end-to-end
+      jobs with capybara comparisons against main; coverage is not measured and 1.8% of merged PRs touch
+      test files.
+    evidence:
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/.github/workflows/check-geometry-configs.yml#L24-L43
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/.github/workflows/linux-eic-shell.yml#L322-L346
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/.github/workflows/linux-eic-shell.yml#L572-L638
+      - metrics:code.test_files = 1
+      - metrics:prs.test_touching_fraction_12m = 0.018
+    gaps:
+      - No test coverage of the detector plugins is measured or published.
+      - Only 1.8% of merged PRs in 12 months touch test files; there are no per-plugin tests of constructed dimensions or parameters.
+      - Capybara comparisons produce reports but do not fail CI on differences.
+    actions:
+      - action: Add a gcov/Codecov job that runs the per-configuration `checkGeometry` loop on a coverage build and publishes plugin coverage.
+        priority: medium
+        effort: M
+      - action: Add a scripted check (e.g. `scripts/subdetector_tests/`) that compares dumped constants or material scans against stored references and is required for PRs that change `src/` or `compact/`.
+        priority: medium
+        effort: M
+  eng.static-quality:
+    level: 2
+    confidence: high
+    rationale: >-
+      clang-format and pre-commit hygiene hooks run through pre-commit.ci, xmllint and SPDX-header
+      checks run on every PR, and non-Release builds use `-Wall -Wextra -Werror -pedantic`; no
+      clang-tidy, cppcheck or sanitizer job runs.
+    evidence:
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/.pre-commit-config.yaml#L1-L19
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/.github/workflows/linux-eic-shell.yml#L18-L25
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/.github/workflows/spdx.yml#L1-L14
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/CMakeLists.txt#L30-L36
+    gaps:
+      - No deeper static analysis (clang-tidy, cppcheck) or sanitizer build, although `CMAKE_EXPORT_COMPILE_COMMANDS` is set for clang-tidy.
+    actions:
+      - action: Add a clang-tidy job on changed `src/` files using the exported `compile_commands.json` from the eic-shell build.
+        priority: medium
+        effort: S
+  eng.modularity:
+    level: 2
+    confidence: high
+    rationale: >-
+      Each detector is a DD4hep plugin in `src/` configured by compact XML and YAML/Jinja2
+      configurations, built with CMake (C++17) and installed with a setup script; there is no exported
+      CMake package config and no architecture documentation.
+    evidence:
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/CMakeLists.txt#L15-L22
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/CMakeLists.txt#L58-L131
+      - metrics:code.cxx_standard = [17]
+      - metrics:code.largest_source_files[0] = src/LFHCAL_geo.cpp (1175 lines)
+    gaps:
+      - No `install(EXPORT ...)` or package config for downstream CMake consumers; consumers rely on `thisepic.sh` environment variables.
+      - The plugin, compact-file and configuration-template architecture is not documented (`templates/README.md` is 3 lines).
+    actions:
+      - action: Add `docs/architecture.md` describing plugins, compact files, the Jinja2 configuration templates and the FileLoader, and install an `epicConfig.cmake`.
+        priority: medium
+        effort: M
+  doc.user:
+    level: 1
+    confidence: high
+    rationale: >-
+      The README gives cmake build and `thisepic.sh` instructions and links a hosted geometry viewer,
+      but names no dependencies or versions, does not describe the eic-shell route (it links retired
+      eicweb tutorial and container pages), and has no runnable example.
+    evidence:
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/README.md#L27-L82
+      - metrics:repo.homepage = https://eic.github.io/epic
+    gaps:
+      - Dependencies (DD4hep >= 1.27, ROOT, fmt, optional IRT2, jinja2) and versions are not listed in the README.
+      - No eic-shell quick start and no runnable example (e.g. an `npsim` or `checkOverlaps` command).
+      - Detector configurations and `DETECTOR_CONFIG` options are not documented for users.
+    actions:
+      - action: Add an "Installation" README section naming dependencies with minimum versions and the eic-shell route (`/opt/detector` builds and `source install/bin/thisepic.sh`), and link the EIC geometry-development tutorial.
+        priority: medium
+        effort: S
+      - action: Add a quick-start example running `npsim` on `epic_craterlake.xml` and a table of the configurations in `configurations/`.
+        priority: medium
+        effort: S
+  doc.developer:
+    level: 1
+    confidence: high
+    rationale: >-
+      27 of 61 plugin sources carry Doxygen-style comments, but there is no Doxygen configuration, no
+      generated API reference and no architecture overview.
+    evidence:
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/src/BarrelTrackerWithFrame_geo.cpp#L4-L10
+      - metrics:files.doxygen = []
+    gaps:
+      - No generated API documentation of plugin XML parameters.
+      - No architecture overview of how plugins, compact files and configuration templates fit together.
+    actions:
+      - action: Add a `Doxyfile` and a job in `linux-eic-shell.yml` that publishes the generated plugin reference with the existing GitHub Pages artifacts site.
+        priority: medium
+        effort: M
+  doc.contributing:
+    level: 1
+    confidence: medium
+    rationale: >-
+      `.github/CONTRIBUTING.md` covers the PR process, review requirement and clang-format/no-warning
+      conventions, and issue and PR templates exist, but it does not describe setting up the
+      development environment or running the geometry checks locally.
+    evidence:
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/.github/CONTRIBUTING.md#L1-L31
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/.github/ISSUE_TEMPLATE/config.yml#L1-L11
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/.devcontainer/devcontainer.json#L1-L4
+    gaps:
+      - CONTRIBUTING.md has no development-environment setup (eic-shell or the devcontainer) and no instructions for running `checkGeometry`/`checkOverlaps` locally.
+    actions:
+      - action: Extend `.github/CONTRIBUTING.md` with eic-shell/devcontainer setup, the cmake build, and the `checkGeometry` and `scripts/checkOverlaps.py` commands CI runs.
+        priority: medium
+        effort: S
+  com.responsiveness:
+    level: 1
+    confidence: high
+    rationale: >-
+      Median first response is 1.6 days and PRs are reviewed, but 58 of 66 open issues are older than
+      one year and 10% of new issues are labeled.
+    evidence:
+      - metrics:issues.median_first_response_days_12m = 1.6
+      - metrics:issues.open_older_365d = 58
+      - metrics:issues.open_total = 66
+      - metrics:issues.labeled_fraction_12m = 0.1
+      - metrics:issues.unanswered_fraction_12m = 0.3
+    gaps:
+      - 88% of open issues are older than one year.
+      - 90% of new issues in 12 months are unlabeled; no triage process is documented.
+    actions:
+      - action: Review the 58 open issues older than a year, close or label each with the existing `topic:` labels, and apply a topic label to every new issue.
+        priority: medium
+        effort: S
+  com.contributors:
+    level: 1
+    confidence: medium
+    rationale: >-
+      35 authors from 9 e-mail domains committed in 24 months with 12 new authors in 12 months, but
+      every non-bot PR merged in 24 months came from an eic organization member.
+    evidence:
+      - metrics:git.authors_24m = 35
+      - metrics:git.email_domains_24m = 9
+      - metrics:git.new_authors_12m = 12
+      - metrics:prs.external_fraction_12m = 0.0
+    gaps:
+      - No merged PRs from contributors outside the eic organization membership.
+    actions:
+      - action: Link the 15 `good first issue` issues from the README and CONTRIBUTING.md and review fork PRs from non-members.
+        priority: medium
+        effort: S
+  com.bus-factor:
+    level: 1
+    confidence: high
+    rationale: >-
+      The 50% bus factor is 2 with 17 reviewers and 14 mergers, but no CODEOWNERS or maintainer list
+      names owners, and one person published all 24-month releases.
+    evidence:
+      - metrics:git.bus_factor_50_24m = 2
+      - metrics:git.top_author_share_24m = 0.286
+      - metrics:prs.distinct_reviewers_12m = 17
+      - metrics:prs.distinct_mergers_12m = 14
+      - metrics:releases.authors_24m = 1
+      - metrics:files.codeowners = []
+    gaps:
+      - No CODEOWNERS or maintainer list naming at least two people.
+      - All releases in 24 months were made by one person and the release procedure is not documented.
+    actions:
+      - action: Add `.github/CODEOWNERS` assigning two owners per `src/`/`compact/` subsystem directory.
+        priority: high
+        effort: S
+      - action: Document the monthly release and backport procedure in `RELEASING.md` and have a second maintainer publish a release.
+        priority: high
+        effort: S
+  com.governance:
+    level: 1
+    confidence: medium
+    rationale: >-
+      Maintainers can be identified only from `LICENSE.spdx` originators and the eic-spack recipe, and
+      decisions are visible in PRs and linked weekly meetings, but there is no documented decision
+      process or maintainer path, and milestones stopped in 2025.
+    evidence:
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/LICENSE.spdx#L1-L7
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/.github/ISSUE_TEMPLATE/config.yml#L1-L11
+      - https://github.com/eic/epic/milestones
+    gaps:
+      - No document states who decides, who the "core developers" in CONTRIBUTING.md are, or how to become one.
+      - Milestones are stale (latest open milestone 25.08.0).
+    actions:
+      - action: Add `GOVERNANCE.md` naming the maintainers and core developers, the decision process, and the path to reviewer and maintainer.
+        priority: medium
+        effort: S
+  com.conduct:
+    level: 1
+    confidence: high
+    rationale: >-
+      The issue-template configuration links the EIC Mattermost and weekly Indico meetings for support,
+      but no code of conduct applies at repository or organization level.
+    evidence:
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/.github/ISSUE_TEMPLATE/config.yml#L1-L11
+      - metrics:community.files.code_of_conduct = false
+    gaps:
+      - No code of conduct with a reporting contact.
+    actions:
+      - action: Add `CODE_OF_CONDUCT.md` (or link the ePIC collaboration code of conduct) with a reporting contact.
+        priority: high
+        effort: S
+  dist.packaging:
+    level: 3
+    confidence: high
+    rationale: >-
+      The eic-spack recipe provides 26.10.0 and was updated the day of the release, and the eic_xl
+      environment builds epic release 26.10.0, earlier releases and `main` into eic-shell (the collector's
+      `in_eic_shell` checks only the top-level spec list and reports false).
+    evidence:
+      - metrics:packaging.eic_spack.versions = [main, 26.10.0, 26.09.0, 26.08.0, 26.07.3]
+      - metrics:packaging.latest_release_packaged = true
+      - metrics:packaging.in_eic_shell = false
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/spack-environment/xl/epic/spack.yaml#L17-L28
+      - https://github.com/eic/eic-spack/blob/92390fcef76214c0e315a0d5f894ddd07ff5de6d/spack_repo/eic/packages/epic/package.py#L8-L21
+    gaps: []
+    actions: []
+  dist.releases:
+    level: 1
+    confidence: high
+    rationale: >-
+      42 tags in 24 months with generated, categorized release notes on every release, but the YY.MM.N
+      version scheme is not documented anywhere in the repository.
+    evidence:
+      - metrics:git.tags_24m = 42
+      - metrics:releases.with_notes_fraction_24m = 1.0
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/.github/release.yml#L1-L36
+      - https://github.com/eic/epic/releases/tag/26.10.0
+    gaps:
+      - The CalVer scheme and patch/backport policy are not documented.
+      - No changelog with migration notes, no deprecation policy, and no release workflow.
+    actions:
+      - action: State the YY.MM.patch CalVer scheme and the `backport` label policy in the README.
+        priority: medium
+        effort: S
+  dist.dependencies:
+    level: 1
+    confidence: high
+    rationale: >-
+      `CMakeLists.txt` requires DD4hep >= 1.27 and IRT2 >= 2.1.1, but `fmt` and the `requirements.txt`
+      Python packages have no version constraints; Dependabot monitors only GitHub Actions.
+    evidence:
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/CMakeLists.txt#L46-L49
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/requirements.txt#L1-L2
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/.github/dependabot.yml#L6-L13
+      - metrics:ci.action_refs_not_sha_pinned = 156
+    gaps:
+      - "`find_package(fmt)`, ROOT (via `dd4hep_add_plugin USES`) and `jinja2`/`jinja2-cli` have no minimum versions."
+      - No SECURITY.md; several actions are referenced at `@main`.
+    actions:
+      - action: Add minimum versions to `find_package(fmt ...)` and an explicit `find_package(ROOT ...)`, and to the entries in `requirements.txt`.
+        priority: medium
+        effort: S
+  dist.reproducibility:
+    level: 2
+    confidence: medium
+    rationale: >-
+      The eic-shell images (`.devcontainer` on `eic_ci:nightly`, CI on `eic_xl`) are the machine-readable
+      environment, installs record `epic_version` in `compact/version.xml` and `DETECTOR_VERSION`, external
+      data are pinned to epic-data commits, and CI simulations fix seeds; CI tests only against nightly,
+      and no release states its eic-shell version.
+    evidence:
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/.devcontainer/devcontainer.json#L1-L4
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/templates/version.xml.in#L1-L4
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/compact/calibrations.xml#L6-L10
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/.github/workflows/linux-eic-shell.yml#L600-L606
+    gaps:
+      - Release notes do not name the eic-shell release that ships or was used to validate each epic release.
+      - The README's container link points to the retired eicweb container page rather than current eic-shell instructions.
+    actions:
+      - action: Add the validating `eic_xl:<version>-stable` tag to each release's notes and run the PR checks on that pinned image as well as nightly.
+        priority: medium
+        effort: S
+  dist.portability:
+    level: 2
+    confidence: high
+    rationale: >-
+      CI builds with GCC and Clang, no site-specific paths are present, and external data are fetched
+      through a configurable `DETECTOR_CACHE`; all CI runs on Linux x86_64.
+    evidence:
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/.github/workflows/linux-eic-shell.yml#L50-L66
+      - metrics:ci.runs_on = [ubuntu-latest]
+      - metrics:code.site_specific_paths = []
+    gaps:
+      - No aarch64 or macOS CI job, although `thisepic.sh` handles Darwin.
+      - Use on distributed HTC resources is not documented in the repository.
+    actions:
+      - action: Add an `ubuntu-24.04-arm` build-and-checkGeometry job in `linux-eic-shell.yml`.
+        priority: medium
+        effort: S
+  eic.reuse:
+    level: 3
+    confidence: high
+    rationale: >-
+      The geometry is DD4hep compact XML with DD4hep plugins, tracking surfaces and material maps use
+      ACTS, and validation uses npsim, EICrecon and epic-capybara; the project is itself the geometry
+      component that EICrecon, npsim and the benchmarks load.
+    evidence:
+      - metrics:eic.domain_components = [acts, dd4hep, eicrecon, irt, npsim]
+      - metrics:eic.vendored_candidates = []
+      - https://github.com/eic/detector_benchmarks/blob/b1572d521504c67b9df7723599a9ff88859bd28b/benchmarks/tracking_performances/Snakefile
+    gaps: []
+    actions: []
+  eic.data-model:
+    level: 2
+    confidence: medium
+    rationale: >-
+      The geometry is DD4hep compact XML and CI exports TGeo, GDML and STEP and writes EDM4hep
+      simulation output; the geometry version is recorded but not checked, and there is no export
+      round-trip test.
+    evidence:
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/templates/version.xml.in#L1-L4
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/.github/workflows/convert-to-gdml.yml
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/.github/workflows/linux-eic-shell.yml#L606
+    gaps:
+      - The `epic_version` constant is not checked by consumers or tests.
+      - No round-trip test that reloads exported GDML/TGeo and compares it to the DD4hep geometry.
+    actions:
+      - action: Add a CI step that loads the exported TGeo file with uproot or ROOT and compares volume counts and material budget with the DD4hep geometry.
+        priority: medium
+        effort: M
+  eic.environment:
+    level: 2
+    confidence: medium
+    rationale: >-
+      CI builds and tests in `eic_xl:nightly` through `eic/run-cvmfs-osg-eic-shell`, and the README
+      points to the container image; the only stable-release job builds on 25.07.0-stable and no tests
+      run against a stable release.
+    evidence:
+      - metrics:ci.uses_eic_shell = true
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/.github/workflows/linux-eic-shell.yml#L50-L102
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/README.md#L65-L74
+    gaps:
+      - Tests run only on nightly; the 25.07.0-stable build is five eic-shell releases behind v26.10.0-stable and its artifact is not tested.
+    actions:
+      - action: Move the stable build in `linux-eic-shell.yml` to the current `eic_xl:<release>-stable` and run `check-geometry-configs` and the overlap checks on it.
+        priority: medium
+        effort: S
+  eic.currency:
+    level: 3
+    confidence: medium
+    rationale: >-
+      Every release ships in the current eic-shell, PR CI builds against nightly with `-Werror` (so
+      deprecated-declaration warnings fail the build), and no open issue reports a stack incompatibility.
+    evidence:
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/spack-environment/xl/epic/spack.yaml#L17-L28
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/CMakeLists.txt#L30-L33
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/.github/workflows/linux-eic-shell.yml#L56-L61
+    gaps: []
+    actions: []
+  via.license:
+    level: 2
+    confidence: high
+    rationale: >-
+      LGPL-3.0 is detected, `LICENSE.spdx` declares LGPL-3.0-or-later, and CI enforces SPDX headers on
+      all sources; there are no documented contribution terms (DCO or inbound = outbound).
+    evidence:
+      - metrics:repo.license_spdx = LGPL-3.0
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/LICENSE.spdx#L1-L7
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/.github/workflows/spdx.yml#L1-L14
+    gaps:
+      - Contribution licensing terms are not documented.
+    actions:
+      - action: State in `.github/CONTRIBUTING.md` that contributions are accepted under LGPL-3.0-or-later (inbound = outbound) or require DCO sign-off.
+        priority: low
+        effort: S
+  via.citation:
+    level: 1
+    confidence: medium
+    rationale: >-
+      `CITATION.cff` exists and the Zenodo-GitHub integration issues a DOI per release (concept DOI
+      10.5281/zenodo.16806749), but both credit only "EPIC Collaboration" and no author or contributor
+      list is maintained.
+    evidence:
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/CITATION.cff#L1-L10
+      - https://doi.org/10.5281/zenodo.16806749
+    gaps:
+      - No maintained author or contributor list in `CITATION.cff`, `.zenodo.json` or an AUTHORS file.
+    actions:
+      - action: Add `.zenodo.json` and `CITATION.cff` author lists covering significant contributors, and add the concept DOI to the README and `CITATION.cff`.
+        priority: medium
+        effort: S
+  via.adoption:
+    level: 3
+    confidence: high
+    rationale: >-
+      Every epic release is built into eic-shell, the geometry is used by the ePIC simulation production
+      and by detector benchmarks, and EICrecon and npsim load it.
+    evidence:
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/spack-environment/xl/epic/spack.yaml#L17-L28
+      - https://github.com/eic/epic-prod/blob/bb75f8ad55bf2102d1f1125d1d927e1d7e44919f/docs/FULL/main/index.md
+      - https://github.com/eic/detector_benchmarks/blob/b1572d521504c67b9df7723599a9ff88859bd28b/benchmarks/lfhcal/Snakefile
+    gaps: []
+    actions: []
+  via.support:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The repository is in the eic organization, cites "EPIC Collaboration" as author and links ePIC
+      computing meetings, but no document assigns maintenance to an ePIC working group or acknowledges
+      funding.
+    evidence:
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/CITATION.cff#L1-L10
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/.github/ISSUE_TEMPLATE/config.yml#L1-L11
+      - metrics:git.email_domains_24m = 9
+    gaps:
+      - No owning ePIC working group, institutional commitment or funding stated in README or CONTRIBUTING.md.
+    actions:
+      - action: State in the README the ePIC working group responsible for the geometry and the maintainers' institutions.
+        priority: medium
+        effort: S

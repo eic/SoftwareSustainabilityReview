@@ -1,0 +1,30 @@
+pass: '2026-10-12'
+started: '2026-10-12'
+rubrics_commit: 783e2c123369465092490a48796288612dc83bbf
+collector_version: 0.1.0
+stack_snapshot: a5bead855571a4df268ee89cd4030c58c14ce795
+assessor:
+  agent: claude-code
+  model: claude-opus-5-5
+projects:
+- afterburner
+- ai-epic-background
+- algorithms
+- containers
+- edm4eic
+- eic-shell
+- eic-smear
+- eicrecon
+- epic
+- epic-analysis
+- epic-capybara
+- firebird
+- g4occt
+- hepmc-merger
+- irt
+- jana2
+- npsim
+- timeframebuilder
+notes: Pilot pass over all projects in projects.yaml. eicrecon, afterburner and epic-capybara
+  were collected with collector 0.1.0; all other projects with 0.2.0, which additionally
+  resolves the first-parent PR fraction through the GitHub commit-to-PR API.

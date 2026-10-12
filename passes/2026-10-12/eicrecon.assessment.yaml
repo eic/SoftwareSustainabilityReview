@@ -1,0 +1,505 @@
+schema_version: 1
+project: eicrecon
+pass: '2026-10-12'
+commit: b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8
+assessor: { agent: claude-code, model: claude-opus-5-5 }
+summary: >-
+  The main risks are concentration of authorship (one author wrote 51.8% of commits in 24 months, no
+  CODEOWNERS or maintainer list), a review rate just under 50% of merged PRs, and contradictory
+  licensing (LGPL-3.0 file and headers versus a public-domain NOTICE.md, plus third-party code with an
+  undetermined license). Established practices are a required-check, merge-queue CI in eic-shell
+  (nightly and two stable releases) with sanitizer builds, full-chain simulation and reconstruction
+  jobs, and capybara output comparisons, together with eic-spack packaging and inclusion in eic-shell
+  at the latest release.
+criteria:
+  eng.change-control:
+    level: 1
+    confidence: high
+    rationale: >-
+      All first-parent commits arrive through PRs, but 49.2% of merged human PRs in 12 months had a
+      review from someone other than the author, below the 50% needed for level 2.
+    evidence:
+      - metrics:git.first_parent_pr_fraction_12m = 1.0
+      - metrics:prs.reviewed_fraction_12m = 0.492
+      - metrics:repo.rulesets = 2
+      - https://github.com/eic/EICrecon/rules/23476788
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/CONTRIBUTING.md#L54-L67
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/.github/pull_request_template.md#L1-L21
+    gaps:
+      - Fewer than 50% of merged PRs in 12 months were reviewed by a non-author; the ruleset requiring one approval exists only since 2026-09-15.
+      - No CODEOWNERS file.
+    actions:
+      - action: Keep the `main` ruleset's one-approval requirement active so that at least 50% (then 90%) of merged PRs carry a non-author review in the next 12-month window.
+        priority: high
+        effort: S
+  eng.ci:
+    level: 3
+    confidence: high
+    rationale: >-
+      `linux-eic-shell.yml` builds and runs ctest on every PR, merge-queue entry and push to main in
+      eic-shell (GCC and Clang, nightly and two stable releases), required status checks gate the
+      merge queue, full simulation-plus-reconstruction jobs and an eic_container trigger provide
+      integration checks, and 92% of default-branch runs succeed.
+    evidence:
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/.github/workflows/linux-eic-shell.yml#L1-L14
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/.github/workflows/linux-eic-shell.yml#L80-L127
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/.github/workflows/linux-eic-shell.yml#L229-L235
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/.github/workflows/linux-eic-shell.yml#L1194-L1260
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/.github/workflows/linux-eic-shell.yml#L1591-L1625
+      - https://github.com/eic/EICrecon/rules/23476788
+      - metrics:ci.default_branch_success_rate = 0.92
+    gaps: []
+    actions: []
+  eng.testing:
+    level: 1
+    confidence: medium
+    rationale: >-
+      Catch2 unit tests exist for 22 of about 87 algorithm sources, and the per-library coverage
+      posted by CI ranges from 2.9% (reco) to 66.7% (pid_lut), so unit tests cover a minority of
+      algorithms; end-to-end reconstruction jobs and capybara comparisons against the base-branch
+      output do run in CI.
+    evidence:
+      - metrics:code.test_files = 34
+      - metrics:prs.test_touching_fraction_12m = 0.145
+      - https://github.com/eic/EICrecon/tree/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/src/tests/algorithms_test
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/.github/workflows/linux-eic-shell.yml#L414-L472
+      - https://github.com/eic/EICrecon/commit/62eb86ae835ea5db9bfa82a716d322e8093992bb
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/.github/workflows/linux-eic-shell.yml#L1001-L1016
+    gaps:
+      - Unit tests cover a minority of algorithms (coverage below 30% in 6 of 9 algorithm libraries, 2.9% in reco).
+      - Only 14.5% of merged PRs touch test files.
+      - "`tracking_test`, `track_propagation_test` and `geometry_navigation_test` are not added in `src/tests/CMakeLists.txt`."
+    actions:
+      - action: Add Catch2 tests in `src/tests/algorithms_test/` for the untested algorithms in `src/algorithms/reco` and `src/algorithms/tracking` until each algorithm library reports coverage above 50%.
+        priority: medium
+        effort: L
+      - action: Add a PR-template checkbox and review rule requiring a unit test for every new or changed algorithm.
+        priority: medium
+        effort: S
+  eng.static-quality:
+    level: 2
+    confidence: high
+    rationale: >-
+      clang-format, codespell and cmake-lint run through pre-commit.ci, clang-tidy and IWYU run on
+      changed files in every PR, ASan/UBSan/TSan builds run in CI, and builds use `-Werror -Wall
+      -Wextra`; clang-tidy findings are advisory and deprecation warnings are exempted from -Werror.
+    evidence:
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/.pre-commit-config.yaml#L1-L29
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/.clang-tidy#L1-L25
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/.github/workflows/linux-eic-shell.yml#L98-L105
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/.github/workflows/linux-eic-shell.yml#L281-L412
+    gaps:
+      - "`.clang-tidy` sets no `WarningsAsErrors`, so clang-tidy findings neither fail CI nor are tracked to zero."
+      - "`-Wno-error=deprecated-declarations` is applied repository-wide in the CI matrix."
+    actions:
+      - action: Set `WarningsAsErrors` in `.clang-tidy` for the enabled check groups, or publish the clang-tidy warning count on main and drive it to zero.
+        priority: medium
+        effort: M
+      - action: Remove `-Wno-error=deprecated-declarations` from the CI matrix once the Acts deprecations are resolved.
+        priority: low
+        effort: M
+  eng.modularity:
+    level: 2
+    confidence: medium
+    rationale: >-
+      Code is split into algorithms, factories, services and detector plugins built with CMake (C++20)
+      and exported via `EICreconTargets` and `EICreconConfig.cmake`, with parameters exposed through
+      JANA `-P` options; every header is installed with no public/internal split and there is no
+      architecture overview.
+    evidence:
+      - metrics:code.cxx_standard = 20
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/CMakeLists.txt#L80-L91
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/CMakeLists.txt#L355-L378
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/cmake/jana_plugin.cmake#L59-L89
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/src/detectors/BEMC/BEMC.cc#L50-L80
+    gaps:
+      - All headers are installed (`cmake/jana_plugin.cmake` L168-L171); no public API is separated from internals.
+      - No architecture overview of the plugin, factory and algorithm layers.
+      - Detector calibration defaults are compiled into `src/detectors/*` plugins.
+    actions:
+      - action: Write `docs/design/architecture.md` describing the algorithms/factories/services/detectors layers and the data flow, and link it from `docs/_sidebar.md`.
+        priority: medium
+        effort: S
+      - action: Install only headers of the algorithm interfaces and configs intended for downstream use, and mark the rest internal.
+        priority: low
+        effort: M
+  doc.user:
+    level: 1
+    confidence: high
+    rationale: >-
+      README and the hosted docs give the eic-shell build route and a tutorial that runs eicrecon on a
+      sample file, and flags are listed on the site, but the from-source instructions list stale versions
+      that contradict the build (JANA v2.0.7, ACTS v19.9.0, `-DCMAKE_CXX_STANDARD=17` against the C++20
+      minimum).
+    evidence:
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/README.md#L1-L35
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/docs/get-started/eic-shell.md#L11-L45
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/docs/get-started/manual-build.md#L65-L74
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/docs/get-started/manual-build.md#L207-L221
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/docs/tutorial/02-work-environment.md#L115-L147
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/CMakeLists.txt#L59-L77
+    gaps:
+      - "`docs/get-started/manual-build.md` dependency versions do not match the minimums in `CMakeLists.txt` and omit algorithms, onnxruntime, FastJet and IRT2."
+      - "`docs/howto/full_chain_simulation.md` still refers to athena.xml and Juggler."
+    actions:
+      - action: Regenerate the dependency list in `docs/get-started/manual-build.md` from the `*_VERSION_MIN` values in `CMakeLists.txt` and remove the C++17 flags.
+        priority: medium
+        effort: S
+      - action: Update or remove `docs/howto/full_chain_simulation.md` so the quick start uses npsim and eicrecon with a current input file.
+        priority: medium
+        effort: S
+  doc.developer:
+    level: 1
+    confidence: medium
+    rationale: >-
+      Doxygen is generated and published from main to the docs site, and design pages cover tracking,
+      logging and CMake, but 42 of 169 algorithm headers carry Doxygen-style comments and there is no
+      architecture overview.
+    evidence:
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/Doxyfile#L488
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/.github/workflows/linux-eic-shell.yml#L1640-L1645
+      - https://github.com/eic/EICrecon/tree/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/docs/design
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/src/algorithms/reco/InclusiveKinematicsElectron.h#L20-L42
+    gaps:
+      - Most public algorithm headers have no Doxygen comments on classes, configs or methods.
+      - No architecture overview page.
+    actions:
+      - action: Add Doxygen comments to every `src/algorithms/*/*.h` class and `*Config.h` member, and set `WARN_IF_UNDOCUMENTED` in the Doxyfile to track the remainder.
+        priority: medium
+        effort: L
+      - action: Add `docs/design/architecture.md` with a component and data-flow diagram.
+        priority: medium
+        effort: S
+  doc.contributing:
+    level: 2
+    confidence: medium
+    rationale: >-
+      CONTRIBUTING.md covers the PR process, review criteria and coding conventions, the tutorials and
+      AGENTS.md cover eic-shell setup, building and ctest, a PR template and a devcontainer exist; newcomer
+      issues have not been labeled or closed since 2024 and there are no issue templates.
+    evidence:
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/CONTRIBUTING.md#L22-L81
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/AGENTS.md#L17-L65
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/.devcontainer/devcontainer.json#L1-L13
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/.github/pull_request_template.md#L1-L21
+      - https://github.com/eic/EICrecon/issues?q=label%3A%22good+first+issue%22
+    gaps:
+      - The two open `good first issue` issues (#400, #897) are years old; no newcomer issue closed since 2024.
+      - CONTRIBUTING.md does not itself describe build and ctest steps; no issue templates.
+      - "`docs/tutorial/04-contributing.md` links GitHub Discussions, which are disabled."
+    actions:
+      - action: Label at least five current issues `good first issue` and add `.github/ISSUE_TEMPLATE/` bug and feature templates.
+        priority: medium
+        effort: S
+      - action: Add a "Build and test" section to CONTRIBUTING.md covering eic-shell, cmake and `ctest --test-dir build`.
+        priority: low
+        effort: S
+  com.responsiveness:
+    level: 1
+    confidence: high
+    rationale: >-
+      Median first response is 5.1 days, but 139 of 197 open issues are older than one year and 4.8%
+      of new issues are labeled.
+    evidence:
+      - metrics:issues.median_first_response_days_12m = 5.11
+      - metrics:issues.open_older_365d = 139
+      - metrics:issues.open_total = 197
+      - metrics:issues.labeled_fraction_12m = 0.048
+      - metrics:issues.unanswered_fraction_12m = 0.352
+    gaps:
+      - More than half of open issues (70.6%) are older than one year.
+      - Most new issues are not labeled or otherwise triaged.
+    actions:
+      - action: Review the 139 issues older than one year and close or label each, and apply a `topic:` label to every new issue at triage.
+        priority: medium
+        effort: M
+  com.contributors:
+    level: 1
+    confidence: medium
+    rationale: >-
+      34 authors from 10 e-mail domains committed in 24 months with 10 new authors in 12 months, but no
+      merged PR in 12 months came from outside the eic organization membership, and the four fork PRs
+      merged in 24 months were by members.
+    evidence:
+      - metrics:git.authors_24m = 34
+      - metrics:git.email_domains_24m = 10
+      - metrics:git.new_authors_12m = 10
+      - metrics:prs.external_fraction_12m = 0.0
+      - https://github.com/eic/EICrecon/pull/2861
+    gaps:
+      - No PRs from contributors outside the maintainer organization were merged in 12 months.
+    actions:
+      - action: Document in CONTRIBUTING.md how non-ePIC contributors can submit fork PRs that pass CI, and merge at least one such PR.
+        priority: medium
+        effort: S
+  com.bus-factor:
+    level: 1
+    confidence: high
+    rationale: >-
+      One author wrote 51.8% of commits in 24 months; review and merging are spread across 24 reviewers
+      and 23 mergers, but no CODEOWNERS or maintainer list names owners.
+    evidence:
+      - metrics:git.bus_factor_50_24m = 1
+      - metrics:git.top_author_share_24m = 0.518
+      - metrics:prs.distinct_reviewers_12m = 24
+      - metrics:prs.distinct_mergers_12m = 23
+      - metrics:releases.authors_24m = 2
+    gaps:
+      - Bus factor (50%) is 1.
+      - No CODEOWNERS or maintainer list.
+    actions:
+      - action: Add `.github/CODEOWNERS` naming at least two owners for each of `src/algorithms/*`, `src/factories`, `src/services` and `.github/`.
+        priority: high
+        effort: S
+  com.governance:
+    level: 1
+    confidence: medium
+    rationale: >-
+      CONTRIBUTING.md assigns review to an ePIC software review team and asks contributors to consult
+      the reconstruction and simulation working groups, and decisions are visible in PRs; no maintainers
+      are named, there is no maintainer path, and milestones stopped in 2024.
+    evidence:
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/CONTRIBUTING.md#L1-L24
+      - https://github.com/eic/EICrecon/milestones?state=closed
+    gaps:
+      - No document naming maintainers, who decides, or how to become a reviewer or maintainer.
+      - Milestones last used in 2024; no public roadmap.
+    actions:
+      - action: Add `GOVERNANCE.md` naming the maintainers by role, the owning ePIC working group, the decision process and the path to reviewer and maintainer.
+        priority: high
+        effort: S
+  com.conduct:
+    level: 1
+    confidence: medium
+    rationale: >-
+      CONTRIBUTING.md links the ePIC code of conduct and a review-team contact, but the public code of
+      conduct page names no reporting contact, and GitHub Discussions, linked from the tutorial, are
+      disabled.
+    evidence:
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/CONTRIBUTING.md#L56
+      - https://www.epic-eic.org/collaboration/professional.html
+      - metrics:community.files.code_of_conduct = false
+    gaps:
+      - The linked code of conduct has no public reporting contact.
+      - No "Getting help" section naming a user support channel.
+    actions:
+      - action: Add a CODE_OF_CONDUCT.md that links the ePIC code and gives a public reporting contact, and a README "Getting help" section linking the ePIC Mattermost reconstruction channel or the issue tracker.
+        priority: high
+        effort: S
+  dist.packaging:
+    level: 3
+    confidence: high
+    rationale: >-
+      eic-spack carries a recipe that provides the latest release 1.42.0, and eic-shell ships that
+      version.
+    evidence:
+      - metrics:packaging.eic_spack.versions = [main, 1.42.0, 1.41.0, 1.40.1, 1.40.0]
+      - metrics:packaging.in_eic_shell = true
+      - metrics:packaging.eic_shell_version = 1.42.0
+      - metrics:packaging.latest_release_packaged = true
+    gaps: []
+    actions: []
+  dist.releases:
+    level: 1
+    confidence: high
+    rationale: >-
+      43 releases in 24 months all have generated notes grouped by topic, but no version scheme is
+      documented and there is no changelog, deprecation policy or release workflow.
+    evidence:
+      - metrics:releases.count_24m = 43
+      - metrics:releases.with_notes_fraction_24m = 1.0
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/.github/release.yml#L1-L36
+      - https://github.com/eic/EICrecon/releases/tag/v1.42.0
+    gaps:
+      - The version scheme (vMAJOR.MINOR.PATCH tags) is not documented.
+      - Release notes do not flag breaking changes or give migration notes.
+    actions:
+      - action: State in README.md that releases follow SemVer and define what bumps MAJOR (for example renamed or removed output collections).
+        priority: medium
+        effort: S
+  dist.dependencies:
+    level: 1
+    confidence: medium
+    rationale: >-
+      Most dependencies are declared with minimum versions in `CMakeLists.txt`, but Microsoft.GSL,
+      nlohmann_json, Boost and cppzmq are found without version constraints; Dependabot covers GitHub
+      Actions only, 37 `uses:` refs point to `@main`, and there is no SECURITY.md.
+    evidence:
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/CMakeLists.txt#L59-L77
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/CMakeLists.txt#L223
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/src/services/io/podio/CMakeLists.txt#L33
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/src/services/pid_lut/CMakeLists.txt#L17
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/.github/dependabot.yml#L1-L8
+      - metrics:ci.action_refs_not_sha_pinned = 171
+    gaps:
+      - Microsoft.GSL, nlohmann_json, Boost and cppzmq have no minimum version.
+    actions:
+      - action: Add minimum versions to the `find_package` calls for Microsoft.GSL, nlohmann_json, Boost and cppzmq in `CMakeLists.txt` and the `src/services/*/CMakeLists.txt` files.
+        priority: medium
+        effort: S
+  dist.reproducibility:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The environment is machine-readable (eic-shell images, devcontainer on `eic_ci:nightly`) and its
+      use is documented, but output files do not record the EICrecon version, parameter set or random
+      seed.
+    evidence:
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/.devcontainer/devcontainer.json#L2
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/docs/get-started/eic-shell.md#L11-L45
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/src/algorithms/interfaces/UniqueIDGenSvc.h#L98
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/src/services/io/podio/JEventProcessorPODIO.cc#L740-L765
+    gaps:
+      - The podio writer stores no EICrecon version, configuration parameters or seed in the output metadata.
+    actions:
+      - action: Write the EICrecon version and the full JANA parameter set (including the UniqueIDGenSvc seed) into a podio `metadata` frame in `JEventProcessorPODIO::Finish`.
+        priority: medium
+        effort: M
+  dist.portability:
+    level: 2
+    confidence: high
+    rationale: >-
+      CI builds and tests with GCC and Clang on Linux x86_64 and there are no site-specific paths; no
+      aarch64 or macOS job exists and accelerator use is not documented.
+    evidence:
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/.github/workflows/linux-eic-shell.yml#L80-L82
+      - metrics:ci.runs_on = [ubuntu-24.04, ubuntu-latest, ubuntu-slim]
+      - metrics:code.site_specific_paths = []
+    gaps:
+      - No CI job on a second architecture (aarch64) or OS.
+      - HTC/OSG usage and accelerator support (or why not) are not documented.
+    actions:
+      - action: Add an `ubuntu-24.04-arm` build-and-ctest job in eic-shell to `linux-eic-shell.yml`.
+        priority: medium
+        effort: M
+  eic.reuse:
+    level: 1
+    confidence: medium
+    rationale: >-
+      EICrecon builds on JANA2, algorithms, podio, EDM4eic, DD4hep and ACTS, but a 600-line helix
+      propagation and pairing code derived from STAR (`Helix.cc`) runs secondary vertexing in parallel to
+      the ACTS-based `SecondaryVertexFinder` without documented justification.
+    evidence:
+      - metrics:eic.domain_components = [acts, afterburner, algorithms, dd4hep, edm4eic, edm4hep, epic, fastjet, irt, jana2, npsim, podio]
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/src/algorithms/reco/Helix.h#L1-L2
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/src/algorithms/tracking/SecondaryVertexFinder.h
+    gaps:
+      - Helix-based secondary vertexing reimplements track propagation and vertexing available in ACTS, with no documented reason.
+    actions:
+      - action: Document in `docs/design/tracking.md` why `SecondaryVerticesHelix` is kept alongside the ACTS vertexer, or replace it with ACTS propagation and vertex fitting.
+        priority: medium
+        effort: S
+  eic.data-model:
+    level: 2
+    confidence: high
+    rationale: >-
+      Inputs are EDM4hep and outputs EDM4eic podio files, a two-stage CI job re-reads EICrecon output,
+      and CI reads outputs with uproot; the podio file-version check is logged but its failure is
+      commented out.
+    evidence:
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/src/services/io/podio/JEventSourcePODIO.cc#L135-L145
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/.github/workflows/linux-eic-shell.yml#L675-L713
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/src/scripts/verify_for_dangling_references.py#L10
+    gaps:
+      - The version mismatch check in `JEventSourcePODIO.cc` does not throw (FIXME), and no EDM4eic version check on read.
+    actions:
+      - action: Re-enable the exception in `JEventSourcePODIO.cc` L139-L143 and add an EDM4eic/EDM4hep datamodel version check against the file metadata.
+        priority: medium
+        effort: S
+  eic.environment:
+    level: 3
+    confidence: high
+    rationale: >-
+      The eic-shell build is documented, and CI builds and tests in `eic_xl` nightly and in the pinned
+      26.02.0-stable and 26.04.1-stable releases through `eic/run-cvmfs-osg-eic-shell`.
+    evidence:
+      - metrics:ci.uses_eic_shell = true
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/.github/workflows/linux-eic-shell.yml#L116-L127
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/docs/get-started/eic-shell.md#L11-L45
+    gaps: []
+    actions: []
+  eic.currency:
+    level: 2
+    confidence: high
+    rationale: >-
+      Minimum versions (Acts 44, podio 1.3, EDM4eic 8.7, DD4hep 1.21) are satisfied by current eic-shell
+      (Acts 46.8.1, podio 1.8, EDM4eic 8.10.0) and nightly CI passes, but Acts deprecation warnings are
+      exempted from -Werror, so deprecated APIs remain in use.
+    evidence:
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/CMakeLists.txt#L59-L77
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/.github/workflows/linux-eic-shell.yml#L99-L105
+      - metrics:packaging.eic_shell_version = 1.42.0
+    gaps:
+      - Code uses Acts APIs deprecated in Acts v46.
+    actions:
+      - action: Migrate the remaining deprecated Acts seeding calls and drop `-Wno-error=deprecated-declarations` from `linux-eic-shell.yml`.
+        priority: medium
+        effort: M
+  via.license:
+    level: 1
+    confidence: high
+    rationale: >-
+      GitHub detects LGPL-3.0 and 374 files carry LGPL-3.0-or-later SPDX headers, but NOTICE.md declares
+      the repository public domain except where a LICENSE.md exists (only `src/algorithms`), and
+      STAR-derived `Helix.h/.cc` have license "TBD".
+    evidence:
+      - metrics:repo.license_spdx = LGPL-3.0
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/NOTICE.md#L1-L10
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/src/algorithms/reco/Helix.h#L1-L2
+    gaps:
+      - NOTICE.md (public domain) contradicts LICENSE.LGPL3 and the SPDX headers.
+      - Third-party STAR code is included without a recorded license.
+    actions:
+      - action: Replace NOTICE.md with a statement that the repository is LGPL-3.0-or-later and that contributions are accepted under it (inbound = outbound).
+        priority: high
+        effort: S
+      - action: Determine the license of the STAR-derived `src/algorithms/reco/Helix.*`, record it in their SPDX headers, or replace the code.
+        priority: high
+        effort: S
+  via.citation:
+    level: 2
+    confidence: high
+    rationale: >-
+      The Zenodo-GitHub integration issues a DOI per release under concept DOI 10.5281/zenodo.7942531
+      with a 27-creator list; there is no CITATION.cff and no reference publication.
+    evidence:
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/README.md#L2
+      - https://doi.org/10.5281/zenodo.7942531
+      - https://doi.org/10.5281/zenodo.23116381
+      - metrics:files.citation_cff = []
+    gaps:
+      - No reference publication or software paper is cited.
+      - The Zenodo record credits 27 creators against 65 git authors; no `.zenodo.json` or CITATION.cff curates the list.
+    actions:
+      - action: Add `CITATION.cff` and `.zenodo.json` with the full contributor list and a preferred-citation entry for an EICrecon reference publication.
+        priority: low
+        effort: S
+  via.adoption:
+    level: 3
+    confidence: high
+    rationale: >-
+      EICrecon ships in eic-shell, is the ePIC reconstruction used by detector benchmarks and tutorials,
+      and is a dependency of juggler in eic-spack.
+    evidence:
+      - metrics:packaging.in_eic_shell = true
+      - metrics:eic.eic_spack_dependents = [juggler]
+      - https://github.com/eic/detector_benchmarks/blob/b1572d521504c67b9df7723599a9ff88859bd28b/benchmarks/far_forward_dvcs/analysis/analyze_DVCS_eicrecon.cxx
+      - https://github.com/eic/tutorial-understanding-sim-output/blob/aa663cd5a7cf6664bf1bdb3218c7a788ef00a59c/episodes/02-eicrecon.md
+    gaps: []
+    actions: []
+  via.support:
+    level: 2
+    confidence: medium
+    rationale: >-
+      CONTRIBUTING.md places development under the ePIC reconstruction and simulation working groups and
+      the ePIC software review team; there is no documented multi-institution maintenance commitment
+      or succession plan.
+    evidence:
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/CONTRIBUTING.md#L1-L24
+      - metrics:git.email_domains_24m = 10
+    gaps:
+      - No documented multi-institution maintenance commitment or succession plan.
+    actions:
+      - action: State in README.md the owning ePIC working group, the maintaining institutions, and what happens when a maintainer leaves.
+        priority: medium
+        effort: S

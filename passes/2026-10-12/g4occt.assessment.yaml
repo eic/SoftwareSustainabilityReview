@@ -1,0 +1,500 @@
+schema_version: 1
+project: g4occt
+pass: "2026-10-12"
+commit: c58db1b0cda140d447d37e3a499a9b8306d0b93a
+assessor: { agent: claude-code, model: claude-opus-5-5 }
+summary: >-
+  One author wrote 99.2% of non-bot commits in 24 months and is the only human reviewer, merger and
+  release author; 0.8% of merged PRs have a review from someone other than the author, and there is
+  no citation metadata, code of conduct or maintainer list. CI builds in eic_xl:nightly with -Werror,
+  runs gtest unit tests, per-fixture geometry comparisons against native Geant4 solids, DD4hep plugin
+  tests, ASan/UBSan/TSan, IWYU and coverage (published, 47.5% of PRs touch tests), and Doxygen and
+  design docs are deployed by CI. The package is in eic-spack at the latest release (0.3.0) but
+  eic-shell still ships 0.2.1, and no other EIC repository depends on it yet.
+criteria:
+  eng.change-control:
+    level: 1
+    confidence: high
+    rationale: >-
+      97.1% of first-parent commits arrive through PRs and a ruleset requires PRs and eight status
+      checks, but only 0.8% of merged PRs have a review from someone other than the author (the
+      ruleset requires 0 approvals; reviews come from the Copilot bot or the author).
+    evidence:
+      - metrics:git.first_parent_pr_fraction_12m = 0.971
+      - metrics:prs.reviewed_fraction_12m = 0.008
+      - metrics:repo.rulesets = 2
+      - metrics:files.codeowners = []
+      - https://github.com/eic/G4OCCT/pull/398
+      - https://github.com/eic/.github/blob/3231e4d33f430f9806db8703b2feaafca084e18e/.github/pull_request_template.md
+    gaps:
+      - Fewer than 50% of merged PRs are reviewed by someone other than the author.
+      - The "Default" ruleset sets `required_approving_review_count` to 0 and lets the admin role bypass it always.
+      - No CODEOWNERS file.
+    actions:
+      - action: Recruit a second human reviewer and set `required_approving_review_count` to 1 in the "Default" ruleset.
+        priority: high
+        effort: M
+      - action: Add `.github/CODEOWNERS` naming at least two reviewers for `src/`, `include/` and `src/dd4hep/`.
+        priority: medium
+        effort: S
+  eng.ci:
+    level: 2
+    confidence: high
+    rationale: >-
+      `ci.yml` runs on every PR and push to `main`, builds in eic_xl with -Werror, runs ctest, the B1/B4c
+      examples and DD4hep plugin tests, and eight jobs are required checks; 84% of default-branch runs
+      succeeded and the latest two `main` runs fail (ASan leak reports in TGeoOCCTSolid tests).
+    evidence:
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/.github/workflows/ci.yml#L6-L10
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/.github/workflows/ci.yml#L38-L79
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/.github/workflows/ci.yml#L134-L161
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/.github/workflows/ci.yml#L825-L879
+      - metrics:ci.default_branch_success_rate = 0.84
+      - https://github.com/eic/G4OCCT/actions/runs/34890504065
+    gaps:
+      - Default-branch success rate is below 90%; `main` is red since 2026-09-14 (3 ASan test failures) and `TGeoOCCTSolid.RootDrawingSmoke` also failed on `main` in August.
+      - CI tests only the eic_xl nightly stack, not the declared minimum versions (Geant4 11.3, OCCT 7.8).
+      - The admin role can bypass the required status checks.
+    actions:
+      - action: Fix or quarantine the failing `TGeoOCCTSolid.*` tests under ASan so `main` passes, and add a `schedule:` trigger to `ci.yml` to detect nightly-stack breakage.
+        priority: medium
+        effort: S
+      - action: Add a CI job building and testing against Geant4 11.3 and OCCT 7.8 (e.g. from `.github/spack.yaml` with pinned versions).
+        priority: medium
+        effort: M
+  eng.testing:
+    level: 3
+    confidence: high
+    rationale: >-
+      gtest unit tests cover each library class, per-fixture CTest tests compare OCCT navigation results
+      against native Geant4 solids and recorded volume expectations, DD4hep plugin and example runs act
+      as integration tests, coverage is published, and 47.5% of merged PRs touch tests.
+    evidence:
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/src/tests/CMakeLists.txt#L20-L27
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/src/tests/CMakeLists.txt#L164-L196
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/src/tests/fixtures/geometry/README.md
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/.github/workflows/ci.yml#L881-L985
+      - https://eic.github.io/G4OCCT/coverage/index.html
+      - metrics:code.test_files = 52
+      - metrics:prs.test_touching_fraction_12m = 0.475
+    gaps: []
+    actions: []
+  eng.static-quality:
+    level: 2
+    confidence: high
+    rationale: >-
+      pre-commit.ci runs clang-format, cmake-lint, codespell and markdownlint on every PR, IWYU fails PRs
+      that need include changes, sanitizers are required checks, and CI builds with -Wall -Werror; clang-tidy
+      runs but its result is discarded with `|| true`.
+    evidence:
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/.pre-commit-config.yaml#L1-L41
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/.github/workflows/iwyu.yml#L125-L133
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/CMakeLists.txt#L47-L53
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/.github/workflows/ci.yml#L236-L258
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/.github/workflows/ci.yml#L738-L823
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/.github/lsan.supp#L153-L154
+    gaps:
+      - clang-tidy findings never fail CI (`|| true`) and are not tracked to zero.
+      - "LSan suppresses all OCCT allocations (`leak:Standard::Allocate`, `leak:NCollection_IncAllocator::Allocate`)."
+    actions:
+      - action: Remove `|| true` from the clang-tidy-diff step in `ci.yml` so new clang-tidy findings on changed lines fail the PR.
+        priority: medium
+        effort: S
+      - action: Replace the allocator-wide LSan suppressions with caller-scoped entries or explicit cleanup at test teardown.
+        priority: low
+        effort: M
+  eng.modularity:
+    level: 3
+    confidence: medium
+    rationale: >-
+      A C++20 CMake library with public headers in `include/G4OCCT/`, internal kernel headers in `src/`,
+      an exported `G4OCCT::G4OCCT` package config, a separately installed DD4hep plugin, XML-based
+      material and sensitive-detector maps, and documented architecture; the largest file has 1273 lines.
+    evidence:
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/CMakeLists.txt#L15-L16
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/CMakeLists.txt#L300-L332
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/README.md#L44-L63
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/docs/solid_navigation.md
+      - metrics:code.largest_source_files
+    gaps: []
+    actions: []
+  doc.user:
+    level: 1
+    confidence: high
+    rationale: >-
+      The README gives build, install and downstream CMake usage, and B1/B4c/DD4hep examples are documented
+      and run in CI, but the requirements table omits ROOT, DD4hep, yaml-cpp, GoogleTest and Google Benchmark,
+      and there is no eic-shell, Spack or container install route.
+    evidence:
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/README.md#L67-L106
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/docs/example_b1.md
+      - https://eic.github.io/G4OCCT/
+    gaps:
+      - Optional and test dependencies (ROOT, DD4hep, yaml-cpp 0.8, GoogleTest, Google Benchmark) are not listed with versions.
+      - No instructions for using G4OCCT from eic-shell, `spack install g4occt` or the `ghcr.io/eic/g4occt` image.
+      - No troubleshooting or FAQ material.
+    actions:
+      - action: Extend the README Requirements table with ROOT, DD4hep, yaml-cpp and test dependencies, and add an "Installation" section covering eic-shell, eic-spack and `ghcr.io/eic/g4occt`.
+        priority: medium
+        effort: S
+  doc.developer:
+    level: 2
+    confidence: medium
+    rationale: >-
+      Most public headers carry Doxygen comments, CI builds the Doxygen reference and deploys it to GitHub
+      Pages from `main`, and design docs cover the solid-navigation mapping, kernel and optimizations; the
+      design docs cite no external references and `TGeoOCCTSolid` overrides are undocumented.
+    evidence:
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/.github/workflows/ci.yml#L987-L1088
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/include/G4OCCT/G4OCCTSolid.hh#L22-L72
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/include/G4OCCT/TGeoOCCTSolid.hh#L42-L89
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/docs/low_level_optimization.md
+      - https://eic.github.io/G4OCCT/api/
+    gaps:
+      - Algorithm documentation (ray parity, BVH, inscribed-sphere prefilter) cites no literature or OCCT/Geant4 reference documents.
+      - The ~40 `TGeoOCCTSolid` override declarations have no Doxygen comments.
+    actions:
+      - action: Add a References section to `docs/solid_navigation.md` and `docs/low_level_optimization.md` citing the algorithms and OCCT/Geant4 documentation used.
+        priority: low
+        effort: S
+  doc.contributing:
+    level: 1
+    confidence: medium
+    rationale: >-
+      `AGENTS.md` documents build requirements, testing rules, CI, code style and pre-commit, and org-level
+      issue and PR templates apply, but there is no description of the PR process (branching, review, merge)
+      or of setting up a development environment in eic-shell.
+    evidence:
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/AGENTS.md#L152-L240
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/AGENTS.md#L570-L600
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/README.md#L201-L204
+      - https://github.com/eic/.github/tree/3231e4d33f430f9806db8703b2feaafca084e18e/.github/ISSUE_TEMPLATE
+      - metrics:community.files.contributing = false
+    gaps:
+      - No CONTRIBUTING file or section describing how to open, review and merge a PR.
+      - No documented developer environment setup (eic-shell or devcontainer).
+    actions:
+      - action: Add `CONTRIBUTING.md` covering eic-shell setup, the `cmake`/`ctest` commands, pre-commit, and the PR and review process, linking to `AGENTS.md` for conventions.
+        priority: medium
+        effort: S
+  com.responsiveness:
+    level: 2
+    confidence: low
+    rationale: >-
+      Median first response is 2.85 days, 87% of the 23 issues opened in 12 months were answered and 20 were
+      closed (most through linked PRs), and the one external PR (#368) was reviewed; only 13% are labeled and
+      most issues are filed by the maintainer.
+    evidence:
+      - metrics:issues.median_first_response_days_12m = 2.85
+      - metrics:issues.unanswered_fraction_12m = 0.13
+      - metrics:issues.labeled_fraction_12m = 0.13
+      - metrics:issues.open_older_365d = 0
+      - https://github.com/eic/G4OCCT/pull/368
+    gaps:
+      - Median first response exceeds 2 days.
+      - No documented triage process; 13% of issues labeled and no milestones.
+    actions:
+      - action: Label every new issue (bug/enhancement/question) and document the triage practice in `CONTRIBUTING.md`.
+        priority: low
+        effort: S
+  com.contributors:
+    level: 1
+    confidence: high
+    rationale: >-
+      Two non-bot authors committed in 24 months from one e-mail domain; the second author contributed one PR.
+    evidence:
+      - metrics:git.authors_24m = 2
+      - metrics:git.email_domains_24m = 1
+      - metrics:prs.external_fraction_12m = 0.0
+    gaps:
+      - Fewer than 4 active authors and fewer than 2 institutions in 24 months.
+    actions:
+      - action: Present G4OCCT at an ePIC simulation/geometry meeting and recruit co-developers from the groups adopting STEP geometry (e.g. the HCAL pilot in eic/epic#1140).
+        priority: high
+        effort: M
+  com.bus-factor:
+    level: 0
+    confidence: high
+    rationale: >-
+      The top author wrote 99.2% of non-bot commits in 24 months and is the only human reviewer, merger,
+      release author and listed eic-spack maintainer.
+    evidence:
+      - metrics:git.top_author_share_24m = 0.992
+      - metrics:git.bus_factor_50_24m = 1
+      - metrics:prs.distinct_mergers_12m = 1
+      - metrics:prs.distinct_reviewers_12m = 1
+      - metrics:releases.authors_24m = 1
+      - https://github.com/eic/eic-spack/blob/5b666599332b0974af162067e1a075d1661a3580/spack_repo/eic/packages/g4occt/package.py#L16
+    gaps:
+      - No second person reviews, merges or releases.
+      - No CODEOWNERS or maintainer list.
+    actions:
+      - action: Name a second maintainer with merge rights, add both to `.github/CODEOWNERS` and the eic-spack `maintainers(...)`, and have that person review PRs.
+        priority: high
+        effort: M
+  com.governance:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The maintainer is identifiable from the eic-spack recipe and merge history, decisions are made in public
+      PRs and recorded in `AGENTS.md`, and `docs/goals.md` has a roadmap, but there is no documented decision
+      process, maintainer path or maintainer list in the repository.
+    evidence:
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/AGENTS.md#L10-L13
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/docs/goals.md#L162-L176
+      - metrics:files.governance = []
+    gaps:
+      - No document stating who decides, how decisions are made, or how to become a reviewer or maintainer.
+      - Roadmap milestone numbers (v0.4–v1.0) do not match released versions (latest v0.3.0), and no GitHub milestones exist.
+    actions:
+      - action: Add `GOVERNANCE.md` (or a README section) naming the maintainers, the decision process, and the path to reviewer/maintainer.
+        priority: medium
+        effort: S
+  com.conduct:
+    level: 1
+    confidence: high
+    rationale: >-
+      The eic org default issue-template config links the EPIC Mattermost for questions, but no code of
+      conduct applies at repository or organization level.
+    evidence:
+      - https://github.com/eic/.github/blob/3231e4d33f430f9806db8703b2feaafca084e18e/.github/ISSUE_TEMPLATE/config.yml
+      - metrics:community.files.code_of_conduct = false
+    gaps:
+      - No code of conduct with a reporting contact.
+    actions:
+      - action: Add `CODE_OF_CONDUCT.md` (or link the ePIC collaboration code of conduct) with a reporting contact, and a "Getting help" README section pointing to Mattermost.
+        priority: high
+        effort: S
+  dist.packaging:
+    level: 2
+    confidence: high
+    rationale: >-
+      The eic-spack recipe provides 0.3.0 (added 10 days after release), and eic-shell ships g4occt, but at
+      git.v0.2.1; 0.3.0 has not been picked up in the 26.08–26.10 eic-shell releases.
+    evidence:
+      - metrics:packaging.eic_spack
+      - metrics:packaging.eic_shell_version = git.v0.2.1
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/spack-environment/packages.yaml#L224-L227
+      - https://github.com/eic/eic-spack/blob/5b666599332b0974af162067e1a075d1661a3580/spack_repo/eic/packages/g4occt/package.py#L26-L40
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/CMakeLists.txt#L267-L272
+    gaps:
+      - eic-shell still pins 0.2.1, more than one eic-shell release cycle after the 0.3.0 release.
+      - The eic-spack `+dd4hep` variant (required by eic-shell) does not set `BUILD_ROOT_TGEO_SUPPORT`, which 0.3.0 requires with `BUILD_DD4HEP_PLUGIN`.
+    actions:
+      - action: Add `BUILD_ROOT_TGEO_SUPPORT=ON` (and a `root` dependency) for `+dd4hep` in the eic-spack recipe, then bump the eic/containers pin to 0.3.0.
+        priority: medium
+        effort: S
+  dist.releases:
+    level: 2
+    confidence: medium
+    rationale: >-
+      Four SemVer releases since the March 2026 start, each with generated release notes, and the version
+      scheme is documented in `AGENTS.md`; there is no changelog, deprecation policy or release workflow, and
+      the tag/CMake version check failed for every tag.
+    evidence:
+      - metrics:releases.count_24m = 4
+      - metrics:releases.with_notes_fraction_24m = 1.0
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/AGENTS.md#L702-L736
+      - https://github.com/eic/G4OCCT/releases/tag/v0.3.0
+      - https://github.com/eic/G4OCCT/actions/runs/30217308911
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/CMakeLists.txt#L8-L13
+    gaps:
+      - No CHANGELOG flagging breaking changes or migration notes.
+      - No deprecation policy and no automated release workflow; `project(VERSION)` is 0.2.1 at tag v0.3.0 and the version check failed for v0.2.0, v0.2.1 and v0.3.0.
+    actions:
+      - action: Add a release workflow that bumps `project(VERSION)`, tags, and creates the GitHub release with a "Breaking changes" section, and add `CHANGELOG.md`.
+        priority: medium
+        effort: S
+  dist.dependencies:
+    level: 1
+    confidence: high
+    rationale: >-
+      Geant4 (11.3) and yaml-cpp (0.8) have minimum versions and test frameworks are fetched by hash, but
+      `find_package(OpenCASCADE)`, ROOT and DD4hep have no version constraint despite `AGENTS.md` stating OCCT 7.8.
+    evidence:
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/CMakeLists.txt#L118-L125
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/CMakeLists.txt#L184-L230
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/cmake/G4OCCTConfig.cmake.in
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/.github/dependabot.yml
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/src/tests/CMakeLists.txt#L222-L229
+      - metrics:ci.action_refs_not_sha_pinned = 91
+    gaps:
+      - "`find_package(OpenCASCADE)`, `find_package(ROOT ...)`, `find_package(DD4hep)` and the `find_dependency` calls in `G4OCCTConfig.cmake.in` have no minimum version."
+      - Two vendored Geant4 RayTracer headers in `src/tests/geometry/geant4_private/` record no Geant4 version.
+      - No `SECURITY.md`; `enarx/spdx@master` is unpinned; CI does not test minimum dependency versions.
+    actions:
+      - action: Add `7.8` to `find_package(OpenCASCADE ...)` and minimum versions for ROOT and DD4hep, and mirror them in `G4OCCTConfig.cmake.in`.
+        priority: high
+        effort: S
+  dist.reproducibility:
+    level: 1
+    confidence: medium
+    rationale: >-
+      A Spack environment and Dockerfile define the build environment and container images are pushed to
+      `ghcr.io/eic/g4occt` with SemVer tags, but using them is not documented and CI runs in the unpinned
+      eic_xl nightly rather than that image.
+    evidence:
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/.github/spack.yaml
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/Dockerfile
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/.github/workflows/container.yml#L55-L77
+      - metrics:files.dockerfile
+    gaps:
+      - No documentation of running G4OCCT in the published container or a pinned eic-shell version.
+      - The `g4occt` application's CSV outputs record no software versions or configuration.
+    actions:
+      - action: Document `docker run ghcr.io/eic/g4occt:<version>` and the eic-shell release each G4OCCT release was tested with in the README.
+        priority: medium
+        effort: S
+  dist.portability:
+    level: 1
+    confidence: high
+    rationale: >-
+      Tests run only on x86_64 Linux with the eic_xl default compiler; the container workflow compiles for
+      arm64 but with `BUILD_TESTING=OFF`.
+    evidence:
+      - metrics:ci.runs_on
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/.github/workflows/container.yml#L66-L77
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/Dockerfile#L23-L37
+      - metrics:code.site_specific_paths = []
+    gaps:
+      - No test run with a second compiler (Clang) or a second architecture (aarch64) or OS.
+    actions:
+      - action: Add a Clang build-and-ctest job in eic_xl (`CXX=clang++`) and an `ubuntu-24.04-arm` ctest job.
+        priority: medium
+        effort: S
+  eic.reuse:
+    level: 2
+    confidence: medium
+    rationale: >-
+      G4OCCT builds on Geant4, DD4hep (detector-element plugins, DDG4 handoff) and ROOT TGeo and implements
+      only CAD/BRep navigation, which no EIC component provides; the custom DDG4 geometry construction is
+      justified in the docs. No other EIC repository uses its components yet and no upstream contributions were found.
+    evidence:
+      - metrics:eic.components_detected
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/docs/dd4hep_plugin.md
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/src/dd4hep/G4OCCT_DDG4DetectorGeometryConstruction.cc
+      - https://github.com/eic/epic/pull/1140
+    gaps:
+      - No EIC software reuses the G4OCCT DD4hep plugins (eic/epic#1140 is open).
+    actions:
+      - action: Land the HCAL pilot in eic/epic#1140 (or another epic subsystem) using `G4OCCT_STEPSolid`.
+        priority: medium
+        effort: M
+  eic.data-model:
+    level: 2
+    confidence: medium
+    rationale: >-
+      Inputs are STEP (ISO 10303) files and DD4hep compact XML, `step2dd4hep` writes DD4hep compact XML, and
+      the material- and sensitive-detector-map XML formats are documented; map formats carry no version and
+      there are no round-trip tests.
+    evidence:
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/docs/step2dd4hep.md
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/docs/material_bridging.md
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/AGENTS.md#L451-L470
+    gaps:
+      - Material-map and SD-map XML have no declared or checked format version.
+      - No round-trip test (STEP → `step2dd4hep` compact → DD4hep load → compare volumes).
+    actions:
+      - action: Add a ctest that runs `step2dd4hep` on a fixture, loads the generated compact with DD4hep, and compares volumes with the fixture expectations.
+        priority: low
+        effort: S
+  eic.environment:
+    level: 1
+    confidence: medium
+    rationale: >-
+      Every CI job builds and tests inside eic_xl:nightly via `eic/run-cvmfs-osg-eic-shell`, but building or
+      using G4OCCT in eic-shell is not documented for users (only a CI design snippet in `docs/dd4hep_plugin.md`).
+    evidence:
+      - metrics:ci.uses_eic_shell = true
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/.github/workflows/ci.yml#L38-L57
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/docs/dd4hep_plugin.md#L388-L416
+    gaps:
+      - README and docs do not describe building or running G4OCCT in eic-shell.
+      - CI tests only `eic_xl:nightly`, not a pinned stable eic-shell release.
+    actions:
+      - action: Add an "Using G4OCCT in eic-shell" README section (prebuilt package and from-source build).
+        priority: medium
+        effort: S
+  eic.currency:
+    level: 2
+    confidence: medium
+    rationale: >-
+      The build with -Werror and the functional tests pass against the current nightly (Geant4 11.4.1,
+      OpenCASCADE 8.0, ROOT 6.40.04), but ASan leak failures in TGeoOCCTSolid tests appeared on `main` after
+      OpenCASCADE 8.0 entered the stack and have been unresolved since 2026-09-14.
+    evidence:
+      - https://github.com/eic/G4OCCT/actions/runs/34890504065
+      - https://github.com/eic/G4OCCT/pull/375
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/CMakeLists.txt#L47-L53
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/spack-environment/packages.yaml
+    gaps:
+      - Sanitizer failures against the current nightly stack are not fixed within the eic-shell cycle.
+    actions:
+      - action: Resolve the LeakSanitizer reports in `TGeoOCCTSolid.MeshHooksProduceDrawableMesh`, `RootDrawingSmoke` and `TGeoOCCTSolidDD4hepEval.WrapsAsDD4hepSolid` under the current nightly.
+        priority: medium
+        effort: S
+  via.license:
+    level: 2
+    confidence: high
+    rationale: >-
+      GitHub detects LGPL-2.1, the project declares LGPL-2.1-or-later in LICENSE.spdx and the container label,
+      and SPDX headers are enforced in CI; contribution terms are not documented and LICENSE.spdx does not list
+      the Geant4-licensed example and test files.
+    evidence:
+      - metrics:repo.license_spdx = LGPL-2.1
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/LICENSE.spdx
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/.github/workflows/spdx.yml#L20-L29
+      - https://github.com/eic/G4OCCT/blob/c58db1b0cda140d447d37e3a499a9b8306d0b93a/AGENTS.md#L17-L84
+    gaps:
+      - No documented contribution terms (inbound = outbound or DCO).
+      - Third-party Geant4 code (examples B1/B4c, `geant4_private/` headers) is not recorded in LICENSE.spdx, which still states version 0.1.0.
+    actions:
+      - action: Add an inbound=outbound statement to `CONTRIBUTING.md` and list the Geant4-licensed paths in `LICENSE.spdx` (or adopt REUSE with `REUSE.toml`).
+        priority: low
+        effort: S
+  via.citation:
+    level: 0
+    confidence: high
+    rationale: >-
+      No CITATION.cff, Zenodo metadata, DOI, author list or citation request exists.
+    evidence: []
+    gaps:
+      - No machine-readable citation metadata or DOI.
+      - No author or contributor list.
+    actions:
+      - action: Add `CITATION.cff` with the authors and enable the Zenodo–GitHub integration for release DOIs.
+        priority: high
+        effort: S
+  via.adoption:
+    level: 1
+    confidence: medium
+    rationale: >-
+      G4OCCT ships in eic-shell, and one contributor outside the main author reported and fixed a units issue
+      in the DD4hep path, but no EIC repository depends on it and the epic HCAL pilot (eic/epic#1140) is unmerged.
+    evidence:
+      - metrics:packaging.in_eic_shell = true
+      - metrics:eic.eic_spack_dependents = []
+      - https://github.com/eic/G4OCCT/issues/366
+      - https://github.com/eic/epic/pull/1140
+    gaps:
+      - Not a dependency of any other EIC repository and not used in benchmarks or simulation campaigns.
+    actions:
+      - action: Merge a G4OCCT-based geometry path in eic/epic or add a detector_benchmarks job comparing a STEP-backed subsystem with its GDML/CSG version.
+        priority: medium
+        effort: M
+  via.support:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The single maintainer is identifiable (eic-spack maintainer, release author) with a public university
+      affiliation, and the repository is in the eic organization, but no working group ownership, funding or
+      institutional commitment is stated.
+    evidence:
+      - https://github.com/eic/eic-spack/blob/5b666599332b0974af162067e1a075d1661a3580/spack_repo/eic/packages/g4occt/package.py#L16
+      - metrics:releases.authors_24m = 1
+    gaps:
+      - No owning EIC/ePIC working group or funding acknowledgement in the README or docs.
+    actions:
+      - action: State the responsible ePIC working group and the maintainers' institutions and funding in the README.
+        priority: high
+        effort: S

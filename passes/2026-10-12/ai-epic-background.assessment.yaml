@@ -1,0 +1,443 @@
+schema_version: 1
+project: ai-epic-background
+pass: "2026-10-12"
+commit: 0681472bb513d7af20aa6c5507eef41d1624618e
+assessor: { agent: claude-code, model: claude-opus-5-5 }
+summary: >-
+  One author wrote all 46 commits, 46 of 48 first-parent commits were pushed directly to `main`,
+  and the repository has no LICENSE file (the README says "MIT — see `LICENSE`"), no tests, no
+  releases and no CI beyond a documentation deployment. The README still describes the removed
+  `csv_convert/` and `full-sim-pipeline/` directories, and the pipeline code now lives in an
+  unlicensed submodule (JeffersonLab/msf-simulation-pipeline) outside the eic organization. The
+  established practices are a hosted VitePress site that documents the pipeline, the background
+  mixing and the `trk_hits` CSV schema, and a dataset catalog that tracks the ePIC campaigns on Rucio
+  up to 26.07.1.
+criteria:
+  eng.change-control:
+    level: 1
+    confidence: high
+    rationale: >-
+      The history is public, but only 2 of 48 first-parent commits in 12 months came from PRs (both
+      Dependabot), no PR was reviewed, and `main` has no branch protection or ruleset.
+    evidence:
+      - metrics:git.first_parent_pr_fraction_12m = 0.042
+      - metrics:repo.default_branch_protected = false
+      - metrics:repo.rulesets = 0
+      - https://github.com/eic/ai-epic-background/pull/3
+    gaps:
+      - Under 80% of default-branch changes arrive through PRs.
+      - No merged PR has a review from someone other than the author.
+    actions:
+      - action: Enable a ruleset on `main` that requires a pull request with one approving review, and route all changes through PRs.
+        priority: high
+        effort: S
+  eng.ci:
+    level: 1
+    confidence: high
+    rationale: >-
+      The only workflow builds and deploys the VitePress docs on pushes to `main`; it has no
+      `pull_request` trigger and runs no Python tests or scripts.
+    evidence:
+      - https://github.com/eic/ai-epic-background/blob/0681472bb513d7af20aa6c5507eef41d1624618e/.github/workflows/documentation.yml#L1-L37
+      - metrics:ci.pr_triggered_workflows = []
+      - metrics:ci.default_branch_success_rate = 0.932
+    gaps:
+      - No workflow runs on pull requests.
+      - CI does not run any test suite or the analysis scripts.
+    actions:
+      - action: Add `.github/workflows/test.yml` triggered on `pull_request` and `push` to `main` that runs `uv sync` and `uv run pytest`.
+        priority: medium
+        effort: S
+      - action: Add a `pull_request` trigger with a build-only job (no deploy) to `.github/workflows/documentation.yml`.
+        priority: low
+        effort: S
+  eng.testing:
+    level: 0
+    confidence: high
+    rationale: >-
+      The repository contains no test files and no test framework; `scripts/check_podio_files.py`
+      validates data files and is not a test of the code.
+    evidence:
+      - metrics:code.test_files = 0
+      - metrics:code.test_frameworks = []
+    gaps:
+      - No automated tests for the scripts in `scripts/` or `analyses/`.
+    actions:
+      - action: Add pytest tests in `tests/` for `concat_runs_with_unique_events` in `scripts/merge_reco_particles_to_feather.py` and the DID grouping in `scripts/summarize_rucio_dids.py`, using small fixture CSV and text files.
+        priority: high
+        effort: S
+  eng.static-quality:
+    level: 0
+    confidence: high
+    rationale: >-
+      No formatter, linter, type checker or pre-commit configuration exists; `pandas-stubs` is
+      declared as a dependency but no mypy configuration uses it.
+    evidence:
+      - metrics:files.python_lint = []
+      - metrics:files.pre_commit = []
+      - metrics:files.mypy = []
+    gaps:
+      - No formatter or linter configured or enforced.
+    actions:
+      - action: Add `.pre-commit-config.yaml` with `ruff` and `ruff-format` hooks and enable pre-commit.ci on the repository.
+        priority: high
+        effort: S
+  eng.modularity:
+    level: 1
+    confidence: medium
+    rationale: >-
+      `pyproject.toml` defines a uv environment requiring Python 3.12 or later, but it has no
+      build-system or package, and the code is a set of standalone argparse scripts with no shared
+      module or installable entry points.
+    evidence:
+      - https://github.com/eic/ai-epic-background/blob/0681472bb513d7af20aa6c5507eef41d1624618e/pyproject.toml#L1-L31
+      - metrics:code.requires_python = ">=3.12"
+      - metrics:code.source_lines = 1272
+    gaps:
+      - Scripts are not organized as an installable package with defined interfaces.
+      - The background campaign config in the submodule hard-codes a user directory and a local `.sif` image.
+    actions:
+      - action: Add a `[build-system]` table and move `scripts/*.py` into a package with `[project.scripts]` entry points.
+        priority: medium
+        effort: M
+  doc.user:
+    level: 1
+    confidence: high
+    rationale: >-
+      The hosted docs give run commands for the converters and the time-vs-z analysis, but the README
+      describes `csv_convert/` and `full-sim-pipeline/` directories that no longer exist, and no
+      dependency versions or eic-shell install route are given for the Python tools.
+    evidence:
+      - https://github.com/eic/ai-epic-background/blob/0681472bb513d7af20aa6c5507eef41d1624618e/README.md#L10-L17
+      - https://github.com/eic/ai-epic-background/blob/0681472bb513d7af20aa6c5507eef41d1624618e/docs/csv-convert-running.md#L1-L20
+      - https://github.com/eic/ai-epic-background/blob/0681472bb513d7af20aa6c5507eef41d1624618e/docs/csv-convert-running.md#L72-L80
+      - https://eic.github.io/ai-epic-background/
+    gaps:
+      - README layout and quick start refer to removed directories.
+      - Install instructions do not name dependency versions or document setup inside eic-shell.
+      - "`docs/full-sim-pipeline.md` links the submodule as `eic/simulation-pipeline`, which returns 404."
+    actions:
+      - action: Rewrite the README layout and quick start for the current tree (`simulation-pipeline/`, `scripts/`, `analyses/`) and add an "Installation" section covering `uv sync` and eic-shell with versions.
+        priority: high
+        effort: S
+      - action: Fix the submodule link in `docs/full-sim-pipeline.md` to the URL in `.gitmodules`.
+        priority: low
+        effort: S
+  doc.developer:
+    level: 1
+    confidence: high
+    rationale: >-
+      Most scripts have module and function docstrings and the docs site has pipeline overview
+      diagrams, but no API reference is generated.
+    evidence:
+      - https://github.com/eic/ai-epic-background/blob/0681472bb513d7af20aa6c5507eef41d1624618e/scripts/merge_reco_particles_to_feather.py#L1-L19
+      - https://github.com/eic/ai-epic-background/blob/0681472bb513d7af20aa6c5507eef41d1624618e/docs/index.md#L1-L72
+      - metrics:files.sphinx = []
+    gaps:
+      - No generated API documentation.
+    actions:
+      - action: Generate API pages for `scripts/` and `analyses/` (for example with `mkdocstrings` or `pdoc`) in the docs build in `.github/workflows/documentation.yml`.
+        priority: medium
+        effort: M
+  doc.contributing:
+    level: 1
+    confidence: medium
+    rationale: >-
+      `analyses/README.md` has a three-step note on adding an analysis (pointing to a removed
+      `csv_convert/pyproject.toml`), and the eic organization PR and issue templates apply; there is
+      no CONTRIBUTING file covering setup, tests, conventions or the PR process.
+    evidence:
+      - https://github.com/eic/ai-epic-background/blob/0681472bb513d7af20aa6c5507eef41d1624618e/analyses/README.md#L13-L19
+      - metrics:community.files.contributing = false
+      - https://github.com/eic/.github/blob/3231e4d33f430f9806db8703b2feaafca084e18e/.github/pull_request_template.md
+    gaps:
+      - No CONTRIBUTING describing environment setup, testing, conventions and PR process.
+    actions:
+      - action: Add `CONTRIBUTING.md` covering `uv sync`, running scripts in eic-shell, the submodule update procedure and the PR process.
+        priority: medium
+        effort: S
+  com.responsiveness:
+    level: 1
+    confidence: low
+    rationale: >-
+      No issues and no non-bot PRs were opened in 12 months, so no response time can be measured;
+      Dependabot PR #5 has been open since 2026-08-02 without action and no triage process exists.
+    evidence:
+      - metrics:issues.created_12m = 0
+      - metrics:prs.created_12m = 0
+      - https://github.com/eic/ai-epic-background/pull/5
+    gaps:
+      - No public record of responses to issues or contributor PRs, and no labels or triage process.
+    actions:
+      - action: Link the issue tracker from the docs site as the place to report dataset or script problems, and triage new issues with labels within a week.
+        priority: medium
+        effort: S
+  com.contributors:
+    level: 0
+    confidence: high
+    rationale: >-
+      One author made all commits in 24 months and no external PR has been merged.
+    evidence:
+      - metrics:git.authors_24m = 1
+      - metrics:prs.external_fraction_12m = null
+    gaps:
+      - Only one active author.
+    actions:
+      - action: Recruit a co-developer from the ePIC background or AI/ML working group and route their changes through PRs.
+        priority: high
+        effort: M
+  com.bus-factor:
+    level: 0
+    confidence: high
+    rationale: >-
+      One author wrote 100% of commits in 24 months and nobody else has reviewed or merged changes.
+    evidence:
+      - metrics:git.bus_factor_50_24m = 1
+      - metrics:git.top_author_share_24m = 1.0
+      - metrics:prs.distinct_reviewers_12m = 0
+    gaps:
+      - No second person reviews, merges or is named as owner.
+    actions:
+      - action: Add `CODEOWNERS` naming two maintainers and have the second maintainer review every PR.
+        priority: high
+        effort: S
+  com.governance:
+    level: 0
+    confidence: medium
+    rationale: >-
+      Neither the README, the docs site nor a CODEOWNERS file names the maintainers, and there is no
+      decision process, roadmap or milestone.
+    evidence:
+      - metrics:files.codeowners = []
+      - metrics:files.governance = []
+    gaps:
+      - Maintainers are not identified in the repository.
+    actions:
+      - action: Add a "Maintainers" section to the README naming the maintainers and the owning ePIC working group.
+        priority: high
+        effort: S
+  com.conduct:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The eic organization issue-template configuration links the ePIC Mattermost for questions, but
+      no code of conduct applies at repository or organization level.
+    evidence:
+      - https://github.com/eic/.github/blob/3231e4d33f430f9806db8703b2feaafca084e18e/.github/ISSUE_TEMPLATE/config.yml
+      - metrics:community.files.code_of_conduct = false
+    gaps:
+      - No code of conduct with a reporting contact.
+    actions:
+      - action: Add `CODE_OF_CONDUCT.md` with a reporting contact, or link the ePIC collaboration code of conduct from the README.
+        priority: high
+        effort: S
+  dist.packaging:
+    level: 1
+    confidence: low
+    rationale: >-
+      The Python tools run from the repository through `uv run` against `pyproject.toml`, as the docs
+      show, but there is no package or recipe in any package manager.
+    evidence:
+      - https://github.com/eic/ai-epic-background/blob/0681472bb513d7af20aa6c5507eef41d1624618e/docs/csv-convert-running.md#L76-L80
+      - metrics:packaging.pypi = null
+      - metrics:packaging.eic_spack = null
+    gaps:
+      - No package recipe (PyPI, eic-spack, conda-forge).
+    actions:
+      - action: After packaging the scripts, publish the package to PyPI from a tag-triggered release workflow.
+        priority: medium
+        effort: M
+  dist.releases:
+    level: 0
+    confidence: high
+    rationale: >-
+      The repository has no tags or releases; users consume `main`.
+    evidence:
+      - metrics:releases.count_total = 0
+      - metrics:git.tags_total = 0
+    gaps:
+      - No releases or tags.
+    actions:
+      - action: Tag a first release (for example `v0.1.0`, matching `pyproject.toml`) with generated release notes, and state the version scheme in the README.
+        priority: high
+        effort: S
+  dist.dependencies:
+    level: 1
+    confidence: high
+    rationale: >-
+      Dependencies are listed in `pyproject.toml` without version constraints except `keras>=3.0`;
+      several (keras, jax, scikit-learn, duckdb, submitit) are not imported anywhere, and `pyarrow`,
+      needed by `to_feather`, is missing.
+    evidence:
+      - https://github.com/eic/ai-epic-background/blob/0681472bb513d7af20aa6c5507eef41d1624618e/pyproject.toml#L6-L31
+      - https://github.com/eic/ai-epic-background/blob/0681472bb513d7af20aa6c5507eef41d1624618e/scripts/merge_reco_particles_to_feather.py#L104-L110
+      - metrics:files.dependabot = []
+      - metrics:ci.action_refs_not_sha_pinned = 4
+    gaps:
+      - No minimum versions on Python dependencies and no Python lockfile.
+      - Declared set does not match what the code uses.
+    actions:
+      - action: Add minimum versions to every dependency in `pyproject.toml`, drop unused ones, add `pyarrow`, and commit `uv.lock`.
+        priority: medium
+        effort: S
+  dist.reproducibility:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The docs describe pinned containers and per-job seeds, and the submodule config `config-off-26-06.yaml`
+      pins `eic_xl:26.06.0-stable`, but the background campaign config uses a non-public `.sif` in a
+      user directory and the Python environment has no lockfile.
+    evidence:
+      - https://github.com/eic/ai-epic-background/blob/0681472bb513d7af20aa6c5507eef41d1624618e/docs/index.md#L62-L71
+      - https://github.com/JeffersonLab/msf-simulation-pipeline/blob/a3572f55fd3abc03e0ca9e709d4f90bc91921f2b/configs/config-off-26-06.yaml#L13
+      - https://github.com/JeffersonLab/msf-simulation-pipeline/blob/a3572f55fd3abc03e0ca9e709d4f90bc91921f2b/configs/config-msf-26-07-background.yaml#L10
+      - https://github.com/eic/ai-epic-background/blob/0681472bb513d7af20aa6c5507eef41d1624618e/docs/background.md#L89-L96
+    gaps:
+      - Not every campaign environment is publicly reproducible, and the Python environment is not locked.
+      - Seeds and configuration are not recorded in the produced CSV outputs.
+    actions:
+      - action: Pin every campaign config to a public `eic_xl` tag on CVMFS and commit `uv.lock` for the Python tools.
+        priority: medium
+        effort: S
+  dist.portability:
+    level: 1
+    confidence: medium
+    rationale: >-
+      Nothing beyond the docs site is built or tested in CI, and the production path documented is the
+      JLab SLURM farm with `/work` and `/farm_out` paths set in the campaign configs.
+    evidence:
+      - metrics:ci.runs_on = ["ubuntu-latest"]
+      - metrics:code.site_specific_paths = []
+      - https://github.com/eic/ai-epic-background/blob/0681472bb513d7af20aa6c5507eef41d1624618e/docs/full-sim-pipeline-campaigns.md#L24-L41
+    gaps:
+      - No platform or Python-version matrix is tested.
+    actions:
+      - action: Run the test workflow on Python 3.12 and 3.13 (the eic-shell version) in a matrix.
+        priority: medium
+        effort: S
+  eic.reuse:
+    level: 2
+    confidence: medium
+    rationale: >-
+      The chain uses afterburner, npsim, EICrecon and the official background cocktails, the
+      converters read EDM4eic through podio, and the Python tools read podio files with uproot; no
+      parallel implementation was found, but nothing is contributed upstream or reused by other EIC
+      software.
+    evidence:
+      - metrics:eic.components_detected.uproot.files = 2
+      - https://github.com/eic/ai-epic-background/blob/0681472bb513d7af20aa6c5507eef41d1624618e/scripts/podio_metadata.py#L1-L30
+      - https://github.com/eic/ai-epic-background/blob/0681472bb513d7af20aa6c5507eef41d1624618e/docs/full-sim-pipeline.md#L1-L17
+    gaps:
+      - No upstream contributions or reuse by other EIC repositories.
+    actions:
+      - action: Contribute the EDM4eic-to-CSV flattening as a benchmark or tool in an EIC repository such as `eic/detector_benchmarks`.
+        priority: low
+        effort: M
+  eic.data-model:
+    level: 1
+    confidence: medium
+    rationale: >-
+      Inputs are EDM4eic/EDM4hep podio files, but the CSV outputs have a documented schema only for
+      `trk_hits`; the other converters are documented as "read their `.cxx` headers".
+    evidence:
+      - https://github.com/eic/ai-epic-background/blob/0681472bb513d7af20aa6c5507eef41d1624618e/docs/data-format.md#L1-L13
+      - https://github.com/eic/ai-epic-background/blob/0681472bb513d7af20aa6c5507eef41d1624618e/docs/data-format.md#L15-L83
+    gaps:
+      - CSV schemas for the reco_particles, calo_clusters, mc_particles and other roles are undocumented.
+    actions:
+      - action: Document the column layout of every converter role in `docs/data-format.md`, including the EDM4eic version of the source files.
+        priority: medium
+        effort: S
+  eic.environment:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The docs say to run the converters inside the `eic_xl` container, but the Python tools use a
+      separate uv environment and no CI runs in an eic container image.
+    evidence:
+      - https://github.com/eic/ai-epic-background/blob/0681472bb513d7af20aa6c5507eef41d1624618e/docs/csv-convert-running.md#L9-L20
+      - metrics:ci.uses_eic_shell = false
+    gaps:
+      - No CI job runs in an eic container image.
+      - Running the Python tools in eic-shell is not documented.
+    actions:
+      - action: Add a CI job using `eic/run-cvmfs-osg-eic-shell` that runs the tests and `scripts/check_podio_files.py` on a small EDM4eic sample.
+        priority: medium
+        effort: S
+  eic.currency:
+    level: 2
+    confidence: low
+    rationale: >-
+      The dataset catalog covers the 26.07.1 ePIC campaign and the CSV campaign config pins
+      `eic_xl:26.06.0-stable`; no incompatibility issues exist, but no CI checks new stack releases.
+    evidence:
+      - https://github.com/eic/ai-epic-background/blob/0681472bb513d7af20aa6c5507eef41d1624618e/docs/data.md#L33-L37
+      - https://github.com/JeffersonLab/msf-simulation-pipeline/blob/a3572f55fd3abc03e0ca9e709d4f90bc91921f2b/configs/config-off-26-06.yaml#L13
+    gaps:
+      - Adaptation to new component releases is not checked automatically.
+    actions:
+      - action: Run the eic-shell CI job against `eic_xl:nightly` on a weekly schedule.
+        priority: medium
+        effort: S
+  via.license:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The README and docs footer state MIT, but no LICENSE file exists, no SPDX identifier is
+      detected, and the bundled `simulation-pipeline` submodule has no license.
+    evidence:
+      - https://github.com/eic/ai-epic-background/blob/0681472bb513d7af20aa6c5507eef41d1624618e/README.md#L72-L74
+      - metrics:repo.license_spdx = null
+      - metrics:files.license = []
+    gaps:
+      - No LICENSE file with the MIT text, and no license in `pyproject.toml`.
+      - The submodule code has no license.
+    actions:
+      - action: Add `LICENSE` with the MIT text, set `license = "MIT"` in `pyproject.toml`, and ask the submodule owners to add a license.
+        priority: high
+        effort: S
+  via.citation:
+    level: 0
+    confidence: high
+    rationale: >-
+      There is no CITATION.cff, DOI, author list or citation request.
+    evidence:
+      - metrics:files.citation_cff = []
+      - metrics:files.zenodo_json = []
+    gaps:
+      - No citation metadata.
+    actions:
+      - action: Add `CITATION.cff` listing the authors and enable the Zenodo–GitHub integration.
+        priority: high
+        effort: S
+  via.adoption:
+    level: 0
+    confidence: medium
+    rationale: >-
+      No EIC repository, benchmark or campaign references the project; the only code search hit is
+      the shared pipeline README, and the single fork has no commits of its own.
+    evidence:
+      - metrics:packaging.in_eic_shell = false
+      - metrics:eic.eic_spack_dependents = []
+      - https://github.com/JeffersonLab/msf-simulation-pipeline
+    gaps:
+      - No public evidence of use beyond the author.
+    actions:
+      - action: List the analyses and groups using the datasets in the README and link the docs site from the ePIC background working group pages.
+        priority: high
+        effort: S
+  via.support:
+    level: 0
+    confidence: low
+    rationale: >-
+      The repository is in the eic organization, but no maintainer, affiliation, owning ePIC body or
+      funding is stated, and no commit email domain is recorded.
+    evidence:
+      - metrics:git.email_domains_24m = 0
+      - https://github.com/eic/ai-epic-background/blob/0681472bb513d7af20aa6c5507eef41d1624618e/README.md#L76-L82
+    gaps:
+      - No identifiable maintainer affiliation or institutional commitment.
+    actions:
+      - action: State the maintainers' institutions and the owning ePIC working group in the README.
+        priority: high
+        effort: S

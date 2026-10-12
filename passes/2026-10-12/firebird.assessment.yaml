@@ -1,0 +1,427 @@
+schema_version: 1
+project: firebird
+pass: "2026-10-12"
+commit: ee65aa1055a78426ca042d4ed32fda653c3ae892
+assessor: { agent: claude-code, model: claude-opus-5-5 }
+summary: >-
+  pyrobird ships in eic-shell and Firebird is linked as the EIC event display; CI runs the TypeScript and pytest suites, a Python 3.10-3.14 matrix and a server integration test on every PR, with 97% of default-branch runs succeeding.
+  Knowledge is concentrated (bus factor 1, top author 72% of commits, 2 active authors in 12 months, no external PRs), and a 467-file PR (#137) was merged without human review.
+  There are no git tags, GitHub releases or release notes, no formatter, no CONTRIBUTING, code of conduct or citation metadata, and the DD4hep plugin is neither built in CI nor tested in eic-shell.
+criteria:
+  eng.change-control:
+    level: 2
+    confidence: high
+    rationale: >-
+      90% of first-parent commits in 12 months came from PRs and 57% of merged PRs were reviewed by a non-author, but branch protection requires zero approvals and admins can bypass the ruleset.
+    evidence:
+      - metrics:git.first_parent_pr_fraction_12m = 0.9
+      - metrics:prs.reviewed_fraction_12m = 0.571
+      - https://github.com/eic/firebird/rules/10656024
+      - https://github.com/eic/firebird/pull/137
+    gaps:
+      - Fewer than 90% of merged PRs are reviewed; PR 137 (467 files changed) was self-merged without a human review.
+      - Branch protection sets `required_approving_review_count` to 0 and there is no CODEOWNERS file.
+    actions:
+      - action: Set `required_approving_review_count` to 1 on `main` and remove the always-bypass for the admin role in ruleset 10656024.
+        priority: medium
+        effort: S
+      - action: Add `.github/CODEOWNERS` assigning `firebird-ng/`, `packages/`, `pyrobird/` and `dd4hep-plugin/` to at least two reviewers.
+        priority: medium
+        effort: S
+  eng.ci:
+    level: 2
+    confidence: high
+    rationale: >-
+      Three workflows run the frontend suites, pytest on Python 3.10-3.14 and a build-plus-server integration test on every PR and push, with 97% default-branch success; the DD4hep plugin is not built and the required checks are stale.
+    evidence:
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/.github/workflows/frontend.yaml#L3-L86
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/.github/workflows/pyrobird.yaml#L3-L43
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/.github/workflows/integration-tests.yml#L3-L60
+      - metrics:ci.default_branch_success_rate = 0.971
+    gaps:
+      - The `dd4hep-plugin/` CMake project is not built in any workflow.
+      - Ruleset 10656024 requires `integration-tests (3.8)` and `(3.9)`, which no longer exist, and does not require `test-and-build` or `test (*)`.
+    actions:
+      - action: Update the required status checks in ruleset 10656024 to the current `test-and-build`, `test (3.x)` and `integration-tests (3.x)` job names.
+        priority: medium
+        effort: S
+      - action: Add a job that builds `dd4hep-plugin/` and runs `ddsim` with `firebird_steering.py` for a few events.
+        priority: medium
+        effort: M
+  eng.testing:
+    level: 2
+    confidence: high
+    rationale: >-
+      Vitest specs cover the core, root2dex, library and pack packages and pytest covers most pyrobird modules, with a server integration test and a root2dex/pyrobird parity test against reference DEX files; coverage is not published and 14% of merged PRs touch tests.
+    evidence:
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/packages/root2dex/src/parity.spec.ts#L1-L10
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/pyrobird/tests/integration_tests/test_server_start.py#L21-L25
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/pyrobird/tests/unit_tests/test_dex_schema.py#L46-L60
+      - metrics:prs.test_touching_fraction_12m = 0.143
+    gaps:
+      - Test coverage is not measured or published.
+      - Fewer than 40% of merged PRs in 12 months touch test files.
+      - The DD4hep plugin has no tests.
+    actions:
+      - action: Run `coverage run -m pytest` and `vitest --coverage` in CI and upload the reports to Codecov.
+        priority: medium
+        effort: S
+      - action: Require a test change in PRs that change `pyrobird/pyrobird/` or `packages/*/src/`, stated in the PR template.
+        priority: low
+        effort: S
+  eng.static-quality:
+    level: 1
+    confidence: high
+    rationale: >-
+      CodeQL default setup analyses every PR and TypeScript compiles with `strict`, but no formatter or linter (Prettier, ESLint, ruff) is configured, and `qodana.yaml` is not run in CI.
+    evidence:
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/firebird-ng/tsconfig.json#L6
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/pyrobird/qodana.yaml#L1-L29
+      - metrics:files.pre_commit = []
+      - metrics:files.python_lint = []
+    gaps:
+      - No formatter is configured or enforced for TypeScript, Python or C++.
+      - The CodeQL check failed on PR 137, which was merged anyway.
+    actions:
+      - action: Add `.pre-commit-config.yaml` with `ruff`, `ruff-format`, `prettier` and `clang-format` and enable pre-commit.ci.
+        priority: high
+        effort: S
+  eng.modularity:
+    level: 3
+    confidence: medium
+    rationale: >-
+      The code is split into npm workspace packages with `public-api.ts` entry points, published as `@dexvis/*` on npm, a pyproject-based Python package with a CLI, and a C++20 DD4hep plugin built with CMake; the architecture is documented in `docs/extensions.md`, `docs/design.md` and `CLAUDE.md`.
+    evidence:
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/package.json#L5-L17
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/packages/firebird-ng/api/src/public-api.ts
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/dd4hep-plugin/CMakeLists.txt#L17-L23
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/pyrobird/pyproject.toml#L13
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/docs/extensions.md#L1-L12
+    gaps: []
+    actions: []
+  doc.user:
+    level: 2
+    confidence: medium
+    rationale: >-
+      The hosted VitePress site has a pip-based local-run tutorial with downloadable sample data, documents the pyrobird server options, and has a troubleshooting page; the docs are not versioned with releases and no tutorial is executed in CI.
+    evidence:
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/docs/tutorials/02_run_local.md#L8-L81
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/pyrobird/README.md#L114-L124
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/docs/troubleshoot.md#L1-L33
+      - metrics:repo.homepage = https://eic.github.io/firebird/
+    gaps:
+      - Documentation is published only for `main`, not per release.
+      - The tutorials are not executed in CI.
+      - The docs do not state that pyrobird is available in eic-shell.
+    actions:
+      - action: Add a CI job that runs the `02_run_local` steps (`pyrobird serve`, fetch the sample files through the API) on the sample data.
+        priority: medium
+        effort: S
+  doc.developer:
+    level: 1
+    confidence: high
+    rationale: >-
+      Most pyrobird public functions (85 of 102) and the TypeScript API files carry docstrings, and the architecture is described in `docs/extensions.md`, `docs/design.md` and `CLAUDE.md`, but no API reference is generated.
+    evidence:
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/docs/design.md
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/CLAUDE.md#L421-L430
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/pyrobird/pyrobird/dex.py#L52-L59
+    gaps:
+      - No generated API documentation (TypeDoc, Sphinx or similar).
+    actions:
+      - action: Generate TypeDoc for `packages/*` and Sphinx autodoc for `pyrobird` in `docs.yaml` and publish them with the VitePress site.
+        priority: medium
+        effort: M
+  doc.contributing:
+    level: 2
+    confidence: medium
+    rationale: >-
+      The README covers setup and running the test suites, the pyrobird README states conventions and the PR process, `CLAUDE.md` lists TypeScript standards, and the organization supplies PR and issue templates; review expectations, newcomer issues and a ready-made environment are missing.
+    evidence:
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/README.md#L50-L63
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/pyrobird/README.md#L63-L71
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/CLAUDE.md#L880-L895
+      - https://github.com/eic/.github/blob/3231e4d33f430f9806db8703b2feaafca084e18e/.github/pull_request_template.md
+    gaps:
+      - The guidance is spread over three files with no `CONTRIBUTING.md`, and review expectations are not documented.
+      - The `good first issue` label exists but no issue carries it.
+      - No devcontainer or eic-shell development environment is documented.
+    actions:
+      - action: Add `CONTRIBUTING.md` that consolidates setup, tests, conventions and review expectations, and label five newcomer issues `good first issue`.
+        priority: medium
+        effort: S
+  com.responsiveness:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The median first response is 0.18 days, but 13 of 19 open issues are older than one year, no issue opened in 12 months is labeled, and 40% received no response.
+    evidence:
+      - metrics:issues.median_first_response_days_12m = 0.18
+      - metrics:issues.open_older_365d = 13
+      - metrics:issues.labeled_fraction_12m = 0.0
+      - metrics:issues.unanswered_fraction_12m = 0.4
+    gaps:
+      - More than half of open issues are older than one year.
+      - New issues are not labeled or otherwise triaged; all 13 open PRs are older than 90 days.
+    actions:
+      - action: Apply the existing `[UI]`/`[pyrobird]`/`[engine]` labels to all open issues and close or update those older than one year.
+        priority: medium
+        effort: S
+  com.contributors:
+    level: 1
+    confidence: high
+    rationale: >-
+      Four authors were active in 24 months, but only two in 12 months, with no new authors and no merged PRs from outside the maintainer group.
+    evidence:
+      - metrics:git.authors_24m = 4
+      - metrics:git.authors_12m = 2
+      - metrics:git.new_authors_12m = 0
+      - metrics:prs.external_fraction_12m = 0.0
+    gaps:
+      - No external PRs have been merged.
+      - Institutional spread is not documented (`metrics:git.email_domains_24m = 0`).
+    actions:
+      - action: Recruit a co-developer from another ePIC institution through the ePIC software meetings and merge the open contributor PRs or close them.
+        priority: high
+        effort: M
+  com.bus-factor:
+    level: 1
+    confidence: high
+    rationale: >-
+      The top author wrote 72% of commits in 24 months (bus factor 1); two people review and three merge.
+    evidence:
+      - metrics:git.bus_factor_50_24m = 1
+      - metrics:git.top_author_share_24m = 0.722
+      - metrics:prs.distinct_reviewers_12m = 2
+      - metrics:prs.distinct_mergers_12m = 3
+    gaps:
+      - Bus factor (50%) is 1.
+      - No CODEOWNERS or maintainer list names at least 2 people.
+    actions:
+      - action: Add `.github/CODEOWNERS` and a maintainers section in the README naming at least two maintainers per component.
+        priority: high
+        effort: S
+  com.governance:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The maintainer is identifiable from `pyproject.toml` and decisions such as the CalVer switch are proposed in public issues, but there is no documented decision process, maintainer path or milestones.
+    evidence:
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/pyrobird/pyproject.toml#L17-L19
+      - https://github.com/eic/firebird/issues/87
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/docs/eic-requirements.md
+    gaps:
+      - No document stating who decides and how to become a reviewer or maintainer.
+    actions:
+      - action: Add `GOVERNANCE.md` naming the maintainers, the owning ePIC group, the decision process and the path to maintainership.
+        priority: medium
+        effort: S
+  com.conduct:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The organization issue-template configuration links the ePIC Mattermost and meetings as support channels, but no code of conduct applies at repository or organization level; GitHub Discussions is enabled with no threads.
+    evidence:
+      - https://github.com/eic/.github/blob/3231e4d33f430f9806db8703b2feaafca084e18e/.github/ISSUE_TEMPLATE/config.yml#L1-L15
+      - metrics:community.files.code_of_conduct = false
+    gaps:
+      - No code of conduct with a reporting contact.
+    actions:
+      - action: Add `CODE_OF_CONDUCT.md` linking the ePIC collaboration code of conduct and its reporting contact, and a "Getting help" section in the README.
+        priority: high
+        effort: S
+  dist.packaging:
+    level: 2
+    confidence: high
+    rationale: >-
+      pyrobird is on PyPI and in eic-spack (including 2026.10.0b1) and ships in eic-shell, but eic-shell pins an untagged git commit because 0.2.7 is broken on PyPI, and the DD4hep plugin has no recipe.
+    evidence:
+      - metrics:packaging.pypi.latest = 0.2.7
+      - metrics:packaging.in_eic_shell = true
+      - https://github.com/eic/eic-spack/blob/5b666599332b0974af162067e1a075d1661a3580/spack_repo/eic/packages/pyrobird/package.py#L24-L36
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/spack-environment/packages.yaml#L475-L479
+    gaps:
+      - eic-shell does not ship a released version; the last stable PyPI release (0.2.7) is marked broken in eic-spack.
+      - The eic-spack recipe still depends on `py-pyppeteer` for `+batch`, which the project replaced with playwright.
+      - The DD4hep plugin has no Spack recipe.
+    actions:
+      - action: Publish a stable CalVer release to PyPI, add it to the eic-spack `pyrobird` recipe (with `py-playwright` for `+batch`) and pin it in eic/containers.
+        priority: medium
+        effort: S
+  dist.releases:
+    level: 1
+    confidence: high
+    rationale: >-
+      Versions are uploaded to PyPI without git tags, GitHub releases or release notes; CalVer was agreed in an issue but is not documented in the repository.
+    evidence:
+      - metrics:git.tags_total = 0
+      - metrics:releases.count_total = 0
+      - https://github.com/eic/firebird/issues/87
+      - https://github.com/eic/firebird/issues/125
+    gaps:
+      - No tags, GitHub releases, release notes or changelog.
+      - The version scheme is not documented in the repository.
+    actions:
+      - action: Tag each release `vYYYY.MM.N`, create a GitHub release with generated notes, and state the CalVer scheme in the README.
+        priority: high
+        effort: S
+  dist.dependencies:
+    level: 1
+    confidence: high
+    rationale: >-
+      npm and uv lockfiles exist and Dependabot covers npm and GitHub Actions, but pyrobird's `pyproject.toml` gives a minimum version only for `flask-compress`, and CMake requires `fmt` and `Geant4` without versions.
+    evidence:
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/pyrobird/pyproject.toml#L30-L39
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/dd4hep-plugin/CMakeLists.txt#L48-L50
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/.github/dependabot.yml#L1-L13
+      - metrics:ci.action_refs_not_sha_pinned = 17
+    gaps:
+      - The published pyrobird package declares no minimum versions for `click`, `rich`, `pyyaml`, `flask`, `flask-cors`, `json5`, `uproot`.
+      - '`find_package(fmt)` and `find_package(Geant4)` have no `VERSION`.'
+    actions:
+      - action: Add tested minimum versions to every `[project] dependencies` entry and `VERSION` to the `fmt` and `Geant4` `find_package` calls.
+        priority: medium
+        effort: S
+  dist.reproducibility:
+    level: 1
+    confidence: medium
+    rationale: >-
+      `pyrobird/uv.lock` and `package-lock.json` pin the environment and CI installs from them, but converted DEX files record only the input file and entry count, not the pyrobird version or conversion options.
+    evidence:
+      - metrics:files.lockfile = [pyrobird/uv.lock]
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/pyrobird/pyrobird/cli/convert.py#L182-L186
+    gaps:
+      - DEX outputs do not record the converter version or configuration (cuts, box size, steering parameters).
+      - No eic-shell version is documented for the DD4hep plugin or releases.
+    actions:
+      - action: Write the pyrobird or plugin version and the conversion or steering options into the DEX `origin` object.
+        priority: medium
+        effort: S
+  dist.portability:
+    level: 2
+    confidence: medium
+    rationale: >-
+      pyrobird is tested on Python 3.10-3.14 with no site-specific paths in the code; CI runs only on `ubuntu-latest` with one Node.js version, though `package.json` declares Node 22, 24 and 26.
+    evidence:
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/.github/workflows/pyrobird.yaml#L16-L19
+      - metrics:ci.runs_on = [ubuntu-latest]
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/package.json#L42-L44
+    gaps:
+      - No macOS or aarch64 CI job, although issue 57 reports a macOS-specific problem.
+      - Only one of the declared Node.js versions is tested.
+    actions:
+      - action: Add `macos-latest` and `ubuntu-24.04-arm` jobs and a Node 22/24 matrix to `frontend.yaml` and `pyrobird.yaml`.
+        priority: medium
+        effort: S
+  eic.reuse:
+    level: 2
+    confidence: medium
+    rationale: >-
+      Event input is read from EDM4eic/EDM4hep podio files with uproot, geometry comes from the epic TGeo export, and trajectories are recorded with DD4hep DDG4 actions; the DEX JSON format is documented as the browser exchange format, and no upstream contributions or reuse by other EIC software were found.
+    evidence:
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/dd4hep-plugin/CMakeLists.txt#L48-L70
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/pyrobird/pyrobird/edm4hep.py#L22
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/docs/dex.md#L1-L5
+    gaps:
+      - No extension contributed upstream (for example the trajectory writer to DD4hep or npsim) and no EIC repository reuses a Firebird component.
+    actions:
+      - action: Offer the trajectory-writer action to npsim or DD4hep DDG4 so it ships with the simulation stack.
+        priority: low
+        effort: M
+  eic.data-model:
+    level: 2
+    confidence: medium
+    rationale: >-
+      Inputs are EDM4eic/EDM4hep podio ROOT files and TGeo geometry; the DEX output format has a published JSON Schema, a declared version that `collect_dex_problems` checks, and upgrade round-trip and schema tests; the EDM4eic/EDM4hep version of inputs is not read or checked.
+    evidence:
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/dex-schema/firebird-dex-v1.schema.json
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/pyrobird/pyrobird/dex.py#L210-L220
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/pyrobird/tests/unit_tests/test_dex.py#L193-L204
+    gaps:
+      - The podio/EDM4eic/EDM4hep version of input files is not checked; branch-name differences are handled by detection.
+    actions:
+      - action: Read the podio and EDM4eic/EDM4hep versions from the input file metadata in pyrobird and root2dex, record them in DEX `origin`, and warn on unsupported versions.
+        priority: medium
+        effort: S
+  eic.environment:
+    level: 1
+    confidence: high
+    rationale: >-
+      pyrobird ships in eic-shell and the plugin docs show building in `eicweb/eic_xl:nightly`, but no CI job runs in an eic container image.
+    evidence:
+      - metrics:ci.uses_eic_shell = false
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/docs/dd4hep-plugin.md#L156-L170
+    gaps:
+      - CI does not build or test the plugin or pyrobird in an eic container image.
+    actions:
+      - action: Add a workflow using `eic/run-cvmfs-osg-eic-shell` that builds `dd4hep-plugin/`, runs `npsim` with `firebird_steering.py`, and runs `pyrobird convert` on the output.
+        priority: medium
+        effort: S
+  eic.currency:
+    level: 2
+    confidence: medium
+    rationale: >-
+      The current eic-shell builds pyrobird (git commit 25b6556) and the plugin requires DD4hep 1.27 or later against the shipped 1.38, with no open stack-incompatibility issues; there is no nightly eic-shell CI, and eic-shell has not picked up the October 2026 rewrite.
+    evidence:
+      - metrics:packaging.eic_shell_version = git.25b6556e473b99dbbb3b4663d34d683e28acfd5e
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/dd4hep-plugin/CMakeLists.txt#L48
+    gaps:
+      - No CI against eic-shell nightly to catch DD4hep, Geant4 or uproot changes.
+    actions:
+      - action: Add an eic-shell job with `platform-release` set to `eic_xl:nightly` that builds the plugin and runs the pyrobird tests.
+        priority: medium
+        effort: S
+  via.license:
+    level: 2
+    confidence: high
+    rationale: >-
+      GPL-3.0-or-later is detected by GitHub and declared in `pyproject.toml`, the MIT packages carry their own LICENSE and `license` fields, and the README explains the split; there are no SPDX headers or contribution terms.
+    evidence:
+      - metrics:repo.license_spdx = GPL-3.0
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/pyrobird/pyproject.toml#L14-L16
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/README.md#L65-L70
+    gaps:
+      - No `SPDX-License-Identifier` headers in source files.
+      - No documented contribution terms (inbound = outbound or DCO).
+      - The eic-spack recipe declares `LGPL-3.0-or-later`, which differs from the project license.
+    actions:
+      - action: Add SPDX headers (GPL-3.0-or-later or MIT per directory) and run `reuse lint` in CI.
+        priority: low
+        effort: S
+  via.citation:
+    level: 0
+    confidence: high
+    rationale: >-
+      There is no CITATION.cff, `.zenodo.json`, codemeta, DOI or citation request.
+    evidence: []
+    gaps:
+      - No citation metadata or software DOI.
+    actions:
+      - action: Add `CITATION.cff` listing all contributors and enable the Zenodo-GitHub integration for tagged releases.
+        priority: high
+        effort: S
+  via.adoption:
+    level: 3
+    confidence: high
+    rationale: >-
+      pyrobird ships in eic-shell (with `+xrootd`), and the EIC website links the Firebird deployment as its event display.
+    evidence:
+      - metrics:packaging.in_eic_shell = true
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/spack-environment/packages.yaml#L475-L479
+      - https://github.com/eic/eic.github.io/blob/b948f32cba6a5885ef456a4709c078bf1b1aa2d0/_data/menus.yml#L30-L32
+    gaps: []
+    actions: []
+  via.support:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The repository is in the eic organization and the main maintainer's public profile lists an institution, but the documentation names no owning ePIC body, funding or institutional commitment.
+    evidence:
+      - https://github.com/eic/firebird/blob/ee65aa1055a78426ca042d4ed32fda653c3ae892/pyrobird/pyproject.toml#L17-L19
+      - https://github.com/eic/eic-spack/blob/5b666599332b0974af162067e1a075d1661a3580/spack_repo/eic/packages/pyrobird/package.py#L18
+    gaps:
+      - Maintenance responsibility is not assigned to an EIC or ePIC working group in the documentation.
+    actions:
+      - action: State in the README the owning ePIC working group, the maintainers' institutions and any funding.
+        priority: high
+        effort: S

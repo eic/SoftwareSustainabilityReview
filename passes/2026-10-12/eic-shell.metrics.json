@@ -1,0 +1,215 @@
+{
+  "schema_version": 1,
+  "project": "eic-shell",
+  "pass": "2026-10-12",
+  "repo_url": "https://github.com/eic/eic-shell",
+  "subdir": null,
+  "collected_at": "2026-10-12T20:00:27+00:00",
+  "collector_version": "0.2.0",
+  "windows_months": {
+    "short": 12,
+    "long": 24
+  },
+  "git": {
+    "head_sha": "70c57ee44b025f000139d99cca38d681a82bdf10",
+    "head_date": "2026-10-12T09:39:47-04:00",
+    "last_commit_date": "2026-10-12T09:39:47-04:00",
+    "commits_total": 87,
+    "commits_12m": 6,
+    "commits_24m": 6,
+    "authors_total": 5,
+    "authors_12m": 1,
+    "authors_24m": 1,
+    "new_authors_12m": 0,
+    "bus_factor_50_24m": 1,
+    "bus_factor_80_24m": 1,
+    "top_author_share_24m": 1.0,
+    "email_domains_24m": 0,
+    "first_parent_commits_12m": 12,
+    "first_parent_pr_fraction_12m": 0.917,
+    "tags_total": 0,
+    "tags_24m": 0,
+    "first_parent_resolved_via_api": 1
+  },
+  "files": {
+    "readme": [
+      "README.md"
+    ],
+    "license": [],
+    "contributing": [],
+    "code_of_conduct": [],
+    "citation_cff": [],
+    "codemeta": [],
+    "zenodo_json": [],
+    "security": [],
+    "changelog": [],
+    "governance": [],
+    "codeowners": [],
+    "authors": [],
+    "pr_template": [],
+    "issue_templates": [],
+    "dependabot": [
+      ".github/dependabot.yml"
+    ],
+    "renovate": [],
+    "pre_commit": [],
+    "clang_format": [],
+    "clang_tidy": [],
+    "editorconfig": [],
+    "python_lint": [],
+    "mypy": [],
+    "codecov": [],
+    "doxygen": [],
+    "sphinx": [],
+    "mkdocs": [],
+    "dockerfile": [],
+    "apptainer_def": [],
+    "spack_env": [],
+    "conda_env": [],
+    "devcontainer": [
+      ".devcontainer/devcontainer.json"
+    ],
+    "lockfile": [],
+    "gitlab_ci": [],
+    "other_ci": [],
+    "cmake": [],
+    "pyproject": [],
+    "setup_py": [],
+    "docs_dir": 0,
+    "examples_dir": 0,
+    "github_workflows": [
+      ".github/workflows/deploy.yml"
+    ]
+  },
+  "code": {
+    "languages": {
+      "shell": {
+        "files": 1,
+        "lines": 479
+      },
+      "python": {
+        "files": 1,
+        "lines": 336
+      }
+    },
+    "source_lines": 336,
+    "largest_source_files": [
+      {
+        "path": "install.py",
+        "lines": 336
+      }
+    ],
+    "test_files": 0,
+    "test_frameworks": [],
+    "cxx_standard": [],
+    "requires_python": null,
+    "site_specific_paths": []
+  },
+  "eic": {
+    "components_detected": {},
+    "domain_components": [],
+    "is_component": null,
+    "vendored_candidates": [],
+    "submodules": []
+  },
+  "ci": {
+    "workflow_count": 1,
+    "pr_triggered_workflows": [],
+    "runs_on": [
+      "ubuntu-latest"
+    ],
+    "container_images": [],
+    "uses_eic_shell": false,
+    "actions_used": [
+      "actions/checkout",
+      "actions/configure-pages",
+      "actions/deploy-pages",
+      "actions/jekyll-build-pages",
+      "actions/upload-pages-artifact"
+    ],
+    "action_refs_not_sha_pinned": 5,
+    "other_ci": [],
+    "default_branch_runs": 6,
+    "default_branch_success_rate": 1.0,
+    "last_default_branch_run": "2026-10-12T13:39:51Z"
+  },
+  "repo": {
+    "full_name": "eic/eic-shell",
+    "default_branch": "main",
+    "archived": false,
+    "fork": false,
+    "created_at": "2022-11-24T00:44:01Z",
+    "pushed_at": "2026-10-12T14:23:14Z",
+    "stars": 2,
+    "forks": 5,
+    "homepage": "https://eic.github.io/eic-shell",
+    "license_spdx": null,
+    "topics": [],
+    "has_issues": true,
+    "has_discussions": false,
+    "open_issues": 9,
+    "open_prs": 4,
+    "default_branch_protected": true,
+    "rulesets": 0,
+    "languages_github": {
+      "Shell": 0.579,
+      "Python": 0.421
+    }
+  },
+  "community": {
+    "health_percentage": 37,
+    "files": {
+      "code_of_conduct": false,
+      "code_of_conduct_file": false,
+      "contributing": false,
+      "issue_template": false,
+      "license": false,
+      "pull_request_template": true,
+      "readme": true
+    }
+  },
+  "releases": {
+    "count_total": 0,
+    "count_24m": 0,
+    "latest_tag": null,
+    "latest_date": null,
+    "authors_24m": 0,
+    "with_notes_fraction_24m": null
+  },
+  "issues": {
+    "created_12m": 6,
+    "sampled": false,
+    "closed_of_created_12m": 1,
+    "median_first_response_days_12m": 0.57,
+    "unanswered_fraction_12m": 0.5,
+    "labeled_fraction_12m": 0.0,
+    "open_total": 9,
+    "open_older_365d": 4
+  },
+  "prs": {
+    "created_12m": 7,
+    "sampled": false,
+    "merged_12m": 3,
+    "median_days_to_merge_12m": 0.64,
+    "reviewed_fraction_12m": 0.667,
+    "external_fraction_12m": 0.0,
+    "test_touching_fraction_12m": 0.0,
+    "distinct_reviewers_12m": 1,
+    "top_reviewer_share_12m": 1.0,
+    "distinct_mergers_12m": 1,
+    "open_total": 4,
+    "open_older_90d": 3
+  },
+  "packaging": {
+    "spack_name": "eic-shell",
+    "eic_spack": null,
+    "spack_builtin": null,
+    "in_eic_shell": false,
+    "eic_shell_version": null,
+    "eic_spack_dependents": [],
+    "conda_forge": null,
+    "pypi": null,
+    "latest_release_packaged": null
+  },
+  "errors": []
+}
