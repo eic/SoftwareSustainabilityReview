@@ -12,7 +12,8 @@ from .repo import PASS_ID_RE, PROJECT_ID_RE, Repo, load_json, load_yaml
 
 DOMAINS = {"simulation", "reconstruction", "geometry", "data-model", "generator", "analysis", "infrastructure", "tooling"}
 ROLES = {"core", "community"}
-EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+")
+# Domain labels start with a letter, so spack specs such as epic@26.10.0 do not match.
+EMAIL_RE = re.compile(r"[\w.+-]+@[A-Za-z][\w-]*(?:\.[A-Za-z][\w-]*)*\.[A-Za-z]{2,}\b")
 BLOB_RE = re.compile(r"https://github\.com/[^/]+/[^/]+/(blob|tree)/([^/]+)/")
 
 

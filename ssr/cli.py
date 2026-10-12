@@ -59,7 +59,7 @@ def cmd_new_pass(args) -> int:
 def cmd_refresh_stack(args) -> int:
     from .stack import write_snapshot
 
-    write_snapshot(_repo())
+    write_snapshot(_repo(), args.ref)
     return 0
 
 
@@ -208,6 +208,7 @@ def main(argv: list[str] | None = None) -> int:
     p.set_defaults(fn=cmd_new_pass)
 
     p = sub.add_parser("refresh-stack", help="regenerate reference/eic-stack-snapshot.yaml from eic/containers")
+    p.add_argument("--ref", help="containers commit or branch (default: config stack.containers_ref)")
     p.set_defaults(fn=cmd_refresh_stack)
 
     p = sub.add_parser("collect", help="collect metrics for a pass")

@@ -75,3 +75,8 @@ def test_scores(repo):
 def test_invalid_yaml_reported(repo):
     repo.assessment_path("2026-01-01", "alpha").write_text("criteria: [unclosed\n")
     assert any("invalid YAML" in e for e in validate(repo).errors)
+
+
+def test_spack_spec_is_not_an_email(repo):
+    _edit(repo, "alpha", lambda a: a.update(summary="eic-shell ships epic@26.10.0 and eicrecon@1.42.0."))
+    assert validate(repo).errors == []
