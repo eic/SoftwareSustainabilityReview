@@ -81,6 +81,10 @@ When evidence is thin, assign the level the evidence supports and set `confidenc
   releases, or workflow runs, or metric references written as `metrics:<dotted.key>`
   (for example `metrics:git.bus_factor_50_24m = 1`).
 - Never cite a file, URL, or number you have not verified.
+- Do not link repositories under personal GitHub accounts: the account name identifies a person.
+  Cite a code-search URL that finds the use instead
+  (`https://github.com/search?q=<term>&type=code`), and describe the user generically ("an
+  analysis outside EIC").
 
 ## Actions
 
