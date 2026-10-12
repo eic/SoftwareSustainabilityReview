@@ -61,6 +61,7 @@ projects:
     repo: https://github.com/eic/irt
     domain: reconstruction
     role: core
+    packages: { spack: irt2 }
 
   - id: afterburner
     name: afterburner
