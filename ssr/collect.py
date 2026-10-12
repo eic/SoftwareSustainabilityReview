@@ -391,14 +391,22 @@ class Collector:
     def resolve_pr_commits(self, owner: str, name: str, g: dict, unmatched: list[str], limit: int = 60) -> None:
         """Subjects miss PRs whose squash title was edited; ask GitHub which commits came from a merged PR."""
         n = g["first_parent_commits_12m"]
-        checked = unmatched[:limit]
-        via_pr = sum(
-            1 for sha in checked
-            if any(p.get("merged_at") for p in gh_api(f"repos/{owner}/{name}/commits/{sha}/pulls") or [])
-        )
-        matched = n - len(unmatched) + via_pr
-        g["first_parent_pr_fraction_12m"] = frac(matched, n)
+        # Rebase-merging projects can have thousands of such commits: check an evenly spaced sample.
+        step = max(1, -(-len(unmatched) // limit))
+        results = []
+        for sha in unmatched[::step]:
+            try:
+                pulls = gh_api(f"repos/{owner}/{name}/commits/{sha}/pulls") or []
+            except CommandError:
+                continue  # transient API failure: leave this commit out of the sample
+            results.append(any(p.get("merged_at") for p in pulls))
+        if not results:
+            return
+        checked, via_pr = results, sum(results)
+        matched = n - len(unmatched) + via_pr * len(unmatched) / len(checked)
+        g["first_parent_pr_fraction_12m"] = frac(round(matched), n)
         g["first_parent_resolved_via_api"] = len(checked)
+        g["first_parent_pr_fraction_estimated"] = len(checked) < len(unmatched)
 
     # -- file tree
 
