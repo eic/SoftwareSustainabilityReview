@@ -70,3 +70,8 @@ def test_scores(repo):
     s = scores(a, repo.categories())
     assert s["overall"] == 2
     assert all(v == 2 for v in s["categories"].values())
+
+
+def test_invalid_yaml_reported(repo):
+    repo.assessment_path("2026-01-01", "alpha").write_text("criteria: [unclosed\n")
+    assert any("invalid YAML" in e for e in validate(repo).errors)

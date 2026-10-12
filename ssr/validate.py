@@ -6,6 +6,7 @@ import re
 from dataclasses import dataclass, field
 
 import jsonschema
+import yaml
 
 from .repo import PASS_ID_RE, PROJECT_ID_RE, Repo, load_json, load_yaml
 
@@ -69,7 +70,11 @@ def check_rubrics(repo: Repo, rep: Report) -> None:
 
 def check_assessment(repo: Repo, pass_id: str, pid: str, rep: Report, schema: dict, criteria_ids: list[str]) -> None:
     where = f"passes/{pass_id}/{pid}.assessment.yaml"
-    a = repo.assessment(pass_id, pid)
+    try:
+        a = repo.assessment(pass_id, pid)
+    except yaml.YAMLError as e:
+        rep.error(where, f"invalid YAML: {str(e).splitlines()[0]}")
+        return
     try:
         jsonschema.validate(a, schema)
     except jsonschema.ValidationError as e:
