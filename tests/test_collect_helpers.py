@@ -7,6 +7,7 @@ from ssr.collect import (
     institution_domain,
     is_vendored,
     normalize_version,
+    version_key,
     parse_github,
 )
 
@@ -80,3 +81,8 @@ def test_normalize_version():
     assert normalize_version("v1.42.0") == "1.42.0"
     assert normalize_version("v00-17-04") == normalize_version("0.17.4")
     assert normalize_version("2026.03.01") == "2026.3.1"
+
+
+def test_version_key_orders_series():
+    tags = ["v6-36-14", "v6-40-04", "v6-38-00"]
+    assert max(tags, key=version_key) == "v6-40-04"

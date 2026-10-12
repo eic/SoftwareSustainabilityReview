@@ -166,6 +166,11 @@ def normalize_version(tag: str) -> str:
     return ".".join(str(int(p)) if p.isdigit() else p.lower() for p in parts if p)
 
 
+def version_key(tag: str) -> tuple:
+    """Sortable key for a release tag; non-numeric parts sort below numeric ones."""
+    return tuple((1, int(p)) if p.isdigit() else (0, 0) for p in normalize_version(tag).split("."))
+
+
 def is_vendored(path: str) -> bool:
     return any(seg.lower() in VENDOR_DIRS for seg in path.split("/")[:-1])
 
@@ -649,13 +654,17 @@ class Collector:
         t24 = months_ago(self.now, LONG)
         recent = [r for r in rels if parse_time(r.get("published_at")) and parse_time(r["published_at"]) >= t24]
         stable = [r for r in rels if not r.get("prerelease")]
-        latest = max(stable or rels, key=lambda r: r.get("published_at") or "", default=None)
+        # Highest version, not most recent: projects publish backport patches of older series.
+        latest = max(stable or rels, key=lambda r: (version_key(r["tag_name"]), r.get("published_at") or ""), default=None)
+        newest = max(rels, key=lambda r: r.get("published_at") or "", default=None)
         authors = {r["author"]["login"] for r in recent if r.get("author") and not self.is_bot(r["author"]["login"], typename=r["author"].get("type"))}
         return {
             "count_total": len(rels),
             "count_24m": len(recent),
             "latest_tag": latest["tag_name"] if latest else None,
             "latest_date": latest["published_at"] if latest else None,
+            "newest_published_tag": newest["tag_name"] if newest else None,
+            "newest_published_date": newest["published_at"] if newest else None,
             "authors_24m": len(authors),
             "with_notes_fraction_24m": frac(sum(1 for r in recent if (r.get("body") or "").strip()), len(recent)),
         }
