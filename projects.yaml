@@ -161,6 +161,7 @@ projects:
     repo: https://github.com/acts-project/acts
     domain: reconstruction
     role: upstream
+    packages: { pypi: pyacts }
 
   - id: geant4
     name: Geant4
