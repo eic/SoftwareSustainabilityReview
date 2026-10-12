@@ -1,0 +1,471 @@
+schema_version: 1
+project: acts
+pass: "2026-10-12-2"
+commit: 300b664a3d9c32ec928208e7eb18df40e7b2721b
+assessor: { agent: claude-code, model: claude-opus-5-5 }
+summary: >-
+  Two authors wrote half of the commits in 24 months, 84 of 108 open issues are older than one year,
+  governance and the path to maintainership are undocumented, and eic-shell and upstream Spack ship
+  46.8.1 while upstream released 47.0.0 through 48.1.0 (2026-07-14 to 2026-10-09). All
+  default-branch changes arrive through PRs with an approval enforced by policy-bot and a merge queue
+  gated on required CI, which builds and tests GCC, Clang, Linux, macOS and GPU configurations, runs
+  physics-performance regression checks, and builds EICrecon against ACTS in the eic nightly container.
+  There were 61 releases in 24 months with generated notes, each with a Zenodo DOI and a PyPI wheel.
+criteria:
+  eng.change-control:
+    level: 3
+    confidence: high
+    rationale: >-
+      All first-parent commits in 12 months came from PRs and 98.8% of merged PRs were reviewed; the
+      `main` ruleset requires the `policy-bot: main` check, which demands one approval from the
+      reviewers team, and review expectations are documented in CONTRIBUTING.md and the PR template.
+    evidence:
+      - metrics:git.first_parent_pr_fraction_12m = 1.0
+      - metrics:prs.reviewed_fraction_12m = 0.988
+      - metrics:repo.rulesets = 1
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/.policy.yml#L1-L20
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/CONTRIBUTING.md#L245-L270
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/.github/pull_request_template.md
+    gaps: []
+    actions: []
+  eng.ci:
+    level: 3
+    confidence: high
+    rationale: >-
+      Builds, unit, integration, Python and downstream-project tests run on every PR, merge-queue
+      entry and push across Ubuntu, LCG (GCC 15, Clang 19), Clang 22 and macOS, with merge-sentinel
+      requiring them before merge; 50 of 50 recent default-branch runs succeeded.
+    evidence:
+      - metrics:ci.default_branch_success_rate = 1.0
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/.github/workflows/builds.yml#L3-L24
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/.github/workflows/builds.yml#L100-L143
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/.github/workflows/builds.yml#L898-L1051
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/.github/workflows/builds.yml#L1248-L1353
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/.merge-sentinel.yml#L1-L30
+    gaps: []
+    actions: []
+  eng.testing:
+    level: 3
+    confidence: high
+    rationale: >-
+      Boost.Test unit tests, integration tests and pytest example runs execute in CI, the physmon
+      job compares reconstruction performance with reference histograms, coverage is measured and
+      published on SonarCloud, and 40.2% of merged PRs touch test files.
+    evidence:
+      - metrics:code.test_files = 804
+      - metrics:prs.test_touching_fraction_12m = 0.402
+      - https://github.com/acts-project/acts/tree/300b664a3d9c32ec928208e7eb18df40e7b2721b/Tests/IntegrationTests
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/.github/workflows/builds.yml#L219-L267
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/.github/workflows/analysis.yml#L140-L177
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/README.md#L7
+    gaps: []
+    actions: []
+  eng.static-quality:
+    level: 3
+    confidence: high
+    rationale: >-
+      pre-commit (clang-format, black, gersemi, codespell, license and include checks) runs as a
+      required `lint` check, clang-tidy runs on changed files of every PR and fails on findings, and
+      CI presets build with `-Wall -Wextra -Wpedantic -Wshadow` and `CMAKE_COMPILE_WARNING_AS_ERROR`.
+    evidence:
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/.github/workflows/checks.yml#L32-L59
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/.pre-commit-config.yaml#L1-L7
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/.github/workflows/analysis.yml#L179-L252
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/CMakePresets.json#L57-L62
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/cmake/ActsCompilerOptions.cmake#L12-L14
+    gaps: []
+    actions: []
+  eng.modularity:
+    level: 3
+    confidence: high
+    rationale: >-
+      C++20 code is split into Core, Plugins, Fatras, Alignment and Examples with separate namespaces,
+      an exported `ActsConfig.cmake` is consumed by a downstream test project in CI, and the public
+      API and repository architecture are documented.
+    evidence:
+      - metrics:code.cxx_standard = ["20"]
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/cmake/ActsCreatePackageConfig.cmake#L14-L16
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/README.md#L51-L84
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/docs/pages/versioning.md#L1-L48
+      - https://github.com/acts-project/acts/tree/300b664a3d9c32ec928208e7eb18df40e7b2721b/Tests/DownstreamProject
+    gaps: []
+    actions: []
+  doc.user:
+    level: 1
+    confidence: medium
+    rationale: >-
+      A hosted guide, the `pip install pyacts` and Spack routes, a build-option table and a quick-start
+      script run in CI exist, but the documented minimum versions are lower than those CMakeLists.txt
+      enforces, and Geant4, Pythia8 and pybind11 have no versions.
+    evidence:
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/docs/pages/contributing/building_acts.md#L22-L48
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/CMakeLists.txt#L331-L360
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/docs/groups/python/index.md#L9-L56
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/pytest.ini#L1-L6
+    gaps:
+      - "`building_acts.md` lists Boost 1.71, Eigen 3.3.7, DD4hep 1.11, HepMC3 3.2.1 and ROOT 6.20; CMake requires 1.78.0, 3.4.0, 1.26, 3.2.4 and 6.28.04."
+      - Geant4, Pythia8, pybind11, CUDA and libtorch are listed without versions.
+      - Hosted docs are not versioned per release (versions.json at acts-project.github.io lists no versions).
+      - No eic-shell route is described for EIC users.
+    actions:
+      - action: Generate the Prerequisites list in `docs/pages/contributing/building_acts.md` from the `_acts_*_version` variables in `CMakeLists.txt` (as the `cmake_options` pre-commit hook already does for options), covering every optional dependency.
+        priority: medium
+        effort: S
+  doc.developer:
+    level: 3
+    confidence: high
+    rationale: >-
+      Public headers carry Doxygen comments, the docs build fails on undocumented members and warnings,
+      CI deploys the Doxygen site for `main` and tags, and algorithm pages (track fitting, GSF,
+      vertexing, propagation) cite references from `docs/references.bib`.
+    evidence:
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/docs/Doxyfile.in#L719-L746
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/.github/workflows/docs.yml#L47
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/.github/workflows/docs.yml#L131-L145
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/docs/groups/track_fitting.md
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/docs/references.bib
+    gaps: []
+    actions: []
+  doc.contributing:
+    level: 2
+    confidence: medium
+    rationale: >-
+      CONTRIBUTING.md covers the PR process, coding style and review expectations, the docs cover
+      container-based setup, building and running the pytest suite, and PR and issue templates exist;
+      no newcomer label exists.
+    evidence:
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/CONTRIBUTING.md#L56-L100
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/CONTRIBUTING.md#L202-L243
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/docs/pages/contributing/building_acts.md#L120-L182
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/docs/groups/python/python_testing.md#L1-L25
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/.github/issue_template.md
+    gaps:
+      - No `good first issue` or equivalent newcomer label exists in the repository.
+      - Running the C++ unit tests (`ctest`) is not documented; only enabling them is.
+      - The `.devcontainer/` setup is not mentioned in CONTRIBUTING.md or the docs.
+    actions:
+      - action: Create a `good first issue` label, apply it to at least five open issues, and link it from CONTRIBUTING.md.
+        priority: medium
+        effort: S
+      - action: Add a "Development environment and tests" section to CONTRIBUTING.md covering `.devcontainer/`, `cmake --preset dev` and `ctest --test-dir build`.
+        priority: low
+        effort: S
+  com.responsiveness:
+    level: 1
+    confidence: high
+    rationale: >-
+      Median first response is 1.34 days and 64.6% of new issues are labeled, but 84 of 108 open
+      issues are older than one year, more than half.
+    evidence:
+      - metrics:issues.median_first_response_days_12m = 1.34
+      - metrics:issues.labeled_fraction_12m = 0.646
+      - metrics:issues.open_older_365d = 84
+      - metrics:issues.open_total = 108
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/.github/workflows/stale.yml
+    gaps:
+      - 84 of 108 open issues (78%) are older than one year; the stale workflow labels but never closes (`days-before-close -1`).
+      - 16.9% of issues opened in 12 months received no response.
+    actions:
+      - action: Review the 84 open issues older than one year and close, milestone or label each, bringing the share below 50%.
+        priority: medium
+        effort: M
+  com.contributors:
+    level: 2
+    confidence: high
+    rationale: >-
+      87 authors from 11 e-mail domains committed in 24 months with 39 new authors in 12 months, but
+      only 4.1% of merged PRs came from outside the maintainer group, below 20%.
+    evidence:
+      - metrics:git.authors_24m = 87
+      - metrics:git.email_domains_24m = 11
+      - metrics:git.new_authors_12m = 39
+      - metrics:prs.external_fraction_12m = 0.041
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/AUTHORS
+    gaps:
+      - 4.1% of merged PRs in 12 months came from contributors outside the maintainer group (needs 20%).
+    actions:
+      - action: Label newcomer issues and announce them on the acts-developers e-group and Mattermost to raise the external PR share.
+        priority: medium
+        effort: M
+  com.bus-factor:
+    level: 2
+    confidence: high
+    rationale: >-
+      Bus factor is 2 with 23 reviewers and 7 mergers, and releases are automated and documented, but
+      the bus factor is below 3 and CODEOWNERS names owners only for Detray, Traccc, GNN, GSF, GX2F and
+      Covfie, mostly one person each.
+    evidence:
+      - metrics:git.bus_factor_50_24m = 2
+      - metrics:prs.distinct_reviewers_12m = 23
+      - metrics:prs.distinct_mergers_12m = 7
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/CODEOWNERS#L27-L43
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/docs/pages/contributing/release.md
+    gaps:
+      - Bus factor (50%) is 2; level 3 needs 3.
+      - Core/, Fatras/, Alignment/, Examples/ and most Plugins/ have no named owner; README calls CODEOWNERS non-binding and under evaluation.
+    actions:
+      - action: Add CODEOWNERS entries naming at least two owners each for Core/, Fatras/, Alignment/, Examples/ and every Plugins/ subdirectory.
+        priority: medium
+        effort: S
+  com.governance:
+    level: 1
+    confidence: high
+    rationale: >-
+      Reviewers can be identified (reviewers team, CODEOWNERS) and meetings are listed in an Indico
+      category, but no document states who decides, how decisions are made, or how one becomes a
+      reviewer or maintainer.
+    evidence:
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/CONTRIBUTING.md#L56-L71
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/README.md#L98-L104
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/docs/old/acts_project.md#L19-L21
+    gaps:
+      - No documented decision process or path to reviewer or maintainer.
+      - The Indico link appears only in the legacy `docs/old` tree, not in the current docs.
+    actions:
+      - action: Add `GOVERNANCE.md` naming the core-maintainers and reviewers teams, how decisions are made and recorded, and how to join the reviewers team; link the Indico category.
+        priority: medium
+        effort: S
+  com.conduct:
+    level: 2
+    confidence: medium
+    rationale: >-
+      The repository adopts the CERN Code of Conduct, which names the Ombud office and HR as routes,
+      and documents Mattermost, an e-group and GitHub Discussions for help; no enforcement procedure
+      for non-CERN contributors is documented and the last Discussions question is from 2025-11.
+    evidence:
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/CODE_OF_CONDUCT.md#L1-L12
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/CONTRIBUTING.md#L6-L16
+      - https://github.com/acts-project/acts/discussions/4787
+    gaps:
+      - No project-specific reporting contact or enforcement procedure is documented.
+      - Activity of the documented support channels is not publicly verifiable for the last 6 months.
+    actions:
+      - action: Add to CODE_OF_CONDUCT.md an ACTS reporting contact and the enforcement steps that apply to contributors outside CERN.
+        priority: medium
+        effort: S
+  dist.packaging:
+    level: 2
+    confidence: high
+    rationale: >-
+      The `pyacts` wheel on PyPI provides the latest release 48.1.0 and ACTS ships in eic-shell and
+      upstream Spack, but both are at 46.8.1, four months and 12 releases behind.
+    evidence:
+      - https://pypi.org/project/pyacts/48.1.0/
+      - metrics:packaging.spack_builtin.versions = ["main", "46.8.1", "46.8.0", "46.7.0", "46.6.0"]
+      - metrics:packaging.eic_shell_version = 46.8.1
+      - metrics:releases.latest_tag = v48.1.0
+    gaps:
+      - Upstream Spack and eic-shell lack every release from v47.0.0 (2026-07-14) to v48.1.0.
+    actions:
+      - action: Add versions 47.0.0 through 48.1.0 to the `acts` recipe in spack/spack-packages with each release.
+        priority: medium
+        effort: S
+      - action: (EIC side) Update eic/containers to an ACTS 48.x release once EICrecon builds against it.
+        priority: medium
+        effort: M
+  dist.releases:
+    level: 2
+    confidence: high
+    rationale: >-
+      61 SemVer releases in 24 months have generated notes with a breaking-changes section, made by
+      an automated release workflow, but there are no migration notes and no documented deprecation
+      policy.
+    evidence:
+      - metrics:releases.count_24m = 61
+      - metrics:releases.with_notes_fraction_24m = 1.0
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/README.md#L43-L50
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/.github/workflows/release.yml#L1-L54
+      - https://github.com/acts-project/acts/releases/tag/v48.0.0
+    gaps:
+      - Release notes list breaking changes without migration instructions.
+      - No deprecation policy is documented in `docs/pages/versioning.md`.
+    actions:
+      - action: Add a deprecation policy (deprecated in N, removed in N+1) and a migration-notes section per major release to `docs/pages/versioning.md`.
+        priority: medium
+        effort: S
+  dist.dependencies:
+    level: 2
+    confidence: high
+    rationale: >-
+      Dependencies are declared with minimum versions in CMakeLists.txt, CI installs pinned Spack
+      lockfiles, Dependabot covers Actions and pre-commit, and all action refs are SHA-pinned; there is
+      no SECURITY.md and no CI job at the declared minimum versions.
+    evidence:
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/CMakeLists.txt#L331-L360
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/CI/dependencies/versions.env
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/.github/dependabot.yml
+      - metrics:ci.action_refs_not_sha_pinned = 0
+      - metrics:files.security = []
+    gaps:
+      - No SECURITY.md or other vulnerability reporting route.
+      - No CI job builds against the declared minimum versions (e.g. Boost 1.78, ROOT 6.28.04, DD4hep 1.26).
+    actions:
+      - action: Add `SECURITY.md` with a private vulnerability reporting route and enable GitHub private vulnerability reporting.
+        priority: medium
+        effort: S
+      - action: Add a CI job that builds and tests against the minimum versions set in `CMakeLists.txt`.
+        priority: low
+        effort: M
+  dist.reproducibility:
+    level: 2
+    confidence: medium
+    rationale: >-
+      CI installs dependencies from versioned Spack lockfiles at a pinned Spack commit inside tagged
+      containers, container use is documented, and example workflows set explicit seeds; container
+      tags are not tied to releases and outputs carry no version or configuration metadata.
+    evidence:
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/CI/dependencies/versions.env
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/docs/pages/contributing/building_acts.md#L120-L182
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/.devcontainer/devcontainer.json
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/Python/Examples/python/simulation.py#L157
+    gaps:
+      - Container tags (e.g. `ubuntu2604:90`) and lockfile tags are not recorded per ACTS release.
+      - Example writers do not store the ACTS version, commit or configuration in output files.
+    actions:
+      - action: Write the ACTS version, commit hash and sequencer configuration into the metadata of ROOT and EDM4hep outputs in Examples/Io.
+        priority: medium
+        effort: M
+  dist.portability:
+    level: 3
+    confidence: medium
+    rationale: >-
+      CI builds and tests GCC and Clang on Linux and on macOS (arm64), runs CUDA tests on GPU runners,
+      and ACTS ships in eic-shell, which ePIC distributes through the OSG CVMFS image for batch use.
+    evidence:
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/.github/workflows/builds.yml#L1248-L1353
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/.github/workflows/builds.yml#L610-L686
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/.github/workflows/builds.yml#L898-L940
+      - metrics:packaging.in_eic_shell = true
+    gaps: []
+    actions: []
+  eic.reuse:
+    level: 3
+    confidence: high
+    rationale: >-
+      ACTS reads geometry through DD4hep and GeoModel plugins and does event I/O through
+      podio/EDM4hep and HepMC3 rather than custom code, its examples framework is documented as
+      internal test tooling, and EICrecon and other EIC packages build on ACTS.
+    evidence:
+      - metrics:eic.components_detected.dd4hep.files = 41
+      - metrics:eic.components_detected.edm4hep.files = 23
+      - metrics:eic.components_detected.hepmc3.files = 23
+      - metrics:eic.eic_spack_dependents = ["eic-ip6", "eicrecon", "juggler", "npdet"]
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/README.md#L71-L84
+    gaps: []
+    actions: []
+  eic.data-model:
+    level: 3
+    confidence: medium
+    rationale: >-
+      ACTS converts tracks to and from EDM4hep through podio, reads and writes HepMC3, requires
+      minimum EDM4hep and podio versions, versions and validates its material-map JSON format, has
+      EDM4hep conversion round-trip tests, and its ROOT outputs are read with uproot in CI.
+    evidence:
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/CMakeLists.txt#L619-L634
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/docs/pages/material_map_json_schema.md#L23-L25
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/Tests/UnitTests/Plugins/EDM4hep/ConvertTrackEDM4hepTest.cpp
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/CI/root_event_diff_np.py
+    gaps: []
+    actions: []
+  eic.environment:
+    level: 2
+    confidence: medium
+    rationale: >-
+      ACTS CI builds ACTS and then EICrecon inside `ghcr.io/eic/eic_ci_without_acts:nightly` on every
+      PR, eic/containers builds ACTS through its documented Spack environment, and EICrecon CI tests
+      against nightly and stable eic-shell; the ACTS job runs no tests and has no pinned stable release.
+    evidence:
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/.github/workflows/builds.yml#L1355-L1455
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/docs/spack-environment.md#L70-L80
+      - https://github.com/eic/EICrecon/blob/25aa6525083f97999a171d8c88d36809f7ae3316/.github/workflows/linux-eic-shell.yml#L86-L127
+      - metrics:ci.uses_eic_shell = true
+    gaps:
+      - The `external_eic-shell` job runs no tests and its EICrecon build step is `continue-on-error`.
+      - ACTS's own CI uses only the nightly eic image, not a pinned stable eic-shell release.
+      - ACTS documentation does not mention eic-shell.
+    actions:
+      - action: Add a matrix entry to `external_eic-shell` in `.github/workflows/builds.yml` for a pinned `eic_ci_without_acts` stable tag next to `nightly`, and run `ctest` after the ACTS build.
+        priority: medium
+        effort: S
+  eic.currency:
+    level: 3
+    confidence: medium
+    rationale: >-
+      Minimum versions (DD4hep 1.26, podio 1.0.1, EDM4hep 1.0, Geant4 11.1.3, ROOT 6.28.04, HepMC3
+      3.2.4) are below what eic-shell ships, CI builds daily against the eic nightly stack and Key4hep
+      nightlies with warnings as errors, and no compatibility issues with these components are open.
+    evidence:
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/CMakeLists.txt#L331-L360
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/.github/workflows/builds.yml#L1519-L1600
+      - https://github.com/acts-project/acts/actions/runs/38295946065
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/CMakePresets.json#L57-L62
+    gaps: []
+    actions: []
+  via.license:
+    level: 2
+    confidence: high
+    rationale: >-
+      MPL-2.0 is detected, stated in `pyproject.toml`, and a license notice in every source file is
+      enforced by pre-commit; the notices are not SPDX identifiers and no contribution terms (DCO or
+      inbound=outbound) are documented.
+    evidence:
+      - metrics:repo.license_spdx = MPL-2.0
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/pyproject.toml#L32-L33
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/.pre-commit-config.yaml#L54-L58
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/Core/include/Acts/Propagator/Propagator.hpp#L1-L7
+    gaps:
+      - Source headers carry the MPL notice but no `SPDX-License-Identifier`.
+      - No documented contribution terms (DCO or inbound=outbound).
+    actions:
+      - action: Add `SPDX-License-Identifier MPL-2.0` to the header template enforced by `CI/check_license.py` and state inbound=outbound terms in CONTRIBUTING.md.
+        priority: low
+        effort: S
+  via.citation:
+    level: 2
+    confidence: high
+    rationale: >-
+      CITATION.cff, `.zenodo.json` and AUTHORS exist, every release receives a Zenodo DOI under concept
+      DOI 10.5281/zenodo.5141418, and a CSBS paper describes the project, but CITATION.cff and
+      `.zenodo.json` still state v45.1.0.
+    evidence:
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/CITATION.cff#L1-L4
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/CITATION.cff#L124-L125
+      - https://doi.org/10.5281/zenodo.23076834
+      - https://doi.org/10.1007/s41781-021-00078-8
+    gaps:
+      - CITATION.cff and `.zenodo.json` are not updated with each release (both state v45.1.0).
+    actions:
+      - action: Have `CI/release.sh` update `version` and `date-released` in CITATION.cff and run `CI/sync_citation_metadata.py` on every release.
+        priority: medium
+        effort: S
+  via.adoption:
+    level: 3
+    confidence: high
+    rationale: >-
+      ACTS ships in eic-shell and is a dependency of EICrecon in the ePIC reconstruction chain; outside
+      EIC its CI triggers ATLAS Athena builds and tests Key4hep dependents.
+    evidence:
+      - metrics:packaging.in_eic_shell = true
+      - metrics:eic.eic_spack_dependents = ["eic-ip6", "eicrecon", "juggler", "npdet"]
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/.github/workflows/trigger_athena.yml
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/.github/workflows/builds.yml#L1519-L1600
+    gaps: []
+    actions: []
+  via.support:
+    level: 2
+    confidence: medium
+    rationale: >-
+      Every source file is copyright "CERN for the benefit of the ACTS project", contributors' institutions
+      are listed in AUTHORS, and CERN hosts the project's chat, mailing lists and CI infrastructure; no
+      multi-institution maintenance commitment or succession plan is documented.
+    evidence:
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/Core/include/Acts/Propagator/Propagator.hpp#L1-L3
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/AUTHORS
+      - https://github.com/acts-project/acts/blob/300b664a3d9c32ec928208e7eb18df40e7b2721b/CONTRIBUTING.md#L6-L16
+    gaps:
+      - No funding acknowledgement or documented multi-institution maintenance commitment.
+      - No succession or transition plan for maintainers.
+    actions:
+      - action: Add a section to the README naming the institutions that commit maintainer effort and what happens when a maintainer leaves.
+        priority: medium
+        effort: S

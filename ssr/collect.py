@@ -38,12 +38,12 @@ FILE_PATTERNS = {
     "codemeta": r"^codemeta\.json$",
     "zenodo_json": r"^\.zenodo\.json$",
     "security": r"^(\.github/|docs/)?security(\.[a-z]+)?$",
-    "changelog": r"^(docs/)?(changelog|changes|history|news|release[_-]?notes)(\.[a-z]+)?$",
+    "changelog": r"^(docs?/)?(changelog|changes|history|news|release[_-]?notes)(\.[a-z]+)?$",
     "governance": r"^(\.github/|docs/)?governance(\.[a-z]+)?$",
     "codeowners": r"^(\.github/|docs/)?codeowners$",
     "authors": r"^(authors|contributors|maintainers|credits)(\.[a-z]+)?$",
     "pr_template": r"^(\.github/|docs/)?pull_request_template(\.md)?$|^\.github/pull_request_template/",
-    "issue_templates": r"^\.github/issue_template(/|\.md$)",
+    "issue_templates": r"^\.github/issue_template(/|\.md$|$)",
     "dependabot": r"^\.github/dependabot\.ya?ml$",
     "renovate": r"^(\.github/)?(renovate\.json5?|\.renovaterc(\.json)?)$",
     "pre_commit": r"^\.pre-commit-config\.ya?ml$",
@@ -157,6 +157,18 @@ def institution_domain(email: str, generic: set[str]) -> str | None:
     else:
         dom = ".".join(labels[-2:])
     return None if dom in generic else dom
+
+
+def normalize_version(tag: str) -> str:
+    """Compare release tags with package versions: v01-38 -> 1.38, v1.42.0 -> 1.42.0, 2026.03.01 -> 2026.3.1."""
+    t = re.sub(r"^(v|release[-_]?|version[-_]?)", "", tag.strip(), flags=re.I)
+    parts = re.split(r"[.\-_]", t)
+    return ".".join(str(int(p)) if p.isdigit() else p.lower() for p in parts if p)
+
+
+def version_key(tag: str) -> tuple:
+    """Sortable key for a release tag; non-numeric parts sort below numeric ones."""
+    return tuple((1, int(p)) if p.isdigit() else (0, 0) for p in normalize_version(tag).split("."))
 
 
 def is_vendored(path: str) -> bool:
@@ -391,14 +403,22 @@ class Collector:
     def resolve_pr_commits(self, owner: str, name: str, g: dict, unmatched: list[str], limit: int = 60) -> None:
         """Subjects miss PRs whose squash title was edited; ask GitHub which commits came from a merged PR."""
         n = g["first_parent_commits_12m"]
-        checked = unmatched[:limit]
-        via_pr = sum(
-            1 for sha in checked
-            if any(p.get("merged_at") for p in gh_api(f"repos/{owner}/{name}/commits/{sha}/pulls") or [])
-        )
-        matched = n - len(unmatched) + via_pr
-        g["first_parent_pr_fraction_12m"] = frac(matched, n)
+        # Rebase-merging projects can have thousands of such commits: check an evenly spaced sample.
+        step = max(1, -(-len(unmatched) // limit))
+        results = []
+        for sha in unmatched[::step]:
+            try:
+                pulls = gh_api(f"repos/{owner}/{name}/commits/{sha}/pulls") or []
+            except CommandError:
+                continue  # transient API failure: leave this commit out of the sample
+            results.append(any(p.get("merged_at") for p in pulls))
+        if not results:
+            return
+        checked, via_pr = results, sum(results)
+        matched = n - len(unmatched) + via_pr * len(unmatched) / len(checked)
+        g["first_parent_pr_fraction_12m"] = frac(round(matched), n)
         g["first_parent_resolved_via_api"] = len(checked)
+        g["first_parent_pr_fraction_estimated"] = len(checked) < len(unmatched)
 
     # -- file tree
 
@@ -634,13 +654,17 @@ class Collector:
         t24 = months_ago(self.now, LONG)
         recent = [r for r in rels if parse_time(r.get("published_at")) and parse_time(r["published_at"]) >= t24]
         stable = [r for r in rels if not r.get("prerelease")]
-        latest = max(stable or rels, key=lambda r: r.get("published_at") or "", default=None)
+        # Highest version, not most recent: projects publish backport patches of older series.
+        latest = max(stable or rels, key=lambda r: (version_key(r["tag_name"]), r.get("published_at") or ""), default=None)
+        newest = max(rels, key=lambda r: r.get("published_at") or "", default=None)
         authors = {r["author"]["login"] for r in recent if r.get("author") and not self.is_bot(r["author"]["login"], typename=r["author"].get("type"))}
         return {
             "count_total": len(rels),
             "count_24m": len(recent),
             "latest_tag": latest["tag_name"] if latest else None,
             "latest_date": latest["published_at"] if latest else None,
+            "newest_published_tag": newest["tag_name"] if newest else None,
+            "newest_published_date": newest["published_at"] if newest else None,
             "authors_24m": len(authors),
             "with_notes_fraction_24m": frac(sum(1 for r in recent if (r.get("body") or "").strip()), len(recent)),
         }
@@ -806,7 +830,7 @@ class Collector:
                     out["pypi"] = {"latest": json.load(r)["info"]["version"]}
             except OSError:
                 out["pypi"] = False
-        latest = ((partial.get("releases") or {}).get("latest_tag") or "").lstrip("vV")
-        packaged = [v for src in ("eic_spack", "spack_builtin") for v in ((out[src] or {}).get("versions") or [])]
+        latest = normalize_version((partial.get("releases") or {}).get("latest_tag") or "")
+        packaged = {normalize_version(v) for src in ("eic_spack", "spack_builtin") for v in ((out[src] or {}).get("versions") or [])}
         out["latest_release_packaged"] = (latest in packaged) if latest else None
         return out

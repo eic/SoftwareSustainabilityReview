@@ -1,0 +1,322 @@
+{
+  "schema_version": 1,
+  "project": "edm4hep",
+  "pass": "2026-10-12-2",
+  "repo_url": "https://github.com/key4hep/EDM4hep",
+  "subdir": null,
+  "collected_at": "2026-10-12T21:24:48+00:00",
+  "collector_version": "0.3.0",
+  "windows_months": {
+    "short": 12,
+    "long": 24
+  },
+  "git": {
+    "head_sha": "2b569d9fb7085c28cd69b7d0cd129ee9bb178c90",
+    "head_date": "2026-10-12T11:12:12Z",
+    "last_commit_date": "2026-10-12T11:12:12Z",
+    "commits_total": 618,
+    "commits_12m": 75,
+    "commits_24m": 136,
+    "authors_total": 27,
+    "authors_12m": 8,
+    "authors_24m": 11,
+    "new_authors_12m": 3,
+    "bus_factor_50_24m": 2,
+    "bus_factor_80_24m": 3,
+    "top_author_share_24m": 0.426,
+    "email_domains_24m": 3,
+    "first_parent_commits_12m": 75,
+    "first_parent_pr_fraction_12m": 0.747,
+    "tags_total": 31,
+    "tags_24m": 6,
+    "first_parent_resolved_via_api": 19,
+    "first_parent_pr_fraction_estimated": false
+  },
+  "files": {
+    "readme": [
+      "README.md"
+    ],
+    "license": [
+      "LICENSE"
+    ],
+    "contributing": [],
+    "code_of_conduct": [],
+    "citation_cff": [
+      "CITATION.cff"
+    ],
+    "codemeta": [],
+    "zenodo_json": [],
+    "security": [],
+    "changelog": [],
+    "governance": [],
+    "codeowners": [],
+    "authors": [],
+    "pr_template": [
+      ".github/PULL_REQUEST_TEMPLATE"
+    ],
+    "issue_templates": [],
+    "dependabot": [],
+    "renovate": [],
+    "pre_commit": [
+      ".pre-commit-config.yaml"
+    ],
+    "clang_format": [
+      ".clang-format"
+    ],
+    "clang_tidy": [],
+    "editorconfig": [],
+    "python_lint": [
+      ".ruff.toml"
+    ],
+    "mypy": [],
+    "codecov": [],
+    "doxygen": [
+      "doc/Doxyfile.in"
+    ],
+    "sphinx": [],
+    "mkdocs": [],
+    "dockerfile": [],
+    "apptainer_def": [],
+    "spack_env": [],
+    "conda_env": [],
+    "devcontainer": [],
+    "lockfile": [],
+    "gitlab_ci": [
+      ".gitlab-ci.yml"
+    ],
+    "other_ci": [],
+    "cmake": [
+      "CMakeLists.txt"
+    ],
+    "pyproject": [],
+    "setup_py": [],
+    "docs_dir": 12,
+    "examples_dir": 0,
+    "github_workflows": [
+      ".github/workflows/downstream-build.yaml",
+      ".github/workflows/key4hep-build.yaml",
+      ".github/workflows/lcg_linux_with_podio.yml",
+      ".github/workflows/pre-commit.yml"
+    ]
+  },
+  "code": {
+    "languages": {
+      "cpp": {
+        "files": 35,
+        "lines": 3935
+      },
+      "python": {
+        "files": 10,
+        "lines": 1456
+      },
+      "cmake": {
+        "files": 17,
+        "lines": 804
+      }
+    },
+    "source_lines": 5391,
+    "largest_source_files": [
+      {
+        "path": "test/test_EDM4hepFile.py",
+        "lines": 571
+      },
+      {
+        "path": "scripts/createEDM4hepFile.py",
+        "lines": 495
+      },
+      {
+        "path": "utils/include/edm4hep/utils/ParticleIDUtils.h",
+        "lines": 326
+      },
+      {
+        "path": "utils/include/edm4hep/utils/vector_utils.h",
+        "lines": 313
+      },
+      {
+        "path": "test/read_events.h",
+        "lines": 276
+      }
+    ],
+    "test_files": 21,
+    "test_frameworks": [
+      "catch2",
+      "ctest",
+      "pytest",
+      "unittest"
+    ],
+    "cxx_standard": [
+      "17",
+      "20"
+    ],
+    "requires_python": null,
+    "site_specific_paths": []
+  },
+  "eic": {
+    "components_detected": {
+      "podio": {
+        "files": 21,
+        "kind": "domain",
+        "examples": [
+          "CMakeLists.txt",
+          "edm4hep/schema_evolution/src/OldLinkEvolution.cc",
+          "include/edm4hep/GeneratorToolInfo.h"
+        ]
+      },
+      "root": {
+        "files": 8,
+        "kind": "generic",
+        "examples": [
+          "CMakeLists.txt",
+          "python/edm4hep/__init__.py",
+          "test/test_module.py"
+        ]
+      },
+      "hepmc3": {
+        "files": 2,
+        "kind": "domain",
+        "examples": [
+          "test/CMakeLists.txt",
+          "test/hepmc/edm4hep_testhepmc.cc"
+        ]
+      }
+    },
+    "domain_components": [
+      "hepmc3",
+      "podio"
+    ],
+    "is_component": "edm4hep",
+    "vendored_candidates": [],
+    "submodules": []
+  },
+  "ci": {
+    "workflow_count": 4,
+    "pr_triggered_workflows": [
+      ".github/workflows/downstream-build.yaml",
+      ".github/workflows/key4hep-build.yaml",
+      ".github/workflows/lcg_linux_with_podio.yml",
+      ".github/workflows/pre-commit.yml"
+    ],
+    "runs_on": [
+      "ubuntu-latest"
+    ],
+    "container_images": [
+      "${{",
+      "[\"alma9\"]",
+      "ghcr.io/key4hep/key4hep-images/${{",
+      "ghcr.io/key4hep/key4hep-images/alma9-cvmfs",
+      "ubuntu24",
+      "ubuntu26"
+    ],
+    "uses_eic_shell": false,
+    "actions_used": [
+      "actions/cache",
+      "actions/checkout",
+      "key4hep/key4hep-actions/cache-external-data",
+      "key4hep/key4hep-actions/downstream-build",
+      "key4hep/key4hep-actions/key4hep-build"
+    ],
+    "action_refs_not_sha_pinned": 5,
+    "other_ci": [
+      ".gitlab-ci.yml"
+    ],
+    "default_branch_runs": 50,
+    "default_branch_success_rate": 0.8,
+    "last_default_branch_run": "2026-10-12T11:12:16Z"
+  },
+  "repo": {
+    "full_name": "key4hep/EDM4hep",
+    "default_branch": "main",
+    "archived": false,
+    "fork": false,
+    "created_at": "2019-09-19T06:39:24Z",
+    "pushed_at": "2026-10-12T11:12:13Z",
+    "stars": 40,
+    "forks": 49,
+    "homepage": "https://cern.ch/edm4hep",
+    "license_spdx": "Apache-2.0",
+    "topics": [],
+    "has_issues": true,
+    "has_discussions": false,
+    "open_issues": 20,
+    "open_prs": 8,
+    "default_branch_protected": true,
+    "rulesets": 2,
+    "languages_github": {
+      "C++": 0.613,
+      "Python": 0.225,
+      "CMake": 0.144,
+      "C": 0.017
+    }
+  },
+  "community": {
+    "health_percentage": 62,
+    "files": {
+      "code_of_conduct": false,
+      "code_of_conduct_file": false,
+      "contributing": true,
+      "issue_template": true,
+      "license": true,
+      "pull_request_template": true,
+      "readme": true
+    }
+  },
+  "releases": {
+    "count_total": 29,
+    "count_24m": 6,
+    "latest_tag": "v01-01-01",
+    "latest_date": "2026-09-04T12:04:15Z",
+    "authors_24m": 2,
+    "with_notes_fraction_24m": 1.0
+  },
+  "issues": {
+    "created_12m": 17,
+    "sampled": false,
+    "closed_of_created_12m": 9,
+    "median_first_response_days_12m": 1.28,
+    "unanswered_fraction_12m": 0.118,
+    "labeled_fraction_12m": 0.471,
+    "open_total": 20,
+    "open_older_365d": 12
+  },
+  "prs": {
+    "created_12m": 65,
+    "sampled": false,
+    "merged_12m": 53,
+    "median_days_to_merge_12m": 0.83,
+    "reviewed_fraction_12m": 0.585,
+    "external_fraction_12m": 0.075,
+    "test_touching_fraction_12m": 0.377,
+    "distinct_reviewers_12m": 3,
+    "top_reviewer_share_12m": 0.647,
+    "distinct_mergers_12m": 2,
+    "open_total": 8,
+    "open_older_90d": 5
+  },
+  "packaging": {
+    "spack_name": "edm4hep",
+    "eic_spack": null,
+    "spack_builtin": {
+      "matches_repo": true,
+      "versions": [
+        "main",
+        "1.1.1",
+        "1.1",
+        "1.0",
+        "0.99.4"
+      ]
+    },
+    "in_eic_shell": true,
+    "eic_shell_version": "1.1",
+    "eic_spack_dependents": [
+      "algorithms",
+      "edm4eic",
+      "eicrecon",
+      "juggler",
+      "timeframebuilder"
+    ],
+    "conda_forge": null,
+    "pypi": null,
+    "latest_release_packaged": false
+  },
+  "errors": []
+}

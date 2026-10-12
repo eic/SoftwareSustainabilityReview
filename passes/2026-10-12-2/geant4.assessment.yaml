@@ -1,0 +1,504 @@
+schema_version: 1
+project: geant4
+pass: "2026-10-12-2"
+commit: f3d5293d384757b8a228a099898b2b87cfa4023c
+assessor: { agent: claude-code, model: claude-opus-5-5 }
+summary: >-
+  The public GitHub and GitLab repositories only receive release-tree imports by one person, so
+  change history, merge review, CI and the system test suite are not publicly visible, and the
+  Geant4 Software License is neither OSI-approved nor on the SPDX list. Governance is documented
+  publicly (collaboration agreement, elected working-group coordinators and deputies, public
+  steering-board minutes, a yearly plan of work), History files show about 60 authors in 24
+  months, and versioned user, developer and physics documentation is hosted for each release.
+  Geant4 is in upstream Spack at the latest patch, ships in eic-shell (an eic fork at 11.4.1 that
+  adds the eAST physics list), and eic/containers runs npsim simulations on it every six hours.
+criteria:
+  eng.change-control:
+    level: 0
+    confidence: high
+    rationale: >-
+      The GitHub mirror (and the public gitlab.cern.ch/geant4/geant4) contains only "Import Geant4 X
+      source tree" commits by one author; development and merge-request review happen in the
+      private geant4-dev GitLab project, so no change history or review is publicly visible.
+    evidence:
+      - metrics:git.first_parent_commits_12m = 4
+      - metrics:git.first_parent_pr_fraction_12m = 0.0
+      - metrics:git.authors_24m = 1
+      - https://github.com/Geant4/geant4/commit/f3d5293d384757b8a228a099898b2b87cfa4023c
+      - https://geant4.web.cern.ch/collaboration/policies
+      - https://github.com/Geant4/geant4/pull/114
+    gaps:
+      - The repository that receives the actual changes (geant4-dev) and its merge requests are not publicly readable.
+      - GitHub pull requests are closed and re-applied in the private repository, so their review is not visible.
+    actions:
+      - action: Make geant4-dev (or a read-only mirror carrying per-merge-request history) publicly readable, so merged changes and their approvals can be inspected.
+        priority: high
+        effort: M
+  eng.ci:
+    level: 0
+    confidence: high
+    rationale: >-
+      No public CI: the mirror has no workflows, GitLab pipelines return 403, and the CDash dashboard
+      named in the public development procedures requires a CERN login; the stated continuous and
+      nightly testing cannot be verified.
+    evidence:
+      - metrics:ci.workflow_count = 0
+      - metrics:ci.default_branch_runs = 0
+      - https://geant4.web.cern.ch/collaboration/policies
+      - https://cdash-sft.web.cern.ch/index.php?project=Geant4
+    gaps:
+      - Continuous and nightly test results are behind CERN single sign-on.
+      - No build or test runs on the public repositories.
+    actions:
+      - action: Make the Geant4 CDash project (cdash-sft.web.cern.ch, project Geant4) publicly readable, or publish nightly results for each release branch.
+        priority: high
+        effort: S
+      - action: Add a GitHub Actions workflow on the mirror that builds each imported release and runs `ctest` on the basic examples on Linux and macOS.
+        priority: high
+        effort: M
+  eng.testing:
+    level: 1
+    confidence: medium
+    rationale: >-
+      280 example reference outputs (`*.out`) ship with the source, but the unit and system test
+      tree (`tests/`) is excluded from the public release and its runs are not publicly visible.
+    evidence:
+      - metrics:code.test_files = 7
+      - https://github.com/Geant4/geant4/blob/f3d5293d384757b8a228a099898b2b87cfa4023c/cmake/Modules/G4CMakeMain.cmake#L98-L106
+      - https://github.com/Geant4/geant4/blob/f3d5293d384757b8a228a099898b2b87cfa4023c/examples/basic/B1/exampleB1.out
+      - https://geant4.web.cern.ch/collaboration/policies/tag_and_release
+    gaps:
+      - The `tests/` tree (unit, integration and verification tests) is not in the public source.
+      - No public test runs, coverage measurement, or regression comparison results.
+    actions:
+      - action: Publish the `tests/` tree (at least `ctests_examples` and `ctests_integration`) with each release so `GEANT4_ENABLE_TESTING=ON` works on public sources.
+        priority: medium
+        effort: M
+  eng.static-quality:
+    level: 1
+    confidence: medium
+    rationale: >-
+      `.clang-format` and a `.clang-tidy` check set are in the tree and GCC/Clang builds default to
+      `-W -Wall -pedantic -Wshadow`, but no public CI or pre-commit enforces formatting or analysis;
+      History entries show clang-tidy fixes applied by hand.
+    evidence:
+      - metrics:files.clang_format = [".clang-format", "examples/.clang-format", "examples/extended/medical/radiobiology/.clang-format", "source/externals/clhep/.clang-format", "source/externals/expat/.clang-format"]
+      - https://github.com/Geant4/geant4/blob/f3d5293d384757b8a228a099898b2b87cfa4023c/.clang-tidy#L1-L30
+      - https://github.com/Geant4/geant4/blob/f3d5293d384757b8a228a099898b2b87cfa4023c/cmake/Modules/G4MakeRules_cxx.cmake#L32
+      - https://github.com/Geant4/geant4/blob/f3d5293d384757b8a228a099898b2b87cfa4023c/source/geometry/solids/specific/History#L48-L52
+    gaps:
+      - No public evidence that clang-format or clang-tidy is enforced on changes.
+      - "`.clang-tidy` points to CODING_GUIDELINES.rst, which is not in the public tree."
+    actions:
+      - action: Add a public CI job (or pre-commit.ci on the mirror) that runs `clang-format --dry-run --Werror` and the `.clang-tidy` checks on each imported tree, and publish CODING_GUIDELINES.rst.
+        priority: medium
+        effort: S
+  eng.modularity:
+    level: 2
+    confidence: medium
+    rationale: >-
+      CMake builds about 140 category modules with C++17/20/23, installs `Geant4Config.cmake` with
+      `Geant4::` targets, keeps run configuration in macros and messengers, and the Toolkit Developer
+      guide documents the category design; only 15 of 142 modules declare private headers.
+    evidence:
+      - https://github.com/Geant4/geant4/blob/f3d5293d384757b8a228a099898b2b87cfa4023c/cmake/Modules/G4BuildSettings.cmake#L159-L192
+      - https://github.com/Geant4/geant4/blob/f3d5293d384757b8a228a099898b2b87cfa4023c/cmake/Modules/G4ConfigureCMakeHelpers.cmake#L242-L246
+      - https://github.com/Geant4/geant4/blob/f3d5293d384757b8a228a099898b2b87cfa4023c/cmake/Modules/G4DeveloperAPI.cmake#L1101-L1107
+      - https://geant4-userdoc.web.cern.ch/UsersGuides/ForToolkitDeveloper/html/
+      - metrics:code.largest_source_files
+    gaps:
+      - 127 of 142 modules install every header as public, so the user API is not separated from internals.
+    actions:
+      - action: Declare internal headers with `PRIVATE_HEADERS` in each `sources.cmake` so only the user-facing API is installed.
+        priority: medium
+        effort: L
+  doc.user:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The hosted, versioned Installation Guide lists compilers, CMake and optional dependencies with
+      versions and documents build options, and example B1 is a runnable quick start, but the only
+      non-source routes are binary tarballs and container recipes; no package-manager or eic-shell route is documented.
+    evidence:
+      - https://github.com/Geant4/geant4/blob/f3d5293d384757b8a228a099898b2b87cfa4023c/README.rst#L18-L23
+      - https://geant4-userdoc.web.cern.ch/UsersGuides/InstallationGuide/html/gettingstarted.html
+      - https://geant4-userdoc.web.cern.ch/UsersGuides/InstallationGuide/html/containers.html
+      - https://geant4.web.cern.ch/download/11.4.0.html
+      - https://geant4.web.cern.ch/docs/
+    gaps:
+      - No package-manager route (Spack, conda) is documented, although Geant4 is in upstream Spack.
+      - Example execution in CI is not publicly visible.
+    actions:
+      - action: Add a "Installing with Spack" section (`spack install geant4`, with variants for Qt, GDML and datasets) to the Installation Guide.
+        priority: medium
+        effort: S
+  doc.developer:
+    level: 2
+    confidence: medium
+    rationale: >-
+      Public headers carry class descriptions and method comments, a Doxygen reference is published
+      per release, the Toolkit Developer guide describes the category design, and the Physics
+      Reference Manual documents the models with references; publication by CI is not publicly verifiable.
+    evidence:
+      - https://github.com/Geant4/geant4/blob/f3d5293d384757b8a228a099898b2b87cfa4023c/source/digits_hits/detector/include/G4VSensitiveDetector.hh#L26-L70
+      - https://geant4.kek.jp/Reference/11.4.0/
+      - https://geant4-userdoc.web.cern.ch/UsersGuides/ForToolkitDeveloper/html/
+      - https://geant4-userdoc.web.cern.ch/UsersGuides/PhysicsReferenceManual/html/
+    gaps:
+      - No public evidence that the Doxygen reference is generated and published automatically.
+    actions:
+      - action: Generate and publish the Doxygen reference from a public CI job for each release (and the development branch).
+        priority: medium
+        effort: S
+  doc.contributing:
+    level: 1
+    confidence: high
+    rationale: >-
+      `CONTRIBUTING.rst` asks for single-topic GitHub PRs that a responsible person re-applies
+      upstream, with no build, test or convention details; the developer CONTRIBUTING and coding
+      guidelines linked from the website are in the private geant4-dev project.
+    evidence:
+      - https://github.com/Geant4/geant4/blob/f3d5293d384757b8a228a099898b2b87cfa4023c/CONTRIBUTING.rst#L1-L20
+      - metrics:files.pr_template = []
+      - metrics:files.issue_templates = []
+      - https://geant4.web.cern.ch/collaboration/policies
+    gaps:
+      - No public description of development setup, running tests, or coding conventions.
+      - No PR or issue templates.
+    actions:
+      - action: Copy the geant4-dev CONTRIBUTING.rst and CODING_GUIDELINES.rst into the public tree, covering build, `GEANT4_ENABLE_TESTING`, conventions and the PR path.
+        priority: medium
+        effort: S
+      - action: Add `.github/pull_request_template.md` asking for the Bugzilla report, affected category and how the change was tested.
+        priority: low
+        effort: S
+  com.responsiveness:
+    level: 1
+    confidence: medium
+    rationale: >-
+      GitHub issues are disabled and Bugzilla is the documented tracker: of 102 reports opened in 12
+      months, 62 had a non-reporter comment (median 3 days) and 18 remain NEW with no comment, and
+      71 of 115 open reports are older than one year.
+    evidence:
+      - metrics:repo.has_issues = false
+      - https://github.com/Geant4/geant4/blob/f3d5293d384757b8a228a099898b2b87cfa4023c/README.rst#L25-L35
+      - https://bugzilla-geant4.kek.jp/buglist.cgi?chfieldfrom=2025-10-12&chfieldto=Now&chfield=%5BBug%20creation%5D
+      - https://bugzilla-geant4.kek.jp/buglist.cgi?bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&bug_status=UNCONFIRMED
+      - https://github.com/Geant4/geant4/pull/116
+    gaps:
+      - 62% of open Bugzilla reports are older than one year.
+      - 18 of 102 reports from the last 12 months have no response or assignment.
+      - Median first maintainer comment on GitHub PRs opened in 12 months is about 13 days.
+    actions:
+      - action: Review the 71 Bugzilla reports opened before October 2025 and close, resolve or re-target each.
+        priority: medium
+        effort: M
+      - action: Assign every new Bugzilla report to its category owner within a week and record that rule on the Bug Reports page.
+        priority: medium
+        effort: S
+  com.contributors:
+    level: 2
+    confidence: medium
+    rationale: >-
+      Git metrics show only the importer, but History files name about 60 distinct authors in 24
+      months (at least 8 first appearing in the last 12) from 142 members at many institutions, and
+      external GitHub PRs are applied upstream; the share of merged changes from outside contributors cannot be measured publicly.
+    evidence:
+      - metrics:git.authors_24m = 1
+      - https://github.com/Geant4/geant4/blob/f3d5293d384757b8a228a099898b2b87cfa4023c/source/geometry/solids/specific/History#L9-L68
+      - https://geant4.web.cern.ch/collaboration/members
+      - https://github.com/Geant4/geant4/pull/110
+      - https://github.com/Geant4/geant4/pull/116
+    gaps:
+      - The fraction of merged changes from contributors outside the collaboration is not publicly measurable.
+    actions:
+      - action: Record the origin of each externally contributed change (GitHub PR or Bugzilla number) in the History entry and release notes, so external contributions can be counted.
+        priority: low
+        effort: S
+  com.bus-factor:
+    level: 2
+    confidence: medium
+    rationale: >-
+      History files give a 50% bus factor of about 4 (top author about 18% of entries) and CODEOWNERS
+      plus elected coordinators and deputies cover the categories, but one person made every
+      release and import in 24 months and no automated release process is public.
+    evidence:
+      - metrics:git.bus_factor_50_24m = 1
+      - metrics:releases.authors_24m = 1
+      - https://github.com/Geant4/geant4/blob/f3d5293d384757b8a228a099898b2b87cfa4023c/.github/CODEOWNERS#L1-L84
+      - https://geant4.web.cern.ch/collaboration/steering_board/
+      - https://geant4.web.cern.ch/collaboration/policies/tag_and_release
+    gaps:
+      - All releases and source imports in 24 months were made by one person; the release procedure is documented but not automated.
+      - "`.github/CODEOWNERS` names one owner for `/source/processes/hadronic/`, `/source/analysis/` and `/ReleaseNotes/`."
+    actions:
+      - action: Have a second named person cut and publish the next patch release and its GitHub import, following the Tag and Release Policy.
+        priority: medium
+        effort: S
+      - action: Sync `.github/CODEOWNERS` with `.gitlab/CODEOWNERS` so every top-level category has two owners.
+        priority: low
+        effort: S
+  com.governance:
+    level: 2
+    confidence: high
+    rationale: >-
+      The website documents the Steering Board, elected working-group coordinators, membership and
+      contributor paths, and public steering-board minutes and a 2026 plan of work are published;
+      ownership is not mapped to any EIC or ePIC structure.
+    evidence:
+      - https://geant4.web.cern.ch/collaboration/working_groups/
+      - https://geant4.web.cern.ch/collaboration/steering_board/
+      - https://geant4.web.cern.ch/steering_minutes/
+      - https://geant4.web.cern.ch/news/2026-03-17-planned-dev
+      - https://geant4.web.cern.ch/collaboration/technical_forum
+    gaps:
+      - No mapping of Geant4 ownership or liaison to the EIC or ePIC software organization.
+    actions:
+      - action: (EIC side) Name the ePIC contact for Geant4 and record EIC requirements through the Geant4 Technical Forum, linked from the EIC software documentation.
+        priority: low
+        effort: S
+  com.conduct:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The README documents an active user forum and Bugzilla, but no project code of conduct with a
+      reporting contact was found; the forum's default discussion guidelines only cover flagging posts.
+    evidence:
+      - https://github.com/Geant4/geant4/blob/f3d5293d384757b8a228a099898b2b87cfa4023c/README.rst#L25-L35
+      - https://geant4-forum.web.cern.ch/
+      - https://geant4-forum.web.cern.ch/faq
+      - metrics:community.files.code_of_conduct = false
+    gaps:
+      - No code of conduct with a reporting contact applies to the collaboration or its repositories.
+    actions:
+      - action: Add `CODE_OF_CONDUCT.md` (or link the CERN Code of Conduct) with a named reporting contact, and link it from the README and forum.
+        priority: high
+        effort: S
+  dist.packaging:
+    level: 3
+    confidence: high
+    rationale: >-
+      Upstream Spack provides 11.4.3 (added eight days after its release), and eic-shell ships Geant4
+      through eic-spack.
+    evidence:
+      - metrics:packaging.spack_builtin.versions = ["11.4.3", "11.4.2", "11.4.1", "11.4.0", "11.3.2"]
+      - metrics:packaging.in_eic_shell = true
+      - metrics:packaging.latest_release_packaged = true
+      - https://github.com/spack/spack-packages/pull/6967
+    gaps: []
+    actions: []
+  dist.releases:
+    level: 2
+    confidence: high
+    rationale: >-
+      Nine tagged releases in 24 months (a December minor release, a June beta and patches), the
+      major.minor.patch scheme and compatibility rules are documented in the Tag and Release Policy,
+      and each release has notes with a "migration of the user code" section; no automated release process is public.
+    evidence:
+      - metrics:releases.count_24m = 9
+      - https://geant4.web.cern.ch/collaboration/policies/tag_and_release
+      - https://github.com/Geant4/geant4/blob/f3d5293d384757b8a228a099898b2b87cfa4023c/ReleaseNotes/ReleaseNotes.11.4.html#L104-L130
+      - https://github.com/Geant4/geant4/releases/tag/v11.4.3
+    gaps:
+      - No public release automation.
+      - No written deprecation policy (how long deprecated options and interfaces remain before removal).
+    actions:
+      - action: Add a deprecation section to the Tag and Release Policy stating that deprecated interfaces are announced in release notes and removed only in a major release.
+        priority: medium
+        effort: S
+  dist.dependencies:
+    level: 1
+    confidence: high
+    rationale: >-
+      CLHEP, PTL, VecGeom, HDF5, Coin and Qt have minimum versions in CMake, but EXPAT, ZLIB, TBB,
+      XercesC and Freetype have none, and PTL (2.0.0) and VecGeom (1.2.6) minima differ from the
+      3.0.1 and 2.0.0 stated in the 11.4 release notes.
+    evidence:
+      - https://github.com/Geant4/geant4/blob/f3d5293d384757b8a228a099898b2b87cfa4023c/cmake/Modules/G4OptionalComponents.cmake#L127-L165
+      - https://github.com/Geant4/geant4/blob/f3d5293d384757b8a228a099898b2b87cfa4023c/cmake/Modules/G4OptionalComponents.cmake#L262
+      - https://github.com/Geant4/geant4/blob/f3d5293d384757b8a228a099898b2b87cfa4023c/ReleaseNotes/ReleaseNotes.11.4.html#L88-L102
+      - metrics:eic.vendored_candidates = ["source/externals/clhep", "source/externals/expat", "source/externals/g4tools", "source/externals/ptl", "source/externals/zlib"]
+      - metrics:files.security = []
+    gaps:
+      - "`find_package` for EXPAT, ZLIB, TBB, XercesC and Freetype has no minimum version."
+      - CMake minima for PTL and VecGeom do not match the documented requirements.
+    actions:
+      - action: Add `VERSION` arguments to every `find_package` in `G4OptionalComponents.cmake` and `G4InterfaceOptions.cmake`, matching the Installation Guide and release notes.
+        priority: medium
+        effort: S
+  dist.reproducibility:
+    level: 2
+    confidence: medium
+    rationale: >-
+      `packaging/rpm` holds Dockerfiles and an RPM spec that pin the release and dataset versions,
+      the Installation Guide documents container builds, and random-engine status can be saved per
+      run and event; no versioned images are published and no public CI uses that environment.
+    evidence:
+      - metrics:files.dockerfile = ["packaging/rpm/Dockerfile.alma8", "packaging/rpm/Dockerfile.alma9", "packaging/rpm/Dockerfile.centos7", "packaging/rpm/Dockerfile.fedora"]
+      - https://github.com/Geant4/geant4/blob/f3d5293d384757b8a228a099898b2b87cfa4023c/packaging/rpm/geant4.spec#L1-L20
+      - https://geant4-userdoc.web.cern.ch/UsersGuides/InstallationGuide/html/containers.html
+      - https://github.com/Geant4/geant4/blob/f3d5293d384757b8a228a099898b2b87cfa4023c/source/run/src/G4RunMessenger.cc#L297
+      - https://hub.docker.com/r/geant4/geant4
+    gaps:
+      - The geant4/geant4 Docker Hub repository is a placeholder last updated in 2022; no image is tagged per release.
+      - No public CI runs in the release container.
+    actions:
+      - action: Build the `packaging/rpm` Alma 9 image for each release and push it as `geant4/geant4:<version>`.
+        priority: medium
+        effort: M
+  dist.portability:
+    level: 2
+    confidence: medium
+    rationale: >-
+      Releases are supported and binary-packaged for Linux/GCC, macOS/Clang (Intel and ARM) and
+      Windows/MSVC, and eic/containers builds and runs Geant4 on amd64 and arm64; Geant4's own test
+      matrix is not public and accelerator support is not documented by the project.
+    evidence:
+      - https://github.com/Geant4/geant4/blob/f3d5293d384757b8a228a099898b2b87cfa4023c/ReleaseNotes/ReleaseNotes.11.4.html#L62-L82
+      - https://geant4.web.cern.ch/download/11.4.0.html
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/.github/workflows/build-push.yml#L440-L459
+      - metrics:ci.runs_on = []
+    gaps:
+      - No public CI from the project for its declared platforms.
+      - The user documentation does not state the status of GPU offload (AdePT, Celeritas) or why it is not provided in the toolkit.
+    actions:
+      - action: Add an Installation Guide or FAQ section describing GPU offload options (G4HepEm, AdePT, Celeritas) and their status.
+        priority: low
+        effort: S
+  eic.reuse:
+    level: 3
+    confidence: medium
+    rationale: >-
+      Geant4 needs little from the EIC stack (Pythia8 for the decayer example; its g4tools ROOT/HDF5
+      writer is a documented design choice) and is itself the simulation engine reused by DD4hep/DDG4
+      and npsim; an ePIC geometry fix was contributed upstream.
+    evidence:
+      - metrics:eic.components_detected.pythia8.files = 4
+      - https://geant4-userdoc.web.cern.ch/UsersGuides/ForApplicationDeveloper/html/Analysis/g4tools.html
+      - metrics:packaging.eic_spack_dependents = ["east", "g4e", "g4occt", "juggler", "simphony"]
+      - https://github.com/Geant4/geant4/pull/116
+      - https://github.com/eic/epic/issues/629
+    gaps: []
+    actions: []
+  eic.data-model:
+    level: 2
+    confidence: medium
+    rationale: >-
+      Geometry I/O uses GDML with published XSD schemas, analysis output goes to ROOT, HDF5 or CSV
+      through G4AnalysisManager and is read with uproot in examples; public round-trip tests and
+      declared output format versions are absent.
+    evidence:
+      - https://github.com/Geant4/geant4/tree/f3d5293d384757b8a228a099898b2b87cfa4023c/source/persistency/gdml/schema
+      - https://github.com/Geant4/geant4/blob/f3d5293d384757b8a228a099898b2b87cfa4023c/source/persistency/gdml/src/G4GDMLWrite.cc#L253
+      - https://github.com/Geant4/geant4/blob/f3d5293d384757b8a228a099898b2b87cfa4023c/examples/extended/exoticphysics/channeling/ch2/analysis_ch2.py#L11-L30
+    gaps:
+      - No public GDML or analysis-file round-trip tests.
+      - Analysis output files carry no Geant4 or format version metadata.
+    actions:
+      - action: Add a public ctest that writes and re-reads a GDML geometry and an ntuple file and compares the results.
+        priority: medium
+        effort: M
+  eic.environment:
+    level: 2
+    confidence: high
+    rationale: >-
+      eic/containers builds Geant4 into the eic-shell images (default and nightly) every six hours
+      and runs npsim particle-gun and DIS simulations on it on amd64 and arm64; new Geant4 releases
+      and betas are not built or tested in eic-shell before they are adopted.
+    evidence:
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/.github/workflows/build-push.yml#L1-L10
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/.github/workflows/build-push.yml#L440-L470
+      - https://github.com/eic/containers/actions/runs/38273766629
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/spack-environment/packages.yaml#L256-L259
+    gaps:
+      - Both default and nightly eic-shell builds pin the same Geant4 (11.4.1.east), so new Geant4 versions are not tested against the EIC stack ahead of adoption.
+    actions:
+      - action: (EIC side) Add a scheduled eic/containers job that builds the latest Geant4 patch and beta with the nightly stack and runs the npsim jobs.
+        priority: medium
+        effort: M
+  eic.currency:
+    level: 2
+    confidence: medium
+    rationale: >-
+      Geant4 builds in the current eic-shell with CLHEP 2.4.7.2 (the release-verified version), Qt6
+      and C++20, but the HepMC examples require HepMC 2.06 and Pythia 6 rather than the shipped HepMC3,
+      and HDF5 2 builds failed until a fix scheduled for 11.5.
+    evidence:
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/spack-environment/packages.yaml#L256-L259
+      - https://github.com/Geant4/geant4/blob/f3d5293d384757b8a228a099898b2b87cfa4023c/ReleaseNotes/ReleaseNotes.11.4.html#L88-L102
+      - https://github.com/Geant4/geant4/blob/f3d5293d384757b8a228a099898b2b87cfa4023c/examples/extended/eventgenerator/HepMC/README.md
+      - https://github.com/Geant4/geant4/pull/109
+      - https://github.com/eic/geant4/tree/east-v11.4.1
+    gaps:
+      - "`examples/extended/eventgenerator/HepMC` uses the HepMC 2 API, not HepMC3."
+      - eic-shell ships 11.4.1 through an eic fork while 11.4.2 and 11.4.3 are released (EIC side).
+    actions:
+      - action: Port the HepMCEx01, HepMCEx02 and MCTruth examples to HepMC3 and Pythia8.
+        priority: medium
+        effort: M
+      - action: (EIC side) Rebase the eAST branch of eic/geant4 onto 11.4.3 and update the eic-spack pin.
+        priority: medium
+        effort: S
+  via.license:
+    level: 0
+    confidence: high
+    rationale: >-
+      The Geant4 Software License 1.0 is a custom license that is not OSI-approved and has no SPDX
+      identifier (GitHub reports NOASSERTION).
+    evidence:
+      - metrics:repo.license_spdx = NOASSERTION
+      - https://github.com/Geant4/geant4/blob/f3d5293d384757b8a228a099898b2b87cfa4023c/LICENSE#L1-L45
+      - https://geant4.web.cern.ch/download/license
+    gaps:
+      - The license is not OSI-approved and not in the SPDX license list.
+    actions:
+      - action: Submit the Geant4 Software License to the OSI approval process and the SPDX license list, or relicense under an OSI-approved license.
+        priority: high
+        effort: L
+  via.citation:
+    level: 1
+    confidence: high
+    rationale: >-
+      The README lists three reference papers and `CITATION.cff` exists, but the file fails
+      validation (the DOI is given as a URL) and lists the collaboration as two partial author
+      entries; there is no software DOI.
+    evidence:
+      - https://github.com/Geant4/geant4/blob/f3d5293d384757b8a228a099898b2b87cfa4023c/README.rst#L12-L16
+      - https://github.com/Geant4/geant4/blob/f3d5293d384757b8a228a099898b2b87cfa4023c/CITATION.cff#L5-L13
+      - metrics:files.zenodo_json = []
+    gaps:
+      - "`CITATION.cff` fails `cffconvert --validate` (preferred-citation doi must be `10.1016/j.nima.2016.06.125`)."
+      - No software DOI.
+    actions:
+      - action: Fix `CITATION.cff` (bare DOI, single `name - Geant4 Collaboration` entity author, version and date-released) and validate it with cffconvert.
+        priority: medium
+        effort: S
+  via.adoption:
+    level: 3
+    confidence: high
+    rationale: >-
+      Geant4 ships in eic-shell and is the simulation engine of npsim, DD4hep/DDG4 and the ePIC
+      simulation campaigns, and it is used by experiments and projects outside EIC.
+    evidence:
+      - metrics:packaging.in_eic_shell = true
+      - metrics:packaging.eic_spack_dependents = ["east", "g4e", "g4occt", "juggler", "simphony"]
+      - https://github.com/eic/containers/actions/runs/38273766629
+      - https://geant4.web.cern.ch/about/
+      - https://github.com/search?q=org%3Aeic+G4VSensitiveDetector&type=code
+    gaps: []
+    actions: []
+  via.support:
+    level: 3
+    confidence: high
+    rationale: >-
+      Maintenance rests on a Collaboration Agreement among laboratories and institutes, 142 members
+      and 47 contributors pledge about 31 FTE for 2026, and coordinators and deputies are elected
+      every two years with a documented spokesperson election process.
+    evidence:
+      - https://geant4.web.cern.ch/collaboration/
+      - https://geant4.web.cern.ch/assets/geant4-agreement-2005.pdf
+      - https://geant4.web.cern.ch/collaboration/members
+      - https://geant4.web.cern.ch/collaboration/working_groups/
+      - https://geant4.web.cern.ch/collaboration/policies
+    gaps: []
+    actions: []

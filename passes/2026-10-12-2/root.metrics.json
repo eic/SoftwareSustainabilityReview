@@ -1,0 +1,486 @@
+{
+  "schema_version": 1,
+  "project": "root",
+  "pass": "2026-10-12-2",
+  "repo_url": "https://github.com/root-project/root",
+  "subdir": null,
+  "collected_at": "2026-10-12T21:24:48+00:00",
+  "collector_version": "0.3.0",
+  "windows_months": {
+    "short": 12,
+    "long": 24
+  },
+  "git": {
+    "head_sha": "14a58f7421159e73840ff07d09a975b7145d7fcb",
+    "head_date": "2026-10-12T12:33:07+02:00",
+    "last_commit_date": "2026-10-12T12:33:07+02:00",
+    "commits_total": 98280,
+    "commits_12m": 4304,
+    "commits_24m": 9009,
+    "authors_total": 619,
+    "authors_12m": 110,
+    "authors_24m": 173,
+    "new_authors_12m": 58,
+    "bus_factor_50_24m": 5,
+    "bus_factor_80_24m": 10,
+    "top_author_share_24m": 0.186,
+    "email_domains_24m": 34,
+    "first_parent_commits_12m": 4495,
+    "first_parent_pr_fraction_12m": 1.0,
+    "tags_total": 478,
+    "tags_24m": 44,
+    "first_parent_resolved_via_api": 60,
+    "first_parent_pr_fraction_estimated": true
+  },
+  "files": {
+    "readme": [
+      "README.md"
+    ],
+    "license": [
+      "LICENSE"
+    ],
+    "contributing": [
+      "CONTRIBUTING.md"
+    ],
+    "code_of_conduct": [],
+    "citation_cff": [],
+    "codemeta": [],
+    "zenodo_json": [],
+    "security": [
+      "SECURITY.md"
+    ],
+    "changelog": [],
+    "governance": [],
+    "codeowners": [
+      ".github/CODEOWNERS"
+    ],
+    "authors": [],
+    "pr_template": [
+      ".github/pull_request_template.md"
+    ],
+    "issue_templates": [
+      ".github/ISSUE_TEMPLATE/bug_report.yml",
+      ".github/ISSUE_TEMPLATE/config.yml",
+      ".github/ISSUE_TEMPLATE/feature_request.yml",
+      ".github/ISSUE_TEMPLATE/improvement_report.yml"
+    ],
+    "dependabot": [],
+    "renovate": [],
+    "pre_commit": [],
+    "clang_format": [
+      ".clang-format",
+      "bindings/pyroot/cppjit/.clang-format",
+      "interpreter/CppInterOp/.clang-format",
+      "interpreter/cling/.clang-format",
+      "interpreter/cling/test/.clang-format"
+    ],
+    "clang_tidy": [
+      ".clang-tidy",
+      "interpreter/CppInterOp/.clang-tidy",
+      "interpreter/CppInterOp/unittests/.clang-tidy",
+      "interpreter/llvm-project/.clang-tidy",
+      "interpreter/llvm-project/clang/.clang-tidy"
+    ],
+    "editorconfig": [],
+    "python_lint": [
+      "ruff.toml"
+    ],
+    "mypy": [],
+    "codecov": [
+      "codecov.yml"
+    ],
+    "doxygen": [
+      "documentation/doxygen/Doxyfile"
+    ],
+    "sphinx": [],
+    "mkdocs": [],
+    "dockerfile": [
+      "interpreter/llvm-project/clang/utils/analyzer/Dockerfile",
+      "interpreter/llvm-project/llvm/utils/docker/debian12/Dockerfile",
+      "interpreter/llvm-project/llvm/utils/docker/example/Dockerfile",
+      "interpreter/llvm-project/llvm/utils/docker/nvidia-cuda/Dockerfile"
+    ],
+    "apptainer_def": [],
+    "spack_env": [],
+    "conda_env": [
+      "interpreter/CppInterOp/environment-wasm.yml"
+    ],
+    "devcontainer": [],
+    "lockfile": [],
+    "gitlab_ci": [],
+    "other_ci": [],
+    "cmake": [
+      "CMakeLists.txt"
+    ],
+    "pyproject": [
+      "pyproject.toml"
+    ],
+    "setup_py": [],
+    "docs_dir": 0,
+    "examples_dir": 1340,
+    "github_workflows": [
+      ".github/workflows/code_analysis.yml",
+      ".github/workflows/cppinterop-diff.yml",
+      ".github/workflows/cppjit-diff.yml",
+      ".github/workflows/histv7.yml",
+      ".github/workflows/issues-nudge.yml",
+      ".github/workflows/lint-action-files.yml",
+      ".github/workflows/llvm-diff.yml",
+      ".github/workflows/projFixedIssues.yml",
+      ".github/workflows/python_wheel_build.yml",
+      ".github/workflows/root-626.yml",
+      ".github/workflows/root-628.yml",
+      ".github/workflows/root-630.yml",
+      ".github/workflows/root-632.yml",
+      ".github/workflows/root-636.yml",
+      ".github/workflows/root-640.yml",
+      ".github/workflows/root-ci.yml",
+      ".github/workflows/root-docs-ci.yml",
+      ".github/workflows/root-docs-schedule.yml",
+      ".github/workflows/root-master.yml",
+      ".github/workflows/root-nightlies-active.yml",
+      ".github/workflows/root-nightlies-maintenance.yml",
+      ".github/workflows/root-pr-backport.yml",
+      ".github/workflows/root-relpage-ci.yml",
+      ".github/workflows/root-rn-ci.yml",
+      ".github/workflows/root-src-tarball.yml",
+      ".github/workflows/sync_cling.yml",
+      ".github/workflows/test-ci-scripts.yml",
+      ".github/workflows/test-coverage.yml",
+      ".github/workflows/test-result-comment.yml",
+      ".github/workflows/testsecurity.yml",
+      ".github/workflows/update-brew-macs.yml",
+      ".github/workflows/visual-studio-latest.yml",
+      ".github/workflows/visual-studio-preview.yml"
+    ]
+  },
+  "code": {
+    "languages": {
+      "cpp": {
+        "files": 20337,
+        "lines": 8000113
+      },
+      "python": {
+        "files": 872,
+        "lines": 176579
+      },
+      "c": {
+        "files": 211,
+        "lines": 145513
+      },
+      "cmake": {
+        "files": 1377,
+        "lines": 82650
+      },
+      "javascript": {
+        "files": 63,
+        "lines": 25103
+      },
+      "fortran": {
+        "files": 4,
+        "lines": 10567
+      },
+      "shell": {
+        "files": 102,
+        "lines": 4984
+      }
+    },
+    "source_lines": 8357875,
+    "largest_source_files": [
+      {
+        "path": "interpreter/llvm-project/llvm/lib/Target/AArch64/AArch64ISelLowering.cpp",
+        "lines": 32439
+      },
+      {
+        "path": "interpreter/llvm-project/llvm/lib/CodeGen/SelectionDAG/DAGCombiner.cpp",
+        "lines": 30769
+      },
+      {
+        "path": "interpreter/llvm-project/llvm/lib/Transforms/Vectorize/SLPVectorizer.cpp",
+        "lines": 27689
+      },
+      {
+        "path": "interpreter/llvm-project/llvm/lib/Target/RISCV/RISCVISelLowering.cpp",
+        "lines": 26156
+      },
+      {
+        "path": "interpreter/llvm-project/clang/lib/Sema/SemaOpenMP.cpp",
+        "lines": 26133
+      }
+    ],
+    "test_files": 1555,
+    "test_frameworks": [
+      "ctest",
+      "gtest",
+      "pytest",
+      "unittest"
+    ],
+    "cxx_standard": [
+      "11",
+      "17",
+      "20"
+    ],
+    "requires_python": ">=3.10",
+    "site_specific_paths": [
+      "core/unix/src/TUnixSystem.cxx: /home/rdm/",
+      "gui/gui/src/TGFrame.cxx: /home/root/",
+      "gui/webdisplay/inc/ROOT/RWebWindow.hxx: /home/user/",
+      "gui/webdisplay/src/RWebWindowsManager.cxx: /home/user/",
+      "interpreter/llvm-project/clang/utils/check_cfc/test_check_cfc.py: /home/user/",
+      "io/io/test/TFileTests.cxx: /eos/",
+      "net/http/inc/THttpWSHandler.h: /home/user/",
+      "net/http/src/THttpServer.cxx: /home/user/",
+      "net/netxng/test/RRawFileNetXNG.cxx: /eos/",
+      "net/netxng/test/TNetXNGFileTest.cxx: /eos/"
+    ]
+  },
+  "eic": {
+    "components_detected": {
+      "xrootd": {
+        "files": 54,
+        "kind": "generic",
+        "examples": [
+          ".github/workflows/python_wheel_build.yml",
+          ".github/workflows/root-ci.yml",
+          ".github/workflows/root-docs-ci.yml"
+        ]
+      },
+      "pythia8": {
+        "files": 2,
+        "kind": "domain",
+        "examples": [
+          "cmake/modules/SearchInstalledSoftware.cmake",
+          "montecarlo/pythia8/inc/TPythia8.h"
+        ]
+      },
+      "awkward": {
+        "files": 1,
+        "kind": "generic",
+        "examples": [
+          "bindings/pyroot/pythonizations/python/ROOT/_pythonization/_rdataframe.py"
+        ]
+      },
+      "onnxruntime": {
+        "files": 1,
+        "kind": "generic",
+        "examples": [
+          "tutorials/machine_learning/TMVA_SOFIE_ONNX.py"
+        ]
+      }
+    },
+    "domain_components": [
+      "pythia8"
+    ],
+    "is_component": "root",
+    "vendored_candidates": [],
+    "submodules": []
+  },
+  "ci": {
+    "workflow_count": 33,
+    "pr_triggered_workflows": [
+      ".github/workflows/code_analysis.yml",
+      ".github/workflows/cppinterop-diff.yml",
+      ".github/workflows/cppjit-diff.yml",
+      ".github/workflows/histv7.yml",
+      ".github/workflows/lint-action-files.yml",
+      ".github/workflows/llvm-diff.yml",
+      ".github/workflows/python_wheel_build.yml",
+      ".github/workflows/root-ci.yml",
+      ".github/workflows/test-ci-scripts.yml",
+      ".github/workflows/test-coverage.yml"
+    ],
+    "runs_on": [
+      "macos-15",
+      "macos-26",
+      "self-hosted",
+      "ubuntu-24.04-arm",
+      "ubuntu-latest"
+    ],
+    "container_images": [
+      "[\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\"]",
+      "alma10",
+      "alma8",
+      "alma9",
+      "debian13",
+      "fedora43",
+      "fedora44",
+      "opensuse16",
+      "rawhide",
+      "registry.cern.ch/root-ci/${{",
+      "registry.cern.ch/root-ci/alma10:buildready",
+      "registry.cern.ch/root-ci/alma9:buildready",
+      "ubuntu",
+      "ubuntu22",
+      "ubuntu2404",
+      "ubuntu2404-cuda",
+      "ubuntu2604",
+      "ubuntu2610"
+    ],
+    "uses_eic_shell": false,
+    "actions_used": [
+      "EnricoMi/publish-unit-test-result-action",
+      "actions/checkout",
+      "actions/download-artifact",
+      "actions/setup-node",
+      "actions/setup-python",
+      "actions/upload-artifact",
+      "astral-sh/ruff-action",
+      "codecov/codecov-action",
+      "cvmfs-contrib/github-action-cvmfs",
+      "pypa/gh-action-pypi-publish",
+      "raven-actions/actionlint",
+      "root-project/gcc-problem-matcher-improved",
+      "root-project/root/.github/workflows/root-ci.yml",
+      "root-project/root/.github/workflows/root-docs-ci.yml"
+    ],
+    "action_refs_not_sha_pinned": 72,
+    "other_ci": [],
+    "default_branch_runs": 50,
+    "default_branch_success_rate": 0.04,
+    "last_default_branch_run": "2026-10-12T10:33:11Z"
+  },
+  "repo": {
+    "full_name": "root-project/root",
+    "default_branch": "master",
+    "archived": false,
+    "fork": false,
+    "created_at": "2013-06-27T10:46:59Z",
+    "pushed_at": "2026-10-12T10:33:08Z",
+    "stars": 3311,
+    "forks": 1577,
+    "homepage": "https://root.cern",
+    "license_spdx": "NOASSERTION",
+    "topics": [
+      "data-analysis",
+      "root-cern",
+      "root",
+      "c-plus-plus",
+      "python",
+      "physics",
+      "statistics",
+      "mathematics",
+      "machine-learning",
+      "interpreter",
+      "cling",
+      "graphics",
+      "visualization",
+      "geometry",
+      "parallel",
+      "hacktoberfest"
+    ],
+    "has_issues": true,
+    "has_discussions": false,
+    "open_issues": 381,
+    "open_prs": 299,
+    "default_branch_protected": true,
+    "rulesets": 4,
+    "languages_github": {
+      "C++": 0.839,
+      "C": 0.076,
+      "JavaScript": 0.042,
+      "Python": 0.018,
+      "CMake": 0.009,
+      "HTML": 0.008,
+      "Assembly": 0.003,
+      "Objective-C++": 0.002
+    }
+  },
+  "community": {
+    "health_percentage": 87,
+    "files": {
+      "code_of_conduct": false,
+      "code_of_conduct_file": false,
+      "contributing": true,
+      "issue_template": false,
+      "license": true,
+      "pull_request_template": true,
+      "readme": true
+    }
+  },
+  "releases": {
+    "count_total": 63,
+    "count_24m": 40,
+    "latest_tag": "v6-36-14",
+    "latest_date": "2026-09-01T13:42:26Z",
+    "authors_24m": 1,
+    "with_notes_fraction_24m": 1.0
+  },
+  "issues": {
+    "created_12m": 442,
+    "sampled": false,
+    "closed_of_created_12m": 344,
+    "median_first_response_days_12m": 0.68,
+    "unanswered_fraction_12m": 0.066,
+    "labeled_fraction_12m": 0.977,
+    "open_total": 380,
+    "open_older_365d": 282
+  },
+  "prs": {
+    "created_12m": 924,
+    "sampled": true,
+    "merged_12m": 703,
+    "median_days_to_merge_12m": 1.14,
+    "reviewed_fraction_12m": 0.899,
+    "external_fraction_12m": 0.555,
+    "test_touching_fraction_12m": 0.407,
+    "distinct_reviewers_12m": 22,
+    "top_reviewer_share_12m": 0.2,
+    "distinct_mergers_12m": 18,
+    "open_total": 299,
+    "open_older_90d": 168
+  },
+  "packaging": {
+    "spack_name": "root",
+    "eic_spack": {
+      "matches_repo": true,
+      "versions": [
+        "6.32.14",
+        "6.32.12",
+        "6.32.10"
+      ]
+    },
+    "spack_builtin": {
+      "matches_repo": true,
+      "versions": [
+        "master",
+        "develop",
+        "6.40.04",
+        "6.40.02",
+        "6.40.00"
+      ]
+    },
+    "in_eic_shell": true,
+    "eic_shell_version": "6.40.04",
+    "eic_spack_dependents": [
+      "afterburner",
+      "edm4eic",
+      "eic-ip6",
+      "eic-smear",
+      "eicd",
+      "eicrecon",
+      "eicroot",
+      "eicsimubeameffects",
+      "eictoymodel",
+      "ejana",
+      "g4e",
+      "geant3-vmc",
+      "hepmcmerger",
+      "irt",
+      "irt2",
+      "jana2",
+      "jpacphoto",
+      "juggler",
+      "lager",
+      "npdet",
+      "npsim",
+      "online-distribution",
+      "pythia6m",
+      "sartre",
+      "timeframebuilder"
+    ],
+    "conda_forge": null,
+    "pypi": null,
+    "latest_release_packaged": false
+  },
+  "errors": []
+}

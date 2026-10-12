@@ -1,4 +1,5 @@
 from ssr.collect import (
+    _FILE_RES,
     PR_SUBJECT_RE,
     TEST_PATH_RE,
     BotFilter,
@@ -6,6 +7,8 @@ from ssr.collect import (
     bus_factor,
     institution_domain,
     is_vendored,
+    normalize_version,
+    version_key,
     parse_github,
 )
 
@@ -72,3 +75,22 @@ def test_misc():
     assert parse_github("https://gitlab.com/x/y") is None
     assert is_vendored("cpp/external/CLI/App.hpp")
     assert not is_vendored("src/external.cc")
+
+
+def test_normalize_version():
+    assert normalize_version("v01-38") == normalize_version("1.38") == "1.38"
+    assert normalize_version("v1.42.0") == "1.42.0"
+    assert normalize_version("v00-17-04") == normalize_version("0.17.4")
+    assert normalize_version("2026.03.01") == "2026.3.1"
+
+
+def test_version_key_orders_series():
+    tags = ["v6-36-14", "v6-40-04", "v6-38-00"]
+    assert max(tags, key=version_key) == "v6-40-04"
+
+
+def test_file_patterns():
+    assert _FILE_RES["changelog"].search("doc/ReleaseNotes.md")
+    assert _FILE_RES["changelog"].search("CHANGELOG.md")
+    assert _FILE_RES["issue_templates"].search(".github/ISSUE_TEMPLATE")
+    assert _FILE_RES["issue_templates"].search(".github/ISSUE_TEMPLATE/bug.md")

@@ -5,7 +5,7 @@
 <h1>{{ p.name }}</h1>
 <p class="meta">
   <a href="{{ p.repo }}">{{ p.repo|replace('https://', '') }}</a>
-  <span class="chip">{{ p.domain }}</span><span class="chip {% if p.role == 'core' %}core{% endif %}">{{ p.role }}</span>
+  <span class="chip">{{ p.domain }}</span><span class="chip {{ p.role }}">{{ p.role }}</span>
   · pass <a href="../passes/{{ r.pass }}.html">{{ r.pass }}</a>
   · commit <a href="{{ p.repo }}/tree/{{ a.commit }}"><code>{{ a.commit[:12] }}</code></a>
   · assessor <code>{{ a.assessor.model }}</code>

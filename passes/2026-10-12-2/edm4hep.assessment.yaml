@@ -1,0 +1,474 @@
+schema_version: 1
+project: edm4hep
+pass: "2026-10-12-2"
+commit: 2b569d9fb7085c28cd69b7d0cd129ee9bb178c90
+assessor: { agent: claude-code, model: claude-opus-5-5 }
+summary: >-
+  25% of default-branch commits in 12 months were pushed directly (release-note, version and CI
+  updates), rulesets require no approving review, there is no documented version scheme, governance,
+  CODEOWNERS or linked code of conduct, and the downstream-build check failed on 8 of its last 10 runs. CI
+  builds and runs ctest on every PR with GCC and Clang against podio main and Key4hep stacks, including
+  backwards-compatibility reads of files written by older releases, and formatting and ruff are required
+  checks. Upstream Spack added each of the last three releases within a day of tagging, eic-shell ships 1.1, and EDM4eic,
+  EICrecon and the EIC simulation chain build on it.
+criteria:
+  eng.change-control:
+    level: 1
+    confidence: high
+    rationale: >-
+      58.5% of merged PRs have a non-author review, but only 74.7% of first-parent commits came from PRs;
+      maintainers push release-note, version-bump and CI changes directly to `main`, below the 80% needed
+      for level 2.
+    evidence:
+      - metrics:git.first_parent_pr_fraction_12m = 0.747
+      - metrics:prs.reviewed_fraction_12m = 0.585
+      - https://github.com/key4hep/EDM4hep/rules/11846862
+      - https://github.com/key4hep/EDM4hep/commit/84b137b1a0e1b50ab49e33e577f12502c8800bc5
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/.github/PULL_REQUEST_TEMPLATE#L1-L8
+    gaps:
+      - 19 of 75 first-parent commits in 12 months bypassed PRs (release notes, version bumps, CI and CMake config updates).
+      - The rulesets require a PR but zero approving reviews, and there is no CODEOWNERS.
+    actions:
+      - action: Route release-note, version-bump and Key4hepConfig/CI template updates through PRs and remove maintainer bypass from the `main` ruleset.
+        priority: medium
+        effort: S
+      - action: Set `required_approving_review_count` to 1 in the "Default branch (Key4hep)" ruleset.
+        priority: medium
+        effort: S
+  eng.ci:
+    level: 2
+    confidence: high
+    rationale: >-
+      Every PR and push to `main` builds and runs ctest on four LCG stacks (GCC and Clang, podio main) and
+      on Key4hep release and nightly stacks, as required status checks, with 80% of default-branch runs
+      succeeding. Level 3 is missed on the 90% success rate and on a downstream check that failed on 8 of its
+      last 10 runs and is not required.
+    evidence:
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/.github/workflows/lcg_linux_with_podio.yml#L1-L97
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/.github/workflows/key4hep-build.yaml#L6-L49
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/.github/workflows/downstream-build.yaml#L6-L21
+      - metrics:ci.default_branch_success_rate = 0.8
+      - https://github.com/key4hep/EDM4hep/actions/runs/38241146430
+    gaps:
+      - Default-branch success rate is 80% (scheduled Key4hep nightly builds fail intermittently), below 90%.
+      - The downstream-build workflow failed on 8 of its last 10 runs (the others cancelled or awaiting approval) and is not a required check.
+    actions:
+      - action: Fix the `downstream-build` job (key4hep-actions/downstream-build) so it passes, and add it to the ruleset's required status checks.
+        priority: medium
+        effort: M
+  eng.testing:
+    level: 2
+    confidence: high
+    rationale: >-
+      Catch2 unit tests cover the utils, write/read round trips cover every datatype in ROOT, SIO and
+      RNTuple, and backwards-compatibility tests read reference files written by four earlier releases.
+      Coverage is not measured and 37.7% of merged PRs touch tests, below 40%.
+    evidence:
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/test/CMakeLists.txt#L23-L120
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/test/backwards_compat/CMakeLists.txt#L1-L20
+      - metrics:code.test_files = 21
+      - metrics:prs.test_touching_fraction_12m = 0.377
+    gaps:
+      - Test coverage is neither measured nor published (`metrics:files.codecov` is empty).
+      - Fewer than 40% of merged PRs in 12 months touch test files.
+    actions:
+      - action: Add a gcov/lcov build to `.github/workflows/lcg_linux_with_podio.yml` and upload the report to Codecov.
+        priority: medium
+        effort: M
+      - action: Add a PR-template checkbox asking for a test with each schema or utility change.
+        priority: low
+        effort: S
+  eng.static-quality:
+    level: 2
+    confidence: high
+    rationale: >-
+      clang-format, ruff and ruff-format run through pre-commit on every push and PR as a required check,
+      and the build enables `-Wall -Wextra -Wpedantic -Wshadow -Wdeprecated`. No clang-tidy, sanitizer or
+      other deeper analysis runs, and warnings do not fail CI.
+    evidence:
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/.pre-commit-config.yaml#L1-L30
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/.github/workflows/pre-commit.yml#L1-L51
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/cmake/Key4hepConfig.cmake#L5-L20
+    gaps:
+      - No clang-tidy, cppcheck or sanitizer job runs in CI.
+      - Compiler warnings are not treated as errors or tracked to zero.
+    actions:
+      - action: Add an ASan/UBSan build of the ctest suite to `.github/workflows/lcg_linux_with_podio.yml`.
+        priority: medium
+        effort: S
+  eng.modularity:
+    level: 3
+    confidence: medium
+    rationale: >-
+      The schema is generated by podio into separate core, dictionary, SIO, Arrow, utils, RDF and tool
+      targets, built with C++20 and exported as the `EDM4HEP::` CMake package, which CI verifies by building
+      a downstream project. Public headers live under `include/` and `utils/include/`, and the README diagram
+      and Doxygen pages document the type structure.
+    evidence:
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/edm4hep/CMakeLists.txt#L6-L80
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/cmake/EDM4HEPCreateConfig.cmake#L1-L30
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/cmake/Key4hepConfig.cmake#L43-L53
+      - https://github.com/key4hep/EDM4hep/tree/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/test/downstream-project-cmake-test
+      - metrics:code.cxx_standard = ["17", "20"]
+    gaps: []
+    actions: []
+  doc.user:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The README gives a Key4hep-stack build, a Python quick start and `edm4hep2json` usage, and Doxygen
+      pages are hosted. The dependency list omits nlohmann_json, Python and Catch2, and the CMake options
+      are not documented.
+    evidence:
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/README.md#L61-L110
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/CMakeLists.txt#L12-L37
+      - https://edm4hep.web.cern.ch
+    gaps:
+      - README omits required dependencies nlohmann_json (>= 3.10.5, on by default), Python 3 and Catch2 v3, and CMake >= 3.23.
+      - CMake options (`EDM4HEP_WITH_JSON`, `BUILD_DOCS`, `USE_EXTERNAL_CATCH2`) are not documented for users.
+      - README still describes the project as "beta" and points to a `tests` directory that is named `test`.
+    actions:
+      - action: Extend the README "Dependencies" section with every `find_package` dependency and minimum version, and add a table of CMake options.
+        priority: medium
+        effort: S
+  doc.developer:
+    level: 2
+    confidence: medium
+    rationale: >-
+      Every datatype and member in `edm4hep.yaml` carries a description that becomes Doxygen output,
+      published at edm4hep.web.cern.ch, and `doc/` holds design notes (PIDHandler, vertices, LCIO
+      differences). The publishing pipeline runs on a CERN GitLab mirror whose runs are not public, and
+      several utility headers have no per-function documentation.
+    evidence:
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/edm4hep.yaml#L228-L310
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/.gitlab-ci.yml#L1-L70
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/doc/PIDHandler.md
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/doc/differences_wrt_lcio.md
+    gaps:
+      - The Doxygen deployment runs on a CERN GitLab mirror with no publicly visible pipeline.
+      - "`vector_utils.h` and `cov_matrix_utils.h` have almost no Doxygen comments on their public functions."
+    actions:
+      - action: Move the Doxygen build and deployment into a public GitHub Actions workflow (for example to GitHub Pages) triggered on `main` and tags.
+        priority: medium
+        effort: S
+      - action: Add Doxygen comments to every public function in `utils/include/edm4hep/utils/vector_utils.h` and `cov_matrix_utils.h`.
+        priority: low
+        effort: S
+  doc.contributing:
+    level: 1
+    confidence: medium
+    rationale: >-
+      `doc/contributing.md` and the Key4hep organization CONTRIBUTING describe the fork-and-rebase workflow
+      and the release-notes block, and issue and PR templates exist. Neither documents running the tests,
+      the clang-format/ruff pre-commit setup, or the coding conventions beyond "no new warnings".
+    evidence:
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/doc/contributing.md#L1-L60
+      - https://github.com/key4hep/.github/blob/33c61b91c7b07527052a790ddbf29b272944e3a6/.github/CONTRIBUTING.md
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/.github/ISSUE_TEMPLATE#L1-L9
+    gaps:
+      - Contribution guidance does not cover environment setup, running ctest, or pre-commit/clang-format conventions.
+      - "`doc/contributing.md` still refers to the `master` branch."
+    actions:
+      - action: Extend `doc/contributing.md` with Key4hep-stack setup, `ctest` invocation, `pre-commit install`, and the clang-format/ruff conventions.
+        priority: medium
+        effort: S
+  com.responsiveness:
+    level: 2
+    confidence: medium
+    rationale: >-
+      Median first response is 1.3 days and 13 of 17 new issues were labeled or closed, but 12 of 20 open
+      issues are older than a year and no triage process is documented.
+    evidence:
+      - metrics:issues.median_first_response_days_12m = 1.28
+      - metrics:issues.labeled_fraction_12m = 0.471
+      - metrics:issues.open_older_365d = 12
+      - metrics:prs.median_days_to_merge_12m = 0.83
+    gaps:
+      - 60% of open issues are older than one year (level 3 needs under 25%).
+      - No documented triage process; no milestones are used.
+    actions:
+      - action: Review the 12 open issues older than one year, close or label them, and document the label scheme in `doc/contributing.md`.
+        priority: medium
+        effort: S
+  com.contributors:
+    level: 2
+    confidence: high
+    rationale: >-
+      11 authors from 3 e-mail domains contributed in 24 months, with 3 new authors in 12 months and
+      external PRs merged, but only 7.5% of merged PRs came from outside the maintainer group.
+    evidence:
+      - metrics:git.authors_24m = 11
+      - metrics:git.email_domains_24m = 3
+      - metrics:git.new_authors_12m = 3
+      - metrics:prs.external_fraction_12m = 0.075
+    gaps:
+      - External contributors account for 7.5% of merged PRs (level 3 needs 20%).
+    actions:
+      - action: Label open enhancement issues such as utility requests with `good first issue` and link them from the README.
+        priority: low
+        effort: S
+  com.bus-factor:
+    level: 2
+    confidence: medium
+    rationale: >-
+      Bus factor (50%) is 2, 3 people reviewed and 2 merged, releases were cut by 2 people, and the upstream
+      Spack recipe names 3 maintainers. Level 3 is missed on the bus factor and on the absence of named
+      per-component owners.
+    evidence:
+      - metrics:git.bus_factor_50_24m = 2
+      - metrics:git.top_author_share_24m = 0.426
+      - metrics:prs.distinct_reviewers_12m = 3
+      - metrics:prs.distinct_mergers_12m = 2
+      - metrics:releases.authors_24m = 2
+      - https://github.com/spack/spack-packages/blob/b6b5da02e9b5ccf6e3092c7740e677e770019646/repos/spack_repo/builtin/packages/edm4hep/package.py#L18
+    gaps:
+      - Bus factor (50%) is 2; level 3 needs 3.
+      - No CODEOWNERS or in-repository maintainer list; the release procedure is not documented.
+    actions:
+      - action: Add `.github/CODEOWNERS` naming two owners each for `edm4hep.yaml`, `utils/`, `tools/` and `python/`.
+        priority: medium
+        effort: S
+  com.governance:
+    level: 1
+    confidence: medium
+    rationale: >-
+      Maintainers can be identified through CITATION.cff and the Spack recipe, and schema decisions are
+      discussed in public issues labeled `discussion`, but no decision process, maintainer path or roadmap
+      is documented.
+    evidence:
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/CITATION.cff#L10-L40
+      - https://github.com/key4hep/EDM4hep/issues/526
+      - metrics:files.governance = []
+    gaps:
+      - No documented decision process or path to reviewer or maintainer.
+      - No roadmap or milestones.
+    actions:
+      - action: Add `GOVERNANCE.md` naming the maintainers, how schema changes are decided (issue discussion, Key4hep meetings with linked minutes), and how to become a maintainer.
+        priority: medium
+        effort: S
+  com.conduct:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The issue tracker is documented as the support channel, but no code of conduct is linked from the
+      repository; the Key4hep documentation carries a Contributor Covenant 1.0 text without a specific
+      reporting contact.
+    evidence:
+      - metrics:community.files.code_of_conduct = false
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/README.md#L151-L153
+      - https://github.com/key4hep/key4hep-doc/blob/d15a81b91339b92f9269fa5cc315109e18e54f2d/docs/getting_started/CONTRIBUTING.md#L37-L49
+    gaps:
+      - No code of conduct with a reporting contact applies to or is linked from the repository.
+    actions:
+      - action: Add `CODE_OF_CONDUCT.md` to the key4hep `.github` repository with a named reporting contact so it applies to EDM4hep.
+        priority: high
+        effort: S
+  dist.packaging:
+    level: 3
+    confidence: high
+    rationale: >-
+      Upstream Spack provides the latest release 1.1.1, added the day v01-01-01 was tagged, and eic-shell
+      ships EDM4hep 1.1 (the collector's `latest_release_packaged = false` reflects the `v01-01-01` tag
+      naming).
+    evidence:
+      - metrics:packaging.spack_builtin.versions = ["main", "1.1.1", "1.1", "1.0", "0.99.4"]
+      - metrics:releases.latest_tag = v01-01-01
+      - metrics:packaging.in_eic_shell = true
+      - metrics:packaging.eic_shell_version = 1.1
+      - https://github.com/spack/spack-packages/commit/b6b5da02e9b5ccf6e3092c7740e677e770019646
+    gaps: []
+    actions: []
+  dist.releases:
+    level: 1
+    confidence: high
+    rationale: >-
+      Six releases in 24 months each have notes, and `doc/ReleaseNotes.md` flags breaking changes and
+      deprecations, but no version scheme is documented.
+    evidence:
+      - metrics:git.tags_24m = 6
+      - metrics:releases.with_notes_fraction_24m = 1.0
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/doc/ReleaseNotes.md#L1-L10
+      - https://github.com/key4hep/EDM4hep/releases/tag/v01-01-01
+    gaps:
+      - The `vXX-YY-ZZ` version scheme and its compatibility meaning are not documented.
+      - No deprecation policy and no public release workflow.
+    actions:
+      - action: State in the README that tags follow SemVer as `vMM-mm-pp` and what a major, minor or patch bump means for schema and API compatibility.
+        priority: medium
+        effort: S
+  dist.dependencies:
+    level: 1
+    confidence: high
+    rationale: >-
+      podio, nlohmann_json and HepMC3 are declared with minimum versions, but ROOT, Python3 and HepPDT have
+      no version constraint in CMake, and there is no Dependabot or Renovate configuration.
+    evidence:
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/CMakeLists.txt#L12-L19
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/python/CMakeLists.txt#L1
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/test/CMakeLists.txt#L109-L110
+      - metrics:ci.action_refs_not_sha_pinned = 5
+    gaps:
+      - "`find_package(ROOT)`, `find_package(Python3)` and `find_package(HepPDT)` have no minimum version, although the README states ROOT >= 6.22/06."
+      - No automated dependency update monitoring; `key4hep-actions/*@main` and `actions/checkout@v4` are not pinned.
+    actions:
+      - action: Add `VERSION` arguments to the ROOT, Python3 and HepPDT `find_package` calls matching the README.
+        priority: medium
+        effort: S
+  dist.reproducibility:
+    level: 2
+    confidence: medium
+    rationale: >-
+      CI builds in Key4hep container images against Key4hep release and nightly stacks, the README
+      documents the CVMFS stack setup, and files record and tests check the EDM4hep and podio versions.
+      The documented environment is the unpinned nightly, and no release names the stack or image it was
+      built and tested with.
+    evidence:
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/README.md#L74-L86
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/.github/workflows/key4hep-build.yaml#L20-L49
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/test/test_EDM4hepFile.py#L111-L115
+    gaps:
+      - No release states the Key4hep stack or container tag it was validated in.
+    actions:
+      - action: Record in each release note the Key4hep release stack and `key4hep-images` tag used by the release CI run.
+        priority: medium
+        effort: S
+  dist.portability:
+    level: 2
+    confidence: high
+    rationale: >-
+      CI builds and tests with GCC 13 and Clang 22 on AlmaLinux 9, Ubuntu 24.04 and 26.04, with no
+      site-specific paths, but only on x86_64 Linux.
+    evidence:
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/.github/workflows/lcg_linux_with_podio.yml#L23-L31
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/.github/workflows/key4hep-build.yaml#L20-L30
+      - metrics:code.site_specific_paths = []
+    gaps:
+      - No aarch64 or macOS job in CI.
+      - No statement on accelerator use or why it does not apply.
+    actions:
+      - action: Add an `ubuntu-24.04-arm` job building podio and EDM4hep and running ctest to `.github/workflows/lcg_linux_with_podio.yml`.
+        priority: medium
+        effort: M
+  eic.reuse:
+    level: 3
+    confidence: high
+    rationale: >-
+      The data model is generated and serialized by podio and uses ROOT and HepMC3, with no parallel
+      implementations, and it is itself the base that EDM4eic and EICrecon build on.
+    evidence:
+      - metrics:eic.components_detected.podio.files = 21
+      - metrics:eic.vendored_candidates = []
+      - metrics:packaging.eic_spack_dependents = ["algorithms", "edm4eic", "eicrecon", "juggler", "timeframebuilder"]
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/edm4hep/CMakeLists.txt#L6-L14
+    gaps: []
+    actions: []
+  eic.data-model:
+    level: 3
+    confidence: high
+    rationale: >-
+      EDM4hep defines the EIC-standard event format in podio ROOT, RNTuple and SIO files; the version is
+      written to files and checked on read, round-trip and backwards-compatibility tests run in CI, and EIC
+      benchmarks read the files with uproot.
+    evidence:
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/test/test_EDM4hepFile.py#L111-L115
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/old_schemas/README.md#L1-L20
+      - https://github.com/search?q=org%3Aeic+uproot+MCParticles.momentum&type=code
+    gaps: []
+    actions: []
+  eic.environment:
+    level: 2
+    confidence: medium
+    rationale: >-
+      eic/containers builds EDM4hep into the eic images and its CI runs npsim and EICrecon on EDM4hep
+      files in them; the project's own CI does not use eic-shell. Only the pinned release is tested in
+      eic images, so EDM4hep changes reach the EIC stack untested until they are released and pinned.
+    evidence:
+      - metrics:ci.uses_eic_shell = false
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/spack-environment/packages.yaml#L155-L157
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/.github/workflows/build-push.yml#L440-L496
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/docs/spack-environment.md#L231
+    gaps:
+      - No CI builds EDM4eic or EICrecon against EDM4hep `main` before an EDM4hep release.
+    actions:
+      - action: (EIC side) Add a scheduled eic/containers or EDM4eic job that builds EDM4eic and EICrecon against EDM4hep `main` in `eic_ci:nightly`.
+        priority: medium
+        effort: M
+  eic.currency:
+    level: 3
+    confidence: medium
+    rationale: >-
+      EDM4hep requires podio >= 1.7 while eic-shell ships podio 1.8, CI builds against podio `main` on every
+      PR so podio changes are adapted before release, and the latest CI logs show no deprecation warnings
+      from podio or ROOT.
+    evidence:
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/CMakeLists.txt#L12
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/.github/workflows/lcg_linux_with_podio.yml#L33-L37
+      - https://github.com/key4hep/EDM4hep/actions/runs/38241146430
+      - https://github.com/key4hep/EDM4hep/pull/509
+    gaps: []
+    actions: []
+  via.license:
+    level: 2
+    confidence: high
+    rationale: >-
+      A single Apache-2.0 license is detected and stated in CITATION.cff and the Spack recipe, compatible
+      with podio and ROOT. Source files carry no SPDX headers, the NOTICE file is empty, and the vendored
+      public-domain MurmurHash3 is not recorded.
+    evidence:
+      - metrics:repo.license_spdx = Apache-2.0
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/CITATION.cff#L45
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/utils/src/MurmurHash3.cpp#L1-L3
+    gaps:
+      - No SPDX headers in source files and no record of third-party code (MurmurHash3) in NOTICE.
+      - No documented contribution terms.
+    actions:
+      - action: Add `SPDX-License-Identifier` headers, list MurmurHash3 in `NOTICE`, and state inbound = outbound in `doc/contributing.md`.
+        priority: low
+        effort: S
+  via.citation:
+    level: 2
+    confidence: high
+    rationale: >-
+      CITATION.cff lists 6 authors with a Zenodo concept DOI and the ICHEP 2022 paper, and Zenodo mints a
+      DOI per release (v01-01-01 included). CITATION.cff has no version and was last changed in 2025-09, and
+      lists 6 of the 11 authors active in 24 months.
+    evidence:
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/CITATION.cff#L1-L54
+      - https://doi.org/10.5281/zenodo.22304463
+      - metrics:git.authors_24m = 11
+    gaps:
+      - CITATION.cff is not updated with each release (no `version` or `date-released`).
+      - Contributors since the 2022 paper are not credited in the citation metadata.
+    actions:
+      - action: Add `version` and `date-released` to CITATION.cff in the release-notes commit, and add a `.zenodo.json` or contributor list covering recent authors.
+        priority: medium
+        effort: S
+  via.adoption:
+    level: 3
+    confidence: high
+    rationale: >-
+      EDM4hep ships in eic-shell, EDM4eic and EICrecon depend on it, the EIC simulation chain writes
+      EDM4hep files, and it is the event data model of the Key4hep stack used by FCC, CEPC and linear
+      collider studies.
+    evidence:
+      - metrics:packaging.in_eic_shell = true
+      - metrics:packaging.eic_spack_dependents = ["algorithms", "edm4eic", "eicrecon", "juggler", "timeframebuilder"]
+      - https://github.com/key4hep/key4hep-doc/blob/d15a81b91339b92f9269fa5cc315109e18e54f2d/docs/getting_started/introduction.md#L11-L17
+    gaps: []
+    actions: []
+  via.support:
+    level: 2
+    confidence: medium
+    rationale: >-
+      The Key4hep documentation, which covers EDM4hep, acknowledges CERN EP R&D and EU Horizon 2020
+      funding, and the authors are at CERN and DESY. No multi-institution maintenance commitment or
+      succession plan is documented.
+    evidence:
+      - https://github.com/key4hep/key4hep-doc/blob/d15a81b91339b92f9269fa5cc315109e18e54f2d/docs/index.md#L50-L54
+      - https://github.com/key4hep/EDM4hep/blob/2b569d9fb7085c28cd69b7d0cd129ee9bb178c90/CITATION.cff#L10-L40
+    gaps:
+      - No documented multi-institution maintenance commitment or succession plan.
+    actions:
+      - action: State in the README the institutions committed to maintaining EDM4hep and what happens when a maintainer leaves.
+        priority: low
+        effort: S

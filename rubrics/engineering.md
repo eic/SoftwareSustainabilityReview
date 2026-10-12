@@ -28,7 +28,8 @@ against changes in the computing environment.
 repository?
 
 **Check.** `metrics:git.first_parent_pr_fraction_12m` (the share of default-branch first-parent
-commits that came from a merged PR, by commit subject or the GitHub commit-to-PR API),
+commits that came from a merged PR, by commit subject or the GitHub commit-to-PR API; for
+rebase-merging projects the API check is sampled and `first_parent_pr_fraction_estimated` is true),
 `metrics:prs.reviewed_fraction_12m`, `metrics:repo.default_branch_protected`,
 `metrics:repo.rulesets`, and `metrics:files.codeowners`. Also check whether the public repository
 is where development happens, rather than a mirror of a private repository.

@@ -1,0 +1,365 @@
+{
+  "schema_version": 1,
+  "project": "geant4",
+  "pass": "2026-10-12-2",
+  "repo_url": "https://github.com/Geant4/geant4",
+  "subdir": null,
+  "collected_at": "2026-10-12T21:24:48+00:00",
+  "collector_version": "0.3.0",
+  "windows_months": {
+    "short": 12,
+    "long": 24
+  },
+  "git": {
+    "head_sha": "f3d5293d384757b8a228a099898b2b87cfa4023c",
+    "head_date": "2026-06-26T11:31:48+02:00",
+    "last_commit_date": "2026-06-26T11:31:48+02:00",
+    "commits_total": 86,
+    "commits_12m": 4,
+    "commits_24m": 8,
+    "authors_total": 2,
+    "authors_12m": 1,
+    "authors_24m": 1,
+    "new_authors_12m": 0,
+    "bus_factor_50_24m": 1,
+    "bus_factor_80_24m": 1,
+    "top_author_share_24m": 1.0,
+    "email_domains_24m": 1,
+    "first_parent_commits_12m": 4,
+    "first_parent_pr_fraction_12m": 0.0,
+    "tags_total": 137,
+    "tags_24m": 9,
+    "first_parent_resolved_via_api": 4,
+    "first_parent_pr_fraction_estimated": false
+  },
+  "files": {
+    "readme": [
+      "README.rst"
+    ],
+    "license": [
+      "LICENSE"
+    ],
+    "contributing": [
+      "CONTRIBUTING.rst"
+    ],
+    "code_of_conduct": [],
+    "citation_cff": [
+      "CITATION.cff"
+    ],
+    "codemeta": [],
+    "zenodo_json": [],
+    "security": [],
+    "changelog": [
+      "CHANGELOG"
+    ],
+    "governance": [],
+    "codeowners": [
+      ".github/CODEOWNERS"
+    ],
+    "authors": [],
+    "pr_template": [],
+    "issue_templates": [],
+    "dependabot": [],
+    "renovate": [],
+    "pre_commit": [],
+    "clang_format": [
+      ".clang-format",
+      "examples/.clang-format",
+      "examples/extended/medical/radiobiology/.clang-format",
+      "source/externals/clhep/.clang-format",
+      "source/externals/expat/.clang-format"
+    ],
+    "clang_tidy": [
+      ".clang-tidy"
+    ],
+    "editorconfig": [],
+    "python_lint": [],
+    "mypy": [],
+    "codecov": [],
+    "doxygen": [
+      "source/externals/ptl/cmake/Templates/Doxyfile.in",
+      "source/visualization/OpenGL/Doxyfile",
+      "source/visualization/management/Doxyfile"
+    ],
+    "sphinx": [],
+    "mkdocs": [],
+    "dockerfile": [
+      "packaging/rpm/Dockerfile.alma8",
+      "packaging/rpm/Dockerfile.alma9",
+      "packaging/rpm/Dockerfile.centos7",
+      "packaging/rpm/Dockerfile.fedora"
+    ],
+    "apptainer_def": [],
+    "spack_env": [],
+    "conda_env": [],
+    "devcontainer": [],
+    "lockfile": [],
+    "gitlab_ci": [],
+    "other_ci": [],
+    "cmake": [
+      "CMakeLists.txt"
+    ],
+    "pyproject": [],
+    "setup_py": [],
+    "docs_dir": 0,
+    "examples_dir": 9056,
+    "github_workflows": []
+  },
+  "code": {
+    "languages": {
+      "cpp": {
+        "files": 13130,
+        "lines": 2295704
+      },
+      "cmake": {
+        "files": 481,
+        "lines": 34071
+      },
+      "fortran": {
+        "files": 34,
+        "lines": 28766
+      },
+      "c": {
+        "files": 20,
+        "lines": 10430
+      },
+      "python": {
+        "files": 34,
+        "lines": 5390
+      },
+      "shell": {
+        "files": 28,
+        "lines": 732
+      }
+    },
+    "source_lines": 2340290,
+    "largest_source_files": [
+      {
+        "path": "examples/extended/hadronic/Hadr02/hijing1_383/hipyset1.35.f",
+        "lines": 19628
+      },
+      {
+        "path": "source/processes/hadronic/models/lend/src/pugixml.cc",
+        "lines": 13553
+      },
+      {
+        "path": "source/processes/hadronic/models/abla/src/G4Abla.cc",
+        "lines": 11378
+      },
+      {
+        "path": "source/processes/hadronic/models/particle_hp/src/G4ParticleHPFastLegendre.cc",
+        "lines": 7424
+      },
+      {
+        "path": "source/interfaces/implementation/src/G4UIQt.cc",
+        "lines": 6963
+      }
+    ],
+    "test_files": 7,
+    "test_frameworks": [
+      "ctest"
+    ],
+    "cxx_standard": [
+      "14",
+      "17"
+    ],
+    "requires_python": null,
+    "site_specific_paths": [
+      "examples/extended/medical/dna/wvalue/src/DetectorMessenger.cc: /w/d",
+      "examples/extended/medical/dna/wvalue/src/PhysicsListMessenger.cc: /w/p",
+      "examples/extended/parameterisations/Par04/training_vae/core/constants.py: /eos/",
+      "source/processes/hadronic/models/inclxx/incl_physics/src/G4INCLNNbarToAnnihilationChannel.cc: /home/zdemid/",
+      "source/processes/hadronic/models/inclxx/incl_physics/src/G4INCLPbarAtrestEntryChannel.cc: /home/zdemid/"
+    ]
+  },
+  "eic": {
+    "components_detected": {
+      "root": {
+        "files": 57,
+        "kind": "generic",
+        "examples": [
+          "cmake/Modules/FindStatTest.cmake",
+          "examples/advanced/CMakeLists.txt",
+          "examples/advanced/CaTS/CMakeLists.txt"
+        ]
+      },
+      "pythia8": {
+        "files": 4,
+        "kind": "domain",
+        "examples": [
+          "examples/extended/eventgenerator/CMakeLists.txt",
+          "examples/extended/eventgenerator/pythia/py8decayer/CMakeLists.txt",
+          "examples/extended/eventgenerator/pythia/py8decayer/include/Py8Decayer.hh"
+        ]
+      },
+      "uproot": {
+        "files": 3,
+        "kind": "generic",
+        "examples": [
+          "examples/extended/exoticphysics/channeling/ch2/analysis_ch2.py",
+          "examples/extended/parameterisations/Par04/training_vae/root2h5.py",
+          "examples/extended/parameterisations/Par04/training_vae/root2h5_for_vae.py"
+        ]
+      },
+      "onnxruntime": {
+        "files": 1,
+        "kind": "generic",
+        "examples": [
+          "examples/extended/parameterisations/Par04/training_vae/convert.py"
+        ]
+      }
+    },
+    "domain_components": [
+      "pythia8"
+    ],
+    "is_component": "geant4",
+    "vendored_candidates": [
+      "source/externals/clhep",
+      "source/externals/expat",
+      "source/externals/g4tools",
+      "source/externals/ptl",
+      "source/externals/zlib"
+    ],
+    "submodules": []
+  },
+  "ci": {
+    "workflow_count": 0,
+    "pr_triggered_workflows": [],
+    "runs_on": [],
+    "container_images": [],
+    "uses_eic_shell": false,
+    "actions_used": [],
+    "action_refs_not_sha_pinned": 0,
+    "other_ci": [],
+    "default_branch_runs": 0,
+    "default_branch_success_rate": null,
+    "last_default_branch_run": null
+  },
+  "repo": {
+    "full_name": "Geant4/geant4",
+    "default_branch": "master",
+    "archived": false,
+    "fork": false,
+    "created_at": "2016-06-21T08:25:54Z",
+    "pushed_at": "2026-10-01T09:13:12Z",
+    "stars": 865,
+    "forks": 401,
+    "homepage": "https://geant4.org",
+    "license_spdx": "NOASSERTION",
+    "topics": [
+      "monte-carlo-simulation",
+      "particle-transport",
+      "computational-physics",
+      "high-energy-physics",
+      "high-performance-computing",
+      "medical-physics",
+      "neutron-transport",
+      "nuclear-data",
+      "photon-transport",
+      "radiation-transport",
+      "scientific-computing",
+      "hadron-physics",
+      "shielding",
+      "geometry",
+      "multiphysics-simulation",
+      "particle-tracking",
+      "visualization"
+    ],
+    "has_issues": false,
+    "has_discussions": false,
+    "open_issues": 0,
+    "open_prs": 5,
+    "default_branch_protected": true,
+    "rulesets": 0,
+    "languages_github": {
+      "C++": 0.939,
+      "HTML": 0.043,
+      "CMake": 0.009,
+      "C": 0.007,
+      "Fortran": 0.001,
+      "Python": 0.0,
+      "Shell": 0.0,
+      "Pascal": 0.0
+    }
+  },
+  "community": {
+    "health_percentage": 50,
+    "files": {
+      "code_of_conduct": false,
+      "code_of_conduct_file": false,
+      "contributing": true,
+      "issue_template": false,
+      "license": true,
+      "pull_request_template": false,
+      "readme": true
+    }
+  },
+  "releases": {
+    "count_total": 135,
+    "count_24m": 9,
+    "latest_tag": "v11.4.3",
+    "latest_date": "2026-10-01T09:15:17Z",
+    "authors_24m": 1,
+    "with_notes_fraction_24m": 0.778
+  },
+  "issues": {
+    "created_12m": 0,
+    "sampled": false,
+    "closed_of_created_12m": 0,
+    "median_first_response_days_12m": null,
+    "unanswered_fraction_12m": null,
+    "labeled_fraction_12m": null,
+    "open_total": 0,
+    "open_older_365d": 0
+  },
+  "prs": {
+    "created_12m": 21,
+    "sampled": false,
+    "merged_12m": 0,
+    "median_days_to_merge_12m": null,
+    "reviewed_fraction_12m": null,
+    "external_fraction_12m": null,
+    "test_touching_fraction_12m": null,
+    "distinct_reviewers_12m": 0,
+    "top_reviewer_share_12m": null,
+    "distinct_mergers_12m": 0,
+    "open_total": 5,
+    "open_older_90d": 0
+  },
+  "packaging": {
+    "spack_name": "geant4",
+    "eic_spack": {
+      "matches_repo": true,
+      "versions": [
+        "11.4.1.east",
+        "11.4.0.east",
+        "11.3.2.east",
+        "11.3.1.east",
+        "11.3.0.east"
+      ]
+    },
+    "spack_builtin": {
+      "matches_repo": true,
+      "versions": [
+        "11.4.3",
+        "11.4.2",
+        "11.4.1",
+        "11.4.0",
+        "11.3.2"
+      ]
+    },
+    "in_eic_shell": true,
+    "eic_shell_version": "11.4.1.east",
+    "eic_spack_dependents": [
+      "east",
+      "g4e",
+      "g4occt",
+      "juggler",
+      "simphony"
+    ],
+    "conda_forge": null,
+    "pypi": null,
+    "latest_release_packaged": true
+  },
+  "errors": []
+}

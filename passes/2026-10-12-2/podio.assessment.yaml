@@ -1,0 +1,480 @@
+schema_version: 1
+project: podio
+pass: "2026-10-12-2"
+commit: a80a6a17e78998e488395b288553a78e7d14dd61
+assessor: { agent: claude-code, model: claude-opus-5-5 }
+summary: >-
+  podio has no named maintainers, governance, code of conduct, citation metadata, or documented
+  version scheme, its LICENSE file is not machine-detectable, all releases in 24 months were cut by
+  one person, and 76% of default-branch CI runs succeed. CI builds and runs the Catch2 and I/O
+  round-trip suites (including reading files from older podio versions) on GCC and Clang across
+  LCG/Key4hep stacks on every PR, with pre-commit (clang-format, clang-tidy, cppcheck, pylint),
+  sanitizer jobs, and downstream EDM4hep and EDM4eic builds as required checks. The latest release
+  (1.8) is in upstream Spack and ships in eic-shell, where EDM4eic, EICrecon and JANA2 build on it.
+criteria:
+  eng.change-control:
+    level: 2
+    confidence: high
+    rationale: >-
+      95.5% of first-parent commits arrive through PRs and 67.5% of merged PRs have a review by someone
+      other than the author, below the 90% needed for level 3. Branch protection requires status
+      checks, but no required review, CODEOWNERS, or documented review expectations are visible.
+    evidence:
+      - metrics:git.first_parent_pr_fraction_12m = 0.955
+      - metrics:prs.reviewed_fraction_12m = 0.675
+      - metrics:repo.default_branch_protected = true
+      - https://api.github.com/repos/AIDASoft/podio/branches/master
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/.github/CONTRIBUTING.md#L4-L22
+    gaps:
+      - Fewer than 90% of merged PRs have a review by someone other than the author.
+      - No CODEOWNERS file or publicly visible required-review rule.
+      - The PR template contains only the release-notes block, with no review expectations.
+    actions:
+      - action: Require one approving review in the `master` branch protection rule and add `.github/CODEOWNERS`.
+        priority: medium
+        effort: S
+      - action: Add a review checklist (tests, docs, release notes) to `.github/PULL_REQUEST_TEMPLATE`.
+        priority: low
+        effort: S
+  eng.ci:
+    level: 1
+    confidence: high
+    rationale: >-
+      Every PR and push runs ctest on 7 LCG stacks, 2 Ubuntu stacks, 4 Key4hep configurations and 6
+      sanitizer builds, plus downstream EDM4hep and EDM4eic builds, as required checks. Only 76% of
+      recent default-branch runs succeed, below the 80% needed for level 2; the failures come from
+      the `dev3` nightly jobs.
+    evidence:
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/.github/workflows/test.yml#L3-L60
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/.github/workflows/edm4eic.yml#L41-L74
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/.github/workflows/edm4hep.yaml#L65-L74
+      - metrics:ci.default_branch_success_rate = 0.76
+      - https://github.com/AIDASoft/podio/actions/runs/37442394859
+      - https://github.com/AIDASoft/podio/issues/1038
+    gaps:
+      - Fewer than 80% of recent default-branch runs succeed; `dev3` nightly jobs (required checks) fail repeatedly.
+      - macOS, named as a supported platform in the README, is not built in CI.
+    actions:
+      - action: Fix or mark `continue-on-error` the `dev3` matrix entries in `test.yml`, `ubuntu.yml` and `edm4hep.yaml` so `master` stays green (issue #1038).
+        priority: high
+        effort: S
+  eng.testing:
+    level: 2
+    confidence: high
+    rationale: >-
+      Catch2 unit tests and write/read round-trip tests for the ROOT, RNTuple, SIO and Arrow backends
+      run in CI on every PR, and regression tests read reference files written by older podio
+      releases; 40.4% of merged PRs touch tests. Test coverage is not measured or published.
+    evidence:
+      - metrics:code.test_files = 109
+      - metrics:prs.test_touching_fraction_12m = 0.404
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/tests/CMakeLists.txt#L65-L90
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/tests/root_io/CMakeLists.txt#L101-L107
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/tests/root_io/selected_colls_roundtrip_root.cpp
+    gaps:
+      - Test coverage is neither measured nor published (`metrics:files.codecov` is empty).
+    actions:
+      - action: Add a gcov/lcov build job to `.github/workflows/test.yml` and publish results to Codecov.
+        priority: medium
+        effort: M
+  eng.static-quality:
+    level: 2
+    confidence: medium
+    rationale: >-
+      pre-commit (clang-format, black, flake8, pylint, cppcheck, clang-tidy with warnings as errors)
+      is a required CI check, the CI preset builds with `-Werror`, and ASan/TSan/UBSan and nightly
+      Coverity run routinely. cppcheck suppresses all findings under `tests` and two checks globally,
+      and deprecation warnings are exempted from `-Werror`.
+    evidence:
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/.pre-commit-config.yaml#L1-L41
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/.github/workflows/pre-commit.yml#L27-L39
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/CMakePresets.json#L38-L46
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/.github/workflows/sanitizers.yaml#L19-L56
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/.github/workflows/coverity.yml#L1-L20
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/.cppcheck-suppressions.txt#L1-L5
+    gaps:
+      - Blanket cppcheck suppressions (`*:*tests*`, `noExplicitConstructor:*`, `unusedFunction:*`).
+      - "`-Wno-error=deprecated-declarations` in the CI preset and clang-tidy hook lets deprecation warnings pass."
+    actions:
+      - action: Replace the `*:*tests*` and global `*:` entries in `.cppcheck-suppressions.txt` with per-file suppressions.
+        priority: low
+        effort: M
+      - action: Remove `-Wno-error=deprecated-declarations` from the `ci-build` preset once no deprecation warnings remain.
+        priority: low
+        effort: S
+  eng.modularity:
+    level: 3
+    confidence: high
+    rationale: >-
+      C++20 is required, the core, I/O backends, code generator and tools are separate components,
+      and an exported `podio::` CMake package with data-model macros is installed. Internals are kept
+      in `include/podio/detail`, and the design is documented in `doc/design.md`.
+    evidence:
+      - metrics:code.cxx_standard = 20
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/CMakeLists.txt#L35-L44
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/cmake/podioCreateConfig.cmake#L1-L26
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/doc/cmake.md#L1-L30
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/doc/design.md
+    gaps: []
+    actions: []
+  doc.user:
+    level: 1
+    confidence: high
+    rationale: >-
+      The README gives build, test and Spack install steps with ROOT and Python versions, and the
+      hosted docs cover data-model syntax and usage. The required `fmt` (>= 9) dependency is not
+      listed, Python packages have no versions, and the README points to removed paths.
+    evidence:
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/README.md#L14-L72
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/README.md#L113-L143
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/CMakeLists.txt#L227
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/requirements.txt#L1-L6
+      - https://key4hep.web.cern.ch/podio/
+    gaps:
+      - "`fmt` (required, >= 9) and optional SIO/Arrow/Parquet are not listed with versions in the install instructions."
+      - The README references `tests/datamodel/` and `python/tools/podio-vis`, which do not exist.
+      - Versioned docs are built to `gh-pages` but not served; no troubleshooting or FAQ page.
+    actions:
+      - action: Add `fmt >= 9`, optional backends with versions, and minimum `pyyaml`/`jinja2` versions to the README prerequisites.
+        priority: medium
+        effort: S
+      - action: Replace the stale `tests/datamodel/` and `python/tools/podio-vis` references with a minimal runnable data-model example.
+        priority: medium
+        effort: S
+  doc.developer:
+    level: 3
+    confidence: medium
+    rationale: >-
+      Public headers carry Doxygen comments, and Sphinx/Breathe generate C++ and Python API references
+      published from `master` by the CERN GitLab mirror CI. Design, storage layout, frames, links and
+      schema evolution are documented, with references to LCIO and Gaudi.
+    evidence:
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/include/podio/Frame.h
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/doc/index.rst#L9-L27
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/.gitlab-ci.yml#L123-L177
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/doc/storage_details.md
+      - https://key4hep.web.cern.ch/podio/cpp_api/api.html
+    gaps: []
+    actions: []
+  doc.contributing:
+    level: 2
+    confidence: medium
+    rationale: >-
+      CONTRIBUTING and `doc/contributing.md` cover the fork/rebase workflow, PR release-notes format
+      and the no-new-warnings rule; README and `doc/advanced_topics.md` cover build, ctest and
+      pre-commit; issue and PR templates exist. How to propose larger changes is not documented,
+      and no ready-made development environment is described.
+    evidence:
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/.github/CONTRIBUTING.md#L1-L39
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/doc/contributing.md#L6-L64
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/doc/advanced_topics.md#L220-L228
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/.github/ISSUE_TEMPLATE
+      - https://github.com/AIDASoft/podio/issues?q=label%3A%22good+first+issue%22
+    gaps:
+      - No documented process for proposing larger changes; review expectations are limited to a note on review time.
+      - No devcontainer or documented ready-made environment (Key4hep/LCG view or eic-shell) for development.
+    actions:
+      - action: Add sections to `.github/CONTRIBUTING.md` on RFC issues for larger changes, review expectations, and building in a Key4hep nightly or eic-shell environment.
+        priority: medium
+        effort: S
+  com.responsiveness:
+    level: 1
+    confidence: high
+    rationale: >-
+      Median first response is 4.1 days, but 23 of 31 open issues are older than one year and 21% of
+      new issues are labeled, which places the project at level 1.
+    evidence:
+      - metrics:issues.median_first_response_days_12m = 4.11
+      - metrics:issues.open_older_365d = 23
+      - metrics:issues.open_total = 31
+      - metrics:issues.labeled_fraction_12m = 0.214
+    gaps:
+      - More than half of open issues are older than one year.
+      - Most new issues are not labeled.
+    actions:
+      - action: Review the 23 issues older than one year and close, label, or schedule each.
+        priority: medium
+        effort: S
+      - action: Label every new issue on arrival using the existing label set.
+        priority: medium
+        effort: S
+  com.contributors:
+    level: 2
+    confidence: high
+    rationale: >-
+      13 authors from 3 institutional e-mail domains contributed in 24 months, with 3 new authors and
+      merged external PRs. External PRs are 11.4% of merged PRs, below the 20% needed for level 3.
+    evidence:
+      - metrics:git.authors_24m = 13
+      - metrics:git.email_domains_24m = 3
+      - metrics:git.new_authors_12m = 3
+      - metrics:prs.external_fraction_12m = 0.114
+    gaps:
+      - Fewer than 20% of merged PRs come from contributors outside the maintainer group.
+    actions:
+      - action: Keep `good first issue` labels current and link them from CONTRIBUTING to attract outside contributors.
+        priority: low
+        effort: S
+  com.bus-factor:
+    level: 1
+    confidence: high
+    rationale: >-
+      Bus factor (50%) is 2 with 5 reviewers and 2 mergers, but no maintainer list or CODEOWNERS names
+      anyone, and one person made all releases in 24 months.
+    evidence:
+      - metrics:git.bus_factor_50_24m = 2
+      - metrics:git.top_author_share_24m = 0.416
+      - metrics:prs.distinct_reviewers_12m = 5
+      - metrics:prs.distinct_mergers_12m = 2
+      - metrics:releases.authors_24m = 1
+      - metrics:files.codeowners = []
+    gaps:
+      - No maintainer list or CODEOWNERS naming at least 2 people.
+      - All releases in 24 months were made by one person, and the release procedure is undocumented.
+    actions:
+      - action: Add `.github/CODEOWNERS` naming at least two owners for `src/`, `include/`, `python/` and `tools/`.
+        priority: high
+        effort: S
+  com.governance:
+    level: 0
+    confidence: medium
+    rationale: >-
+      Decisions are discussed publicly in issues and PRs (for example RFC issue #997), but no
+      document names the maintainers or describes the decision process, and there are no milestones.
+    evidence:
+      - https://github.com/AIDASoft/podio/issues/997
+      - metrics:files.governance = []
+    gaps:
+      - Maintainers are not named in the README, CODEOWNERS, or any governance document.
+      - No documented decision process or path to becoming a maintainer.
+    actions:
+      - action: Add a "Maintainers" section to the README or a `GOVERNANCE.md` naming the maintainers and their institutions.
+        priority: high
+        effort: S
+  com.conduct:
+    level: 1
+    confidence: high
+    rationale: >-
+      The GitHub issue tracker is documented as the support channel, but no code of conduct applies
+      to the repository or the AIDASoft organization.
+    evidence:
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/.github/CONTRIBUTING.md#L24-L28
+      - metrics:community.files.code_of_conduct = false
+    gaps:
+      - No code of conduct with a reporting contact.
+    actions:
+      - action: Add `CODE_OF_CONDUCT.md` (Contributor Covenant) with a reporting contact, or link the Key4hep or AIDA code.
+        priority: medium
+        effort: S
+  dist.packaging:
+    level: 3
+    confidence: high
+    rationale: >-
+      Upstream Spack provides every release through 1.8 (the latest tag `v01-08`), added the same day
+      as the release, and eic-shell ships podio 1.8.
+    evidence:
+      - metrics:packaging.spack_builtin.versions = [master, 1.8, 1.7, 1.6, 1.5]
+      - metrics:packaging.in_eic_shell = true
+      - metrics:packaging.eic_shell_version = 1.8
+      - metrics:releases.latest_tag = v01-08
+      - https://github.com/spack/spack-packages/pull/6264
+    gaps: []
+    actions: []
+  dist.releases:
+    level: 1
+    confidence: high
+    rationale: >-
+      Eight releases in 24 months each carry notes generated from PR release-note blocks, and
+      `doc/ReleaseNotes.md` records history. The `vMM-mm-pp` version scheme is not documented, and the
+      manual process required re-tagging `v01-08` after it reported the wrong version.
+    evidence:
+      - metrics:releases.count_24m = 8
+      - metrics:releases.with_notes_fraction_24m = 1.0
+      - https://github.com/AIDASoft/podio/releases/tag/v01-08
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/doc/ReleaseNotes.md
+      - https://github.com/spack/spack-packages/pull/6298
+    gaps:
+      - The version scheme and its compatibility promise are not documented.
+      - No release workflow; the `v01-08` tag was moved after publication.
+    actions:
+      - action: State in the README that `vMM-mm-pp` maps to SemVer `MAJOR.MINOR.PATCH` and what each component signals for API and file compatibility.
+        priority: medium
+        effort: S
+  dist.dependencies:
+    level: 1
+    confidence: medium
+    rationale: >-
+      ROOT (6.28.04), fmt (9), nlohmann_json (3.10) and Catch2 declare minimum versions, and CI tests
+      both the minimum ROOT (LCG_104) and nightlies. SIO, Arrow, Parquet and the Python modules in
+      `requirements.txt` have no version constraints.
+    evidence:
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/CMakeLists.txt#L83-L91
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/CMakeLists.txt#L133-L171
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/requirements.txt#L1-L6
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/.github/dependabot.yml#L1-L6
+      - metrics:ci.action_refs_not_sha_pinned = 5
+    gaps:
+      - "`find_package` for SIO, Arrow and Parquet and `requirements.txt` entries carry no minimum versions."
+    actions:
+      - action: Add `VERSION` arguments to the SIO, Arrow and Parquet `find_package` calls and minimum versions to `requirements.txt`.
+        priority: medium
+        effort: S
+  dist.reproducibility:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The README describes the environment in prose (a recent LCG or Key4hep release), and CI pins LCG
+      views in workflow files, but no documented machine-readable environment is provided for users.
+      Written files record the podio build version and the EDM definitions.
+    evidence:
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/README.md#L14-L19
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/.github/workflows/test.yml#L19-L26
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/src/ROOTWriter.cc#L194-L195
+      - metrics:files.spack_env = []
+    gaps:
+      - No documented machine-readable environment (container, Spack environment, or pinned Key4hep/eic-shell release) for users.
+    actions:
+      - action: Document per release the Key4hep release or LCG view (and eic-shell tag) it was tested in, and add a `spack.yaml` environment for development.
+        priority: medium
+        effort: S
+  dist.portability:
+    level: 2
+    confidence: high
+    rationale: >-
+      CI builds and tests with GCC 13/15/16 and Clang 22 on EL9 and Ubuntu 22.04/24.04, with no site
+      paths. All jobs run on x86_64 Linux, although the README addresses macOS users, and HTC/HPC use
+      is not documented.
+    evidence:
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/.github/workflows/test.yml#L19-L26
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/.github/workflows/key4hep.yml#L19-L26
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/README.md#L19
+      - metrics:ci.runs_on = [ubuntu-latest]
+      - metrics:code.site_specific_paths = []
+    gaps:
+      - No aarch64 or macOS job in CI.
+      - No documentation of HTC/HPC use or of why accelerator support does not apply.
+    actions:
+      - action: Add a `macos-latest` or `ubuntu-24.04-arm` job that builds and runs `ctest` to the CI matrix.
+        priority: medium
+        effort: M
+  eic.reuse:
+    level: 3
+    confidence: high
+    rationale: >-
+      podio builds on ROOT and fmt and contains no parallel implementation of other stack components.
+      It is itself the data-model component that EDM4hep, EDM4eic, EICrecon and JANA2 build on.
+    evidence:
+      - metrics:eic.components_detected.root.files = 40
+      - metrics:eic.vendored_candidates = []
+      - metrics:packaging.eic_spack_dependents = [edm4eic, eicd, eicrecon, jana2, juggler, npdet, timeframebuilder]
+      - https://github.com/eic/EDM4eic/blob/9b48c1d15c44ec7bf8a599be0df60606fc3f1828/CMakeLists.txt#L56-L72
+      - https://github.com/eic/EICrecon/blob/25aa6525083f97999a171d8c88d36809f7ae3316/CMakeLists.txt#L205-L207
+    gaps: []
+    actions: []
+  eic.data-model:
+    level: 3
+    confidence: medium
+    rationale: >-
+      podio defines the EIC-standard podio ROOT format, documents its layout, writes the podio version
+      and schema versions into files and checks them on read, and tests write/read round trips. EIC
+      tools read podio output with uproot without podio code.
+    evidence:
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/doc/storage_details.md
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/src/ROOTWriter.cc#L194-L195
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/src/ROOTReader.cc#L209-L259
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/tests/root_io/selected_colls_roundtrip_root.cpp
+      - https://github.com/eic/epic-capybara/blob/6fb78eff9b612ffd2d829aa142c3fbe07bfbe53b/epic_capybara/cli/bara.py#L8
+    gaps: []
+    actions: []
+  eic.environment:
+    level: 2
+    confidence: medium
+    rationale: >-
+      eic/containers builds podio 1.8 into the eic-shell images and runs EICrecon end-to-end with podio
+      output in its CI, and podio's own CI builds and tests EDM4eic against podio `master` on every PR,
+      but in a Key4hep view. The eic-shell nightly pins podio 1.8, so podio `master` is never tested in
+      an eic container.
+    evidence:
+      - metrics:ci.uses_eic_shell = false
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/spack-environment/packages.yaml#L458-L462
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/.github/workflows/build-push.yml#L35-L37
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/.github/workflows/build-push.yml#L647-L653
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/.github/workflows/edm4eic.yml#L14-L74
+    gaps:
+      - Neither podio's CI nor eic/containers tests podio `master` in an eic-shell nightly image.
+    actions:
+      - action: Add a job to `.github/workflows/edm4eic.yml` that builds podio and EDM4eic in `eic_xl:nightly` via `eic/run-cvmfs-osg-eic-shell`.
+        priority: medium
+        effort: S
+  eic.currency:
+    level: 3
+    confidence: medium
+    rationale: >-
+      podio 1.8, the latest release, is the version eic-shell ships, and CI tracks ROOT and compiler
+      nightlies (`dev3`, `dev4`), with no deprecation warnings in the build log of the assessed commit.
+      The new ROOT cppjit incompatibility (issue #1038) was reported on the day it appeared.
+    evidence:
+      - metrics:packaging.eic_shell_version = 1.8
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/.github/workflows/test.yml#L19-L26
+      - https://github.com/AIDASoft/podio/actions/runs/37796150361
+      - https://github.com/AIDASoft/podio/issues/1038
+    gaps: []
+    actions: []
+  via.license:
+    level: 1
+    confidence: high
+    rationale: >-
+      The project is Apache-2.0, but `LICENSE` contains only the short notice, so no SPDX identifier is
+      detected, and no package metadata states the license.
+    evidence:
+      - metrics:repo.license_spdx = NOASSERTION
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/LICENSE#L1-L13
+    gaps:
+      - The license is not machine-detectable (no full Apache-2.0 text, no SPDX identifier).
+    actions:
+      - action: Replace `LICENSE` with the full Apache-2.0 text so GitHub detects `Apache-2.0`, keeping the copyright line in a `NOTICE` file.
+        priority: high
+        effort: S
+  via.citation:
+    level: 0
+    confidence: high
+    rationale: >-
+      The repository has no CITATION.cff, Zenodo metadata, DOI, or citation request. Proceedings papers
+      on podio exist (arXiv:2312.08206) but are not referenced from the repository.
+    evidence:
+      - metrics:files.citation_cff = []
+      - metrics:files.zenodo_json = []
+    gaps:
+      - No citation information or software DOI.
+    actions:
+      - action: Add `CITATION.cff` listing the authors and the reference paper arXiv:2312.08206, and enable the Zenodo-GitHub integration.
+        priority: high
+        effort: S
+  via.adoption:
+    level: 3
+    confidence: high
+    rationale: >-
+      podio ships in eic-shell and is the I/O layer of EDM4eic and EICrecon output used in EIC
+      production; outside EIC it underlies EDM4hep and Key4hep.
+    evidence:
+      - metrics:packaging.in_eic_shell = true
+      - metrics:packaging.eic_spack_dependents = [edm4eic, eicd, eicrecon, jana2, juggler, npdet, timeframebuilder]
+      - https://github.com/eic/EICrecon/blob/25aa6525083f97999a171d8c88d36809f7ae3316/CMakeLists.txt#L205-L207
+      - https://github.com/AIDASoft/podio/blob/a80a6a17e78998e488395b288553a78e7d14dd61/.github/workflows/key4hep.yml#L14-L54
+    gaps: []
+    actions: []
+  via.support:
+    level: 1
+    confidence: medium
+    rationale: >-
+      Recent authors use DESY, CERN and BNL e-mail domains and docs are hosted on Key4hep CERN
+      infrastructure, but no README or documentation states an institutional commitment or funding.
+    evidence:
+      - metrics:git.email_domains_24m = 3
+      - metrics:repo.homepage = https://key4hep.web.cern.ch/podio/
+    gaps:
+      - No funding acknowledgement or statement of institutional or Key4hep/EIC ownership in the README or docs.
+    actions:
+      - action: State in the README the owning project (AIDASoft/Key4hep), the maintaining institutions and funding sources.
+        priority: medium
+        effort: S
