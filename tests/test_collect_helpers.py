@@ -1,4 +1,5 @@
 from ssr.collect import (
+    _FILE_RES,
     PR_SUBJECT_RE,
     TEST_PATH_RE,
     BotFilter,
@@ -86,3 +87,10 @@ def test_normalize_version():
 def test_version_key_orders_series():
     tags = ["v6-36-14", "v6-40-04", "v6-38-00"]
     assert max(tags, key=version_key) == "v6-40-04"
+
+
+def test_file_patterns():
+    assert _FILE_RES["changelog"].search("doc/ReleaseNotes.md")
+    assert _FILE_RES["changelog"].search("CHANGELOG.md")
+    assert _FILE_RES["issue_templates"].search(".github/ISSUE_TEMPLATE")
+    assert _FILE_RES["issue_templates"].search(".github/ISSUE_TEMPLATE/bug.md")
