@@ -114,7 +114,9 @@ Inputs:
 - EIC stack reference: `reference/eic-supported-components.yaml` and `reference/eic-stack-snapshot.yaml`.
 - Previous assessment: {previous}
 - Public GitHub data through `gh` (read-only: `gh api`, `gh search`, `gh issue list`, `gh pr list`, `gh release list`).
-  Never create, comment on, or edit anything on GitHub.
+  Never create, comment on, or edit anything on GitHub. Code search (`gh search code`) is rate-limited to about
+  10 requests per minute, shared with any assessors running in parallel: on a rate-limit error, wait 60 seconds
+  and retry rather than skipping the search.
 {notes}
 Output: write `passes/{pass_id}/{pid}.assessment.yaml` with `commit: {sha}`, `pass: {pass_id}`, and
 `assessor: {{agent: {agent}, model: {model}}}`. Then run `uv run ssr validate {pass_id}` and fix every error and
