@@ -1,0 +1,346 @@
+{
+  "schema_version": 1,
+  "project": "g4occt",
+  "pass": "2026-10-12",
+  "repo_url": "https://github.com/eic/G4OCCT",
+  "subdir": null,
+  "collected_at": "2026-10-12T20:00:27+00:00",
+  "collector_version": "0.2.0",
+  "windows_months": {
+    "short": 12,
+    "long": 24
+  },
+  "git": {
+    "head_sha": "c58db1b0cda140d447d37e3a499a9b8306d0b93a",
+    "head_date": "2026-09-14T15:02:29-05:00",
+    "last_commit_date": "2026-09-14T15:02:29-05:00",
+    "commits_total": 130,
+    "commits_12m": 130,
+    "commits_24m": 130,
+    "authors_total": 2,
+    "authors_12m": 2,
+    "authors_24m": 2,
+    "new_authors_12m": 2,
+    "bus_factor_50_24m": 1,
+    "bus_factor_80_24m": 1,
+    "top_author_share_24m": 0.992,
+    "email_domains_24m": 1,
+    "first_parent_commits_12m": 310,
+    "first_parent_pr_fraction_12m": 0.971,
+    "tags_total": 4,
+    "tags_24m": 4,
+    "first_parent_resolved_via_api": 9
+  },
+  "files": {
+    "readme": [
+      "README.md"
+    ],
+    "license": [
+      "LICENSE",
+      "LICENSE.spdx"
+    ],
+    "contributing": [],
+    "code_of_conduct": [],
+    "citation_cff": [],
+    "codemeta": [],
+    "zenodo_json": [],
+    "security": [],
+    "changelog": [],
+    "governance": [],
+    "codeowners": [],
+    "authors": [],
+    "pr_template": [],
+    "issue_templates": [],
+    "dependabot": [
+      ".github/dependabot.yml"
+    ],
+    "renovate": [],
+    "pre_commit": [
+      ".pre-commit-config.yaml"
+    ],
+    "clang_format": [
+      ".clang-format"
+    ],
+    "clang_tidy": [
+      ".clang-tidy",
+      "src/examples/B1/.clang-tidy",
+      "src/examples/B4c/.clang-tidy"
+    ],
+    "editorconfig": [],
+    "python_lint": [],
+    "mypy": [],
+    "codecov": [],
+    "doxygen": [
+      "Doxyfile"
+    ],
+    "sphinx": [],
+    "mkdocs": [],
+    "dockerfile": [
+      "Dockerfile"
+    ],
+    "apptainer_def": [],
+    "spack_env": [
+      ".github/spack.yaml"
+    ],
+    "conda_env": [],
+    "devcontainer": [],
+    "lockfile": [],
+    "gitlab_ci": [],
+    "other_ci": [],
+    "cmake": [
+      "CMakeLists.txt"
+    ],
+    "pyproject": [],
+    "setup_py": [],
+    "docs_dir": 22,
+    "examples_dir": 0,
+    "github_workflows": [
+      ".github/workflows/base-container.yml",
+      ".github/workflows/ci.yml",
+      ".github/workflows/container.yml",
+      ".github/workflows/iwyu.yml",
+      ".github/workflows/spdx.yml",
+      ".github/workflows/version-check.yml"
+    ]
+  },
+  "code": {
+    "languages": {
+      "cpp": {
+        "files": 129,
+        "lines": 21285
+      },
+      "python": {
+        "files": 15,
+        "lines": 3523
+      },
+      "cmake": {
+        "files": 14,
+        "lines": 1747
+      },
+      "javascript": {
+        "files": 1,
+        "lines": 690
+      },
+      "shell": {
+        "files": 8,
+        "lines": 301
+      }
+    },
+    "source_lines": 25498,
+    "largest_source_files": [
+      {
+        "path": "src/G4OCCTSolidKernel.cc",
+        "lines": 1273
+      },
+      {
+        "path": ".github/scripts/generate_bench_report.py",
+        "lines": 883
+      },
+      {
+        "path": "src/benchmarks/bench_navigator.cc",
+        "lines": 857
+      },
+      {
+        "path": "src/tests/geometry/fixture_solid_builder.cc",
+        "lines": 779
+      },
+      {
+        "path": "src/benchmarks/bench_assembly_navigator.cc",
+        "lines": 735
+      }
+    ],
+    "test_files": 52,
+    "test_frameworks": [
+      "ctest",
+      "gtest"
+    ],
+    "cxx_standard": [
+      "20"
+    ],
+    "requires_python": null,
+    "site_specific_paths": []
+  },
+  "eic": {
+    "components_detected": {
+      "geant4": {
+        "files": 99,
+        "kind": "domain",
+        "examples": [
+          "CMakeLists.txt",
+          "include/G4OCCT/G4OCCTAssemblyVolume.hh",
+          "include/G4OCCT/G4OCCTLogicalVolume.hh"
+        ]
+      },
+      "dd4hep": {
+        "files": 15,
+        "kind": "domain",
+        "examples": [
+          "CMakeLists.txt",
+          "src/app/step2dd4hep/main.cc",
+          "src/dd4hep/G4OCCT_DDG4DetectorGeometryConstruction.cc"
+        ]
+      },
+      "root": {
+        "files": 5,
+        "kind": "generic",
+        "examples": [
+          "CMakeLists.txt",
+          "include/G4OCCT/TGeoOCCTSolid.hh",
+          "src/TGeoOCCTSolid.cc"
+        ]
+      },
+      "npsim": {
+        "files": 1,
+        "kind": "domain",
+        "examples": [
+          "src/app/step2dd4hep/main.cc"
+        ]
+      }
+    },
+    "domain_components": [
+      "dd4hep",
+      "geant4",
+      "npsim"
+    ],
+    "is_component": null,
+    "vendored_candidates": [],
+    "submodules": []
+  },
+  "ci": {
+    "workflow_count": 6,
+    "pr_triggered_workflows": [
+      ".github/workflows/ci.yml",
+      ".github/workflows/container.yml",
+      ".github/workflows/iwyu.yml",
+      ".github/workflows/spdx.yml"
+    ],
+    "runs_on": [
+      "ubuntu-24.04-arm",
+      "ubuntu-latest"
+    ],
+    "container_images": [
+      "platform-release: eic_xl:nightly"
+    ],
+    "uses_eic_shell": true,
+    "actions_used": [
+      "actions/cache",
+      "actions/checkout",
+      "actions/configure-pages",
+      "actions/deploy-pages",
+      "actions/download-artifact",
+      "actions/upload-artifact",
+      "actions/upload-pages-artifact",
+      "cvmfs-contrib/github-action-cvmfs",
+      "dawidd6/action-download-artifact",
+      "docker/build-push-action",
+      "docker/login-action",
+      "docker/metadata-action",
+      "docker/setup-buildx-action",
+      "docker/setup-qemu-action",
+      "eic/run-cvmfs-osg-eic-shell",
+      "enarx/spdx",
+      "platisd/clang-tidy-pr-comments",
+      "spack/setup-spack"
+    ],
+    "action_refs_not_sha_pinned": 91,
+    "other_ci": [],
+    "default_branch_runs": 50,
+    "default_branch_success_rate": 0.84,
+    "last_default_branch_run": "2026-09-14T20:02:32Z"
+  },
+  "repo": {
+    "full_name": "eic/G4OCCT",
+    "default_branch": "main",
+    "archived": false,
+    "fork": false,
+    "created_at": "2026-03-14T20:04:17Z",
+    "pushed_at": "2026-10-12T19:38:45Z",
+    "stars": 1,
+    "forks": 1,
+    "homepage": "https://eic.github.io/G4OCCT/",
+    "license_spdx": "LGPL-2.1",
+    "topics": [
+      "cad",
+      "geant4",
+      "occt",
+      "opencascade"
+    ],
+    "has_issues": true,
+    "has_discussions": false,
+    "open_issues": 3,
+    "open_prs": 6,
+    "default_branch_protected": true,
+    "rulesets": 2,
+    "languages_github": {
+      "C++": 0.906,
+      "CMake": 0.081,
+      "Python": 0.012,
+      "Dockerfile": 0.001
+    }
+  },
+  "community": {
+    "health_percentage": 50,
+    "files": {
+      "code_of_conduct": false,
+      "code_of_conduct_file": false,
+      "contributing": false,
+      "issue_template": false,
+      "license": true,
+      "pull_request_template": true,
+      "readme": true
+    }
+  },
+  "releases": {
+    "count_total": 4,
+    "count_24m": 4,
+    "latest_tag": "v0.3.0",
+    "latest_date": "2026-07-26T19:39:25Z",
+    "authors_24m": 1,
+    "with_notes_fraction_24m": 1.0
+  },
+  "issues": {
+    "created_12m": 23,
+    "sampled": false,
+    "closed_of_created_12m": 20,
+    "median_first_response_days_12m": 2.85,
+    "unanswered_fraction_12m": 0.13,
+    "labeled_fraction_12m": 0.13,
+    "open_total": 3,
+    "open_older_365d": 0
+  },
+  "prs": {
+    "created_12m": 131,
+    "sampled": false,
+    "merged_12m": 122,
+    "median_days_to_merge_12m": 0.06,
+    "reviewed_fraction_12m": 0.008,
+    "external_fraction_12m": 0.0,
+    "test_touching_fraction_12m": 0.475,
+    "distinct_reviewers_12m": 1,
+    "top_reviewer_share_12m": 1.0,
+    "distinct_mergers_12m": 1,
+    "open_total": 6,
+    "open_older_90d": 3
+  },
+  "packaging": {
+    "spack_name": "g4occt",
+    "eic_spack": {
+      "matches_repo": true,
+      "versions": [
+        "main",
+        "0.3.0",
+        "0.2.1",
+        "0.2.0",
+        "0.1.0"
+      ]
+    },
+    "spack_builtin": null,
+    "in_eic_shell": true,
+    "eic_shell_version": "git.v0.2.1",
+    "eic_spack_dependents": [],
+    "conda_forge": null,
+    "pypi": null,
+    "latest_release_packaged": true
+  },
+  "errors": []
+}

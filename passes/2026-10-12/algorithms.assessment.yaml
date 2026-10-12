@@ -1,0 +1,452 @@
+schema_version: 1
+project: algorithms
+pass: "2026-10-12"
+commit: 77a1ddb499c71d137e6f40a42366f5f16e7ff16d
+assessor: { agent: claude-code, model: claude-opus-5-5 }
+summary: >-
+  One author wrote all non-bot commits in 24 months, there are no tests, and the README has no
+  build or usage instructions, no contribution guide, no code of conduct, and no citation metadata.
+  The library ships in eic-shell at its latest release (2.0.0), is required by EICrecon through an
+  exported CMake package config, and is built with GCC and Clang in eic-shell on every PR and
+  nightly, with those builds required by a ruleset.
+criteria:
+  eng.change-control:
+    level: 2
+    confidence: medium
+    rationale: >-
+      9 of 10 first-parent commits came from PRs and 5 of 8 PRs merged in 12 months (6 bot-authored)
+      were approved by a person other than the author; the metric counts only the one non-bot PR
+      (#25), which was self-merged without review. The ruleset requiring one approval is bypassed by
+      admins (#25, #28, #30 merged unapproved; b54ac87 pushed directly), and there is no CODEOWNERS.
+    evidence:
+      - metrics:git.first_parent_pr_fraction_12m = 0.9
+      - metrics:prs.reviewed_fraction_12m = 0.0
+      - metrics:repo.rulesets = 2
+      - https://github.com/eic/algorithms/pull/27
+      - https://github.com/eic/algorithms/pull/32
+      - https://github.com/eic/algorithms/pull/25
+      - https://github.com/eic/algorithms/commit/b54ac874b46645e4795e3dbfe559423534683280
+      - https://github.com/eic/.github/blob/3231e4d33f430f9806db8703b2feaafca084e18e/.github/pull_request_template.md
+    gaps:
+      - Fewer than 90% of merged PRs are reviewed by someone other than the author; admins bypass the required-approval ruleset.
+      - No CODEOWNERS file.
+    actions:
+      - action: Remove the admin bypass from the "Default" ruleset so every PR, including maintainer and Dependabot PRs, needs one approval.
+        priority: medium
+        effort: S
+      - action: Add `.github/CODEOWNERS` naming at least two reviewers for `core/` and `cmake/`.
+        priority: medium
+        effort: S
+  eng.ci:
+    level: 1
+    confidence: high
+    rationale: >-
+      The GitHub workflow builds and installs in eic-shell for GCC and Clang on every PR, push, and
+      nightly, and these builds are required status checks, but it runs no tests because none exist.
+    evidence:
+      - https://github.com/eic/algorithms/blob/77a1ddb499c71d137e6f40a42366f5f16e7ff16d/.github/workflows/linux-eic-shell.yml#L3-L13
+      - https://github.com/eic/algorithms/blob/77a1ddb499c71d137e6f40a42366f5f16e7ff16d/.github/workflows/linux-eic-shell.yml#L86-L97
+      - metrics:ci.default_branch_success_rate = 1.0
+    gaps:
+      - CI does not run any test suite (`ctest` is never invoked).
+      - The legacy `.gitlab-ci.yml` targets the retired eicweb Juggler pipeline and C++17, which the project no longer builds with.
+    actions:
+      - action: Add a `ctest --test-dir build --output-on-failure` step to `.github/workflows/linux-eic-shell.yml` once unit tests exist.
+        priority: medium
+        effort: S
+      - action: Delete the obsolete `.gitlab-ci.yml`.
+        priority: low
+        effort: S
+  eng.testing:
+    level: 0
+    confidence: high
+    rationale: >-
+      There are no test files and testing is a commented-out TODO; `core/src/dummy.cpp` contains
+      property and logger checks that are compiled into the library but never executed.
+    evidence:
+      - metrics:code.test_files = 0
+      - https://github.com/eic/algorithms/blob/77a1ddb499c71d137e6f40a42366f5f16e7ff16d/core/CMakeLists.txt#L42-L45
+      - https://github.com/eic/algorithms/blob/77a1ddb499c71d137e6f40a42366f5f16e7ff16d/core/src/dummy.cpp#L1-L5
+    gaps:
+      - No unit tests for `Property`, `LoggerMixin`, `ServiceSvc`, `AlgorithmSvc`, `RandomSvc`, or `GeoSvc`.
+    actions:
+      - action: Move the checks in `core/src/dummy.cpp` into Catch2 unit tests under `core/tests/` registered with `ctest`, and run them in CI.
+        priority: high
+        effort: M
+  eng.static-quality:
+    level: 1
+    confidence: high
+    rationale: >-
+      `.clang-format` and `.clang-tidy` are present and CI builds with `-Werror -Wall -Wextra`, but
+      neither formatting nor clang-tidy is checked on PRs (clang-tidy runs only in the stale GitLab
+      pipeline and is off by default in CMake).
+    evidence:
+      - https://github.com/eic/algorithms/blob/77a1ddb499c71d137e6f40a42366f5f16e7ff16d/.clang-format
+      - https://github.com/eic/algorithms/blob/77a1ddb499c71d137e6f40a42366f5f16e7ff16d/.clang-tidy
+      - https://github.com/eic/algorithms/blob/77a1ddb499c71d137e6f40a42366f5f16e7ff16d/.github/workflows/linux-eic-shell.yml#L52-L58
+      - https://github.com/eic/algorithms/blob/77a1ddb499c71d137e6f40a42366f5f16e7ff16d/CMakeLists.txt#L28-L38
+    gaps:
+      - No formatter or linter is enforced on PRs.
+    actions:
+      - action: Add `.pre-commit-config.yaml` with the clang-format hook and enable pre-commit.ci (or a clang-format check job).
+        priority: medium
+        effort: S
+      - action: Add a CI job that configures with `-DENABLE_CLANG_TIDY=ON` in eic-shell.
+        priority: medium
+        effort: S
+  eng.modularity:
+    level: 2
+    confidence: medium
+    rationale: >-
+      A C++20 CMake library with small headers, configuration through `Property` members, internals in
+      `detail/`, install targets, and an exported `algorithmsConfig.cmake` consumed by EICrecon. The
+      architecture description is a class summary in the README, and test scaffolding (`dummy.cpp`)
+      is compiled into the installed library.
+    evidence:
+      - metrics:code.cxx_standard = ["20"]
+      - https://github.com/eic/algorithms/blob/77a1ddb499c71d137e6f40a42366f5f16e7ff16d/core/CMakeLists.txt#L32-L40
+      - https://github.com/eic/algorithms/blob/77a1ddb499c71d137e6f40a42366f5f16e7ff16d/cmake/algorithmsCreatePackageConfig.cmake#L19-L31
+      - https://github.com/eic/algorithms/blob/77a1ddb499c71d137e6f40a42366f5f16e7ff16d/README.md
+    gaps:
+      - No architecture document explaining how a host framework provides services and drives algorithms.
+      - "`core/src/dummy.cpp` (test code printing to stdout) is built into the shipped `libalgocore`."
+    actions:
+      - action: Add `docs/architecture.md` describing the service lifecycle, `AlgorithmSvc`, and how EICrecon/JANA2 binds `GeoSvc`, `RandomSvc`, and `LogSvc`.
+        priority: medium
+        effort: S
+      - action: Remove `core/src/dummy.cpp` from the library sources once its checks move to tests.
+        priority: low
+        effort: S
+  doc.user:
+    level: 0
+    confidence: high
+    rationale: >-
+      The README is a class summary with no installation, dependency, build, or usage instructions,
+      and the homepage named in the eic-spack recipe (https://eic.github.io/algorithms) returns 404.
+    evidence:
+      - https://github.com/eic/algorithms/blob/77a1ddb499c71d137e6f40a42366f5f16e7ff16d/README.md
+      - metrics:repo.homepage = null
+    gaps:
+      - No install instructions, dependency list, or runnable example of writing an algorithm.
+    actions:
+      - action: Add README sections for using the eic-shell build, building from source with CMake (DD4hep, EDM4hep, EDM4eic, fmt, Microsoft GSL with versions), and a minimal `Algorithm<Input<...>, Output<...>>` example.
+        priority: high
+        effort: S
+  doc.developer:
+    level: 1
+    confidence: high
+    rationale: >-
+      Public headers carry plain `//` comments describing classes and most methods, but no API
+      reference is generated or published (the GitLab `pages` job references a nonexistent
+      `doc/Doxyfile`), and there is no architecture overview beyond the README class summary.
+    evidence:
+      - https://github.com/eic/algorithms/blob/77a1ddb499c71d137e6f40a42366f5f16e7ff16d/core/include/algorithms/algorithm.h#L1-L26
+      - https://github.com/eic/algorithms/blob/77a1ddb499c71d137e6f40a42366f5f16e7ff16d/core/include/algorithms/geo.h#L1-L20
+      - https://github.com/eic/algorithms/blob/77a1ddb499c71d137e6f40a42366f5f16e7ff16d/.gitlab-ci.yml#L89-L100
+      - metrics:files.doxygen = []
+    gaps:
+      - No generated API documentation and no architecture overview.
+    actions:
+      - action: Add a `Doxyfile` for `core/include` and convert header comments to Doxygen form.
+        priority: medium
+        effort: S
+      - action: Write `docs/architecture.md` covering services, properties, and the algorithm interface.
+        priority: medium
+        effort: S
+  doc.contributing:
+    level: 1
+    confidence: high
+    rationale: >-
+      Only the eic organization PR and issue templates apply; there is no CONTRIBUTING file in the
+      repository or the organization describing setup, build, tests, or conventions.
+    evidence:
+      - metrics:community.files.contributing = false
+      - https://github.com/eic/.github/blob/3231e4d33f430f9806db8703b2feaafca084e18e/.github/pull_request_template.md
+      - https://github.com/eic/.github/tree/3231e4d33f430f9806db8703b2feaafca084e18e/.github/ISSUE_TEMPLATE
+    gaps:
+      - No CONTRIBUTING describing eic-shell setup, build, tests, and coding conventions.
+    actions:
+      - action: Add `CONTRIBUTING.md` covering eic-shell setup, CMake build, running tests, clang-format, and the PR/review process.
+        priority: medium
+        effort: S
+  com.responsiveness:
+    level: 1
+    confidence: low
+    rationale: >-
+      No issues were opened in 12 months; the single open issue (#24, opened 2025-05-01) is older than
+      one year with no response.
+    evidence:
+      - metrics:issues.created_12m = 0
+      - metrics:issues.open_older_365d = 1
+      - https://github.com/eic/algorithms/issues/24
+    gaps:
+      - All open issues are older than one year and unanswered; no labels are used.
+    actions:
+      - action: Respond to and resolve or label issue #24 (install a version header).
+        priority: medium
+        effort: S
+  com.contributors:
+    level: 0
+    confidence: high
+    rationale: >-
+      One non-bot author made all commits in 24 months; other changes came from Dependabot and the
+      Copilot coding agent.
+    evidence:
+      - metrics:git.authors_24m = 1
+      - metrics:git.new_authors_12m = 0
+      - metrics:prs.external_fraction_12m = 0.0
+    gaps:
+      - At most one active human author in 24 months.
+    actions:
+      - action: Recruit a second developer (for example from the EICrecon maintainer group) to own a component such as `RandomSvc` or `GeoSvc` and land PRs.
+        priority: high
+        effort: M
+  com.bus-factor:
+    level: 1
+    confidence: high
+    rationale: >-
+      The top author wrote 100% of non-bot commits in 24 months and made every release, but a second
+      person approved PRs #26, #27, #29, #31, and #32.
+    evidence:
+      - metrics:git.top_author_share_24m = 1.0
+      - metrics:git.bus_factor_50_24m = 1
+      - metrics:releases.authors_24m = 1
+      - https://github.com/eic/algorithms/pull/26
+    gaps:
+      - Bus factor of 1; no CODEOWNERS or maintainer list in the repository.
+    actions:
+      - action: Add `.github/CODEOWNERS` with two maintainers and have the second maintainer author and merge changes.
+        priority: high
+        effort: S
+  com.governance:
+    level: 1
+    confidence: medium
+    rationale: >-
+      Original authors are identifiable from copyright headers and `LICENSE.spdx`, and decisions are
+      visible in PRs, but there is no documented decision process, maintainer path, or roadmap.
+    evidence:
+      - https://github.com/eic/algorithms/blob/77a1ddb499c71d137e6f40a42366f5f16e7ff16d/CMakeLists.txt#L1-L2
+      - https://github.com/eic/algorithms/blob/77a1ddb499c71d137e6f40a42366f5f16e7ff16d/LICENSE.spdx
+      - metrics:files.governance = []
+    gaps:
+      - No documented governance (who decides, how to become a maintainer).
+    actions:
+      - action: Add a "Maintainers and governance" README section naming the maintainers, the owning ePIC body, and how decisions are made.
+        priority: medium
+        effort: S
+  com.conduct:
+    level: 1
+    confidence: high
+    rationale: >-
+      The eic organization issue template links the ePIC Mattermost and weekly software meetings as
+      support channels, but no code of conduct applies in the repository or organization.
+    evidence:
+      - metrics:community.files.code_of_conduct = false
+      - https://github.com/eic/.github/blob/3231e4d33f430f9806db8703b2feaafca084e18e/.github/ISSUE_TEMPLATE/config.yml
+    gaps:
+      - No code of conduct with a reporting contact.
+    actions:
+      - action: Add `CODE_OF_CONDUCT.md` (or link the ePIC collaboration code of conduct) with a reporting contact, preferably in the eic/.github organization repository.
+        priority: high
+        effort: S
+  dist.packaging:
+    level: 3
+    confidence: high
+    rationale: >-
+      The eic-spack recipe provides the latest release 2.0.0 (added 2026-06-15, about one month after
+      the 2026-05-12 release), and eic-shell ships 2.0.0.
+    evidence:
+      - metrics:packaging.eic_spack.versions = ["main", "master", "2.0.0", "1.3.0", "1.2.0"]
+      - metrics:packaging.in_eic_shell = true
+      - metrics:packaging.eic_shell_version = 2.0.0
+      - metrics:packaging.latest_release_packaged = true
+    gaps: []
+    actions: []
+  dist.releases:
+    level: 1
+    confidence: high
+    rationale: >-
+      Five releases in 24 months (at least two per year) have generated release notes, but no version
+      scheme is documented and `version_number` still reads 1.0.0 at v2.0.0, so the installed library
+      and CMake package report version 1.0.0.
+    evidence:
+      - metrics:releases.count_24m = 5
+      - metrics:releases.with_notes_fraction_24m = 1.0
+      - https://github.com/eic/algorithms/blob/77a1ddb499c71d137e6f40a42366f5f16e7ff16d/version_number
+      - https://github.com/eic/algorithms/releases/tag/v2.0.0
+    gaps:
+      - No documented version scheme; the in-tree version is not updated at release.
+    actions:
+      - action: State SemVer in the README and set `version_number` to the tag version in each release commit.
+        priority: medium
+        effort: S
+  dist.dependencies:
+    level: 1
+    confidence: high
+    rationale: >-
+      Dependencies are declared in CMake, but only EDM4hep has a minimum version, Microsoft GSL is
+      found without REQUIRED yet linked unconditionally, EDM4hep/EDM4eic are linked but unused in the
+      code, and the package config re-finds only fmt (and a removed Acts component). Dependabot covers
+      GitHub Actions, but actions are not SHA-pinned and `run-cvmfs-osg-eic-shell@main` floats.
+    evidence:
+      - https://github.com/eic/algorithms/blob/77a1ddb499c71d137e6f40a42366f5f16e7ff16d/CMakeLists.txt#L63-L70
+      - https://github.com/eic/algorithms/blob/77a1ddb499c71d137e6f40a42366f5f16e7ff16d/cmake/algorithmsConfig.cmake.in#L43-L46
+      - https://github.com/eic/algorithms/blob/77a1ddb499c71d137e6f40a42366f5f16e7ff16d/.github/dependabot.yml
+      - metrics:ci.action_refs_not_sha_pinned = 4
+    gaps:
+      - Minimum versions missing for DD4hep, EDM4eic, fmt, and Microsoft GSL; unused EDM4hep/EDM4eic dependencies remain.
+      - "`algorithmsConfig.cmake` does not `find_dependency` the public link dependencies DD4hep, EDM4hep, EDM4eic, and GSL."
+    actions:
+      - action: Add `VERSION` minimums to every `find_package`, make `Microsoft.GSL` REQUIRED, and drop EDM4hep/EDM4eic if unused.
+        priority: medium
+        effort: S
+      - action: Add `find_dependency` calls for all public link dependencies in `cmake/algorithmsConfig.cmake.in` and remove the Acts block.
+        priority: medium
+        effort: S
+  dist.reproducibility:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The only environment specification is the unpinned `eic_xl:nightly` image in the CI workflow,
+      and building or running in it is not documented; `RandomSvc` accepts a seed property.
+    evidence:
+      - https://github.com/eic/algorithms/blob/77a1ddb499c71d137e6f40a42366f5f16e7ff16d/.github/workflows/linux-eic-shell.yml#L38-L41
+      - https://github.com/eic/algorithms/blob/77a1ddb499c71d137e6f40a42366f5f16e7ff16d/core/include/algorithms/random.h#L76-L80
+    gaps:
+      - No documented environment (eic-shell version) for development or releases.
+    actions:
+      - action: Document in the README the eic-shell release each algorithms release was built and tested with.
+        priority: medium
+        effort: S
+  dist.portability:
+    level: 1
+    confidence: medium
+    rationale: >-
+      CI builds with GCC and Clang on Linux x86_64 with no site-specific paths, but no tests run on
+      either configuration, so the two-toolchain condition is met for builds only.
+    evidence:
+      - https://github.com/eic/algorithms/blob/77a1ddb499c71d137e6f40a42366f5f16e7ff16d/.github/workflows/linux-eic-shell.yml#L45-L58
+      - metrics:ci.runs_on = ["ubuntu-24.04"]
+      - metrics:code.site_specific_paths = []
+    gaps:
+      - No tests run on the GCC and Clang builds.
+    actions:
+      - action: Run the unit tests with `ctest` in both the `g++` and `clang++` matrix jobs.
+        priority: medium
+        effort: S
+  eic.reuse:
+    level: 3
+    confidence: high
+    rationale: >-
+      The geometry service wraps DD4hep rather than reimplementing it, and the library is itself an
+      EIC-supported component that EICrecon requires and builds its algorithms on.
+    evidence:
+      - metrics:eic.components_detected.dd4hep.files = 2
+      - https://github.com/eic/algorithms/blob/77a1ddb499c71d137e6f40a42366f5f16e7ff16d/core/include/algorithms/geo.h#L21-L48
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/CMakeLists.txt#L202-L203
+      - metrics:packaging.eic_spack_dependents = ["eicrecon", "juggler"]
+    gaps: []
+    actions: []
+  eic.data-model:
+    level: 2
+    confidence: low
+    rationale: >-
+      The library performs no event I/O; its only data input is DD4hep compact XML loaded by `GeoSvc`
+      in standalone mode, and it declares no data-model version check or round-trip test.
+    evidence:
+      - https://github.com/eic/algorithms/blob/77a1ddb499c71d137e6f40a42366f5f16e7ff16d/core/include/algorithms/geo.h#L40-L45
+      - https://github.com/eic/algorithms/blob/77a1ddb499c71d137e6f40a42366f5f16e7ff16d/core/src/geo.cpp#L10-L31
+    gaps:
+      - No declared or checked EDM4hep/EDM4eic version despite linking both.
+    actions:
+      - action: Either use EDM4eic types in the public interface with a checked minimum version, or remove the EDM dependencies and document that the library is data-model agnostic.
+        priority: low
+        effort: S
+  eic.environment:
+    level: 1
+    confidence: high
+    rationale: >-
+      CI builds in the `eic_xl:nightly` image via `eic/run-cvmfs-osg-eic-shell`, but building or
+      using the library in eic-shell is not documented and no pinned stable release is tested.
+    evidence:
+      - metrics:ci.uses_eic_shell = true
+      - https://github.com/eic/algorithms/blob/77a1ddb499c71d137e6f40a42366f5f16e7ff16d/.github/workflows/linux-eic-shell.yml#L86-L97
+    gaps:
+      - eic-shell usage is not documented; only the nightly image is tested.
+    actions:
+      - action: Document the eic-shell build in the README and add a matrix entry for a pinned stable `eic_xl` release next to `nightly`.
+        priority: medium
+        effort: S
+  eic.currency:
+    level: 2
+    confidence: medium
+    rationale: >-
+      The nightly eic-shell build passes without compiler deprecation warnings and eic-shell ships the
+      latest release, but support for EDM4hep 1.0 (released 2026-01-20) landed only on 2026-04-07, and
+      `-Wno-error=deprecated-declarations` keeps deprecations non-fatal.
+    evidence:
+      - https://github.com/eic/algorithms/actions/runs/36969142480
+      - https://github.com/eic/algorithms/pull/25
+      - https://github.com/eic/algorithms/blob/77a1ddb499c71d137e6f40a42366f5f16e7ff16d/CMakeLists.txt#L53-L56
+    gaps:
+      - Adaptation to the EDM4hep 1.0 release took about 11 weeks, longer than one eic-shell release cycle.
+    actions:
+      - action: Remove `-Wno-error=deprecated-declarations` so the nightly eic-shell job fails on deprecated APIs.
+        priority: low
+        effort: S
+  via.license:
+    level: 2
+    confidence: high
+    rationale: >-
+      LGPL-3.0 is detected, `LICENSE.spdx` declares LGPL-3.0-or-later, and dependencies (DD4hep LGPL,
+      EDM4hep Apache-2.0, fmt and GSL MIT) are compatible. Four source files lack SPDX headers,
+      `LICENSE.spdx` names the package "Juggler", and no contribution terms are documented.
+    evidence:
+      - metrics:repo.license_spdx = LGPL-3.0
+      - https://github.com/eic/algorithms/blob/77a1ddb499c71d137e6f40a42366f5f16e7ff16d/LICENSE.spdx#L3-L6
+      - https://github.com/eic/algorithms/blob/77a1ddb499c71d137e6f40a42366f5f16e7ff16d/core/include/algorithms/random.h#L1-L3
+    gaps:
+      - "SPDX headers missing in `random.h`, `detail/random.h`, `detail/upcast.h`, and `src/random.cpp`; no inbound=outbound or DCO statement."
+    actions:
+      - action: Add SPDX headers to the four files, fix `PackageName` in `LICENSE.spdx`, and add the REUSE lint to CI.
+        priority: low
+        effort: S
+  via.citation:
+    level: 0
+    confidence: high
+    rationale: >-
+      There is no CITATION.cff, Zenodo metadata, DOI, or citation request.
+    evidence: []
+    gaps:
+      - No citation information of any kind.
+    actions:
+      - action: Add `CITATION.cff` with the author list and enable the Zenodo-GitHub integration for release DOIs.
+        priority: high
+        effort: S
+  via.adoption:
+    level: 3
+    confidence: high
+    rationale: >-
+      EICrecon, the ePIC reconstruction framework, requires the library and builds its algorithms on
+      it, and it ships in eic-shell.
+    evidence:
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/CMakeLists.txt#L202-L203
+      - metrics:packaging.in_eic_shell = true
+      - metrics:packaging.eic_spack_dependents = ["eicrecon", "juggler"]
+    gaps: []
+    actions: []
+  via.support:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The repository is in the eic organization and its authors are identifiable, but no owning ePIC
+      body, institutional commitment, or funding is stated, and one person does all maintenance.
+    evidence:
+      - https://github.com/eic/algorithms/blob/77a1ddb499c71d137e6f40a42366f5f16e7ff16d/LICENSE.spdx#L4
+      - metrics:git.authors_24m = 1
+    gaps:
+      - No stated maintenance responsibility within the EIC or ePIC structure.
+    actions:
+      - action: State in the README the ePIC working group that owns the library and the maintainers' institutions.
+        priority: high
+        effort: S

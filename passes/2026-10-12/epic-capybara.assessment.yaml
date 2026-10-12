@@ -1,0 +1,406 @@
+schema_version: 1
+project: epic-capybara
+pass: "2026-10-12"
+commit: 6fb78eff9b612ffd2d829aa142c3fbe07bfbe53b
+assessor: { agent: claude-code, model: claude-opus-5-5 }
+summary: >-
+  epic-capybara is shipped in eic-shell and runs in the CI of EICrecon, epic, npsim and eic/containers, and its default-branch CI includes an end-to-end comparison of EICrecon artifacts that succeeded on all recent runs.
+  Knowledge is concentrated (bus factor 1, 3 authors from 1 e-mail domain in 24 months, 35% of merged PRs reviewed by a non-author), and the only unit test (a doctest) is not run in CI.
+  There is no linter or formatter, no CONTRIBUTING, code of conduct, governance or citation metadata, and dependencies are mostly unversioned with `requires-python = ">=3.7"`.
+criteria:
+  eng.change-control:
+    level: 1
+    confidence: high
+    rationale: >-
+      All default-branch changes arrive through squash-merged PRs under an active ruleset, but only 35% of merged PRs in 12 months were reviewed by someone other than the author, below the 50% required for level 2.
+    evidence:
+      - metrics:git.first_parent_pr_fraction_12m = 1.0
+      - metrics:prs.reviewed_fraction_12m = 0.353
+      - metrics:repo.rulesets = 1
+      - https://github.com/eic/epic-capybara/rules/5452494
+    gaps:
+      - The ruleset requires a PR but zero approving reviews, so most PRs are self-merged without review.
+      - No CODEOWNERS file.
+    actions:
+      - action: Set `required_approving_review_count` to 1 in ruleset 5452494 so every PR needs a non-author approval.
+        priority: medium
+        effort: S
+  eng.ci:
+    level: 1
+    confidence: high
+    rationale: >-
+      `build.yml` runs on every PR and on `main`, builds the wheel and runs `capybara capy`/`bara` on EICrecon artifacts, with all recent default-branch runs succeeding, but it never runs the pytest suite in `tests/`.
+    evidence:
+      - https://github.com/eic/epic-capybara/blob/6fb78eff9b612ffd2d829aa142c3fbe07bfbe53b/.github/workflows/build.yml#L3-L7
+      - https://github.com/eic/epic-capybara/blob/6fb78eff9b612ffd2d829aa142c3fbe07bfbe53b/.github/workflows/build.yml#L28-L65
+      - metrics:ci.default_branch_success_rate = 1.0
+    gaps:
+      - CI does not run `pytest` (the `tests/` directory is never executed).
+      - No required status check on `main`.
+    actions:
+      - action: Add a step to `.github/workflows/build.yml` that runs `hatch run cov` (pytest) on every PR and push to `main`.
+        priority: medium
+        effort: S
+  eng.testing:
+    level: 1
+    confidence: high
+    rationale: >-
+      The only test file runs the doctests of `epic_capybara/util.py`; `capy`, `bara`, `cate`, `github.py` and `filesystem.py` have no unit tests, and the tests are not run in CI.
+    evidence:
+      - https://github.com/eic/epic-capybara/blob/6fb78eff9b612ffd2d829aa142c3fbe07bfbe53b/tests/test_doctest.py#L1-L7
+      - metrics:code.test_files = 2
+      - metrics:prs.test_touching_fraction_12m = 0.0
+    gaps:
+      - No unit tests for the majority of modules (`bara.py` statistics, key normalisation, `capy` artifact download).
+      - Doctests in `bara.py` (`_normalize_key`) are not collected by the test suite.
+      - Tests are not executed in CI.
+    actions:
+      - action: Add pytest tests for `bara` that compare two small ROOT files (for example from `scikit-hep-testdata`) and assert p-values and generated report files.
+        priority: medium
+        effort: M
+      - action: Enable `--doctest-modules` for the `epic_capybara` package so `bara.py` doctests run.
+        priority: low
+        effort: S
+  eng.static-quality:
+    level: 0
+    confidence: high
+    rationale: >-
+      No formatter, linter or type checker is configured in the repository or its workflows.
+    evidence:
+      - metrics:files.python_lint = []
+      - metrics:files.pre_commit = []
+    gaps:
+      - No formatter or linter (ruff, black, flake8) and no pre-commit configuration.
+    actions:
+      - action: Add `.pre-commit-config.yaml` with `ruff` and `ruff-format` and enable pre-commit.ci on the repository.
+        priority: high
+        effort: S
+  eng.modularity:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The package is split into CLI modules and helpers and installs through `pyproject.toml` with entry points, but it declares `requires-python = ">=3.7"` (below the 3.9 threshold) and `bara` is one 500-line function.
+    evidence:
+      - https://github.com/eic/epic-capybara/blob/6fb78eff9b612ffd2d829aa142c3fbe07bfbe53b/pyproject.toml#L9
+      - https://github.com/eic/epic-capybara/blob/6fb78eff9b612ffd2d829aa142c3fbe07bfbe53b/pyproject.toml#L49-L53
+      - https://github.com/eic/epic-capybara/blob/6fb78eff9b612ffd2d829aa142c3fbe07bfbe53b/epic_capybara/cli/bara.py#L101-L616
+    gaps:
+      - Declared Python floor (3.7) and test matrix (3.7 to 3.11) are outdated.
+      - Histogramming, statistical tests and report rendering are interleaved in the single `bara()` function.
+    actions:
+      - action: Raise `requires-python` to `>=3.10` and update the classifiers and `tool.hatch.envs.test.matrix` accordingly.
+        priority: medium
+        effort: S
+      - action: Split `bara()` into separate functions for reading, statistical comparison and report rendering.
+        priority: low
+        effort: M
+  doc.user:
+    level: 1
+    confidence: high
+    rationale: >-
+      The README gives a from-source install with Hatch and points to `--help`, but names no dependencies or versions, has no eic-shell route, no runnable example with input files, and documents nonexistent "legacy scripts".
+    evidence:
+      - https://github.com/eic/epic-capybara/blob/6fb78eff9b612ffd2d829aa142c3fbe07bfbe53b/README.md#L13-L38
+    gaps:
+      - No mention that `capybara` is available in eic-shell, and no `pip install epic-capybara` route.
+      - No runnable quick-start example with sample input files.
+      - The "Legacy scripts" section refers to `capy.py` and `bara.py`, which do not exist at the repository root.
+    actions:
+      - action: Rewrite the README install section to cover eic-shell, `pip install epic-capybara`, and from-source, and add a `capybara bara a.root b.root --serve` example with sample files.
+        priority: medium
+        effort: S
+  doc.developer:
+    level: 1
+    confidence: high
+    rationale: >-
+      A few helpers carry docstrings (`skip_common_prefix`, `_normalize_key`, `_ad_rng`), but the CLI commands and `github.py` are undocumented and there is no API reference or architecture overview.
+    evidence:
+      - https://github.com/eic/epic-capybara/blob/6fb78eff9b612ffd2d829aa142c3fbe07bfbe53b/epic_capybara/util.py#L17-L28
+      - https://github.com/eic/epic-capybara/blob/6fb78eff9b612ffd2d829aa142c3fbe07bfbe53b/epic_capybara/cli/bara.py#L60-L80
+    gaps:
+      - No generated API documentation.
+      - No description of the capy/bara/cate data flow or of the statistical tests used.
+    actions:
+      - action: Add `docs/architecture.md` describing the capy → bara → cate flow and the KS/Anderson-Darling tests, and add docstrings to the CLI commands.
+        priority: medium
+        effort: S
+  doc.contributing:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The README shows how to run the development version with Hatch and the EIC organization supplies PR and issue templates, but there is no CONTRIBUTING file covering tests, conventions or the PR process.
+    evidence:
+      - https://github.com/eic/epic-capybara/blob/6fb78eff9b612ffd2d829aa142c3fbe07bfbe53b/README.md#L22-L26
+      - https://github.com/eic/.github/blob/3231e4d33f430f9806db8703b2feaafca084e18e/.github/pull_request_template.md
+      - metrics:community.files.contributing = false
+    gaps:
+      - No `CONTRIBUTING.md` describing environment setup, running tests, and coding conventions.
+    actions:
+      - action: Add `CONTRIBUTING.md` covering eic-shell or Hatch setup, `hatch run cov`, commit-message conventions and the review process.
+        priority: medium
+        effort: S
+  com.responsiveness:
+    level: 1
+    confidence: low
+    rationale: >-
+      All 3 issues opened in 12 months came from a maintainer and none is labeled; 4 of 6 open issues are older than one year, which exceeds the half allowed at level 2.
+    evidence:
+      - metrics:issues.created_12m = 3
+      - metrics:issues.open_older_365d = 4
+      - metrics:issues.labeled_fraction_12m = 0.0
+      - https://github.com/eic/epic-capybara/issues/22
+    gaps:
+      - More than half of open issues are older than one year (issue 22 appears addressed by PR 23 but remains open).
+      - Issues are not labeled or otherwise triaged.
+    actions:
+      - action: Close resolved issues (for example 22) and apply the existing `bug`/`enhancement` labels to all open issues.
+        priority: medium
+        effort: S
+  com.contributors:
+    level: 1
+    confidence: high
+    rationale: >-
+      Three authors were active in 24 months, all from one e-mail domain, with no new authors in 12 months and no external PRs.
+    evidence:
+      - metrics:git.authors_24m = 3
+      - metrics:git.email_domains_24m = 1
+      - metrics:git.new_authors_12m = 0
+      - metrics:prs.external_fraction_12m = 0.0
+    gaps:
+      - Fewer than 4 active authors in 24 months, and no evidence of more than one institution.
+    actions:
+      - action: Recruit a co-developer from another ePIC institution (for example among the EICrecon or epic CI users) and label newcomer issues as `good first issue`.
+        priority: high
+        effort: M
+  com.bus-factor:
+    level: 1
+    confidence: high
+    rationale: >-
+      The top author wrote 61% of commits in 24 months (bus factor 1) and made all 3 releases, while 3 people review and merge.
+    evidence:
+      - metrics:git.bus_factor_50_24m = 1
+      - metrics:git.top_author_share_24m = 0.607
+      - metrics:prs.distinct_mergers_12m = 3
+      - metrics:releases.authors_24m = 1
+    gaps:
+      - Bus factor (50%) is 1.
+      - No CODEOWNERS or maintainer list naming at least 2 people.
+    actions:
+      - action: Add `.github/CODEOWNERS` naming two maintainers for `epic_capybara/` and `.github/workflows/`.
+        priority: high
+        effort: S
+  com.governance:
+    level: 1
+    confidence: medium
+    rationale: >-
+      A maintainer is identifiable from the `pyproject.toml` authors list and the eic-spack recipe, but there is no documented decision process, maintainer path, roadmap or milestones.
+    evidence:
+      - https://github.com/eic/epic-capybara/blob/6fb78eff9b612ffd2d829aa142c3fbe07bfbe53b/pyproject.toml#L12-L14
+      - https://github.com/eic/eic-spack/blob/5b666599332b0974af162067e1a075d1661a3580/spack_repo/eic/packages/py_epic_capybara/package.py#L20
+    gaps:
+      - No governance document describing who decides and how to become a maintainer.
+    actions:
+      - action: Add a "Maintainers and governance" section to the README naming the maintainers, the owning ePIC group, and the decision process.
+        priority: medium
+        effort: S
+  com.conduct:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The EIC organization issue-template configuration links the ePIC Mattermost and software meetings as support channels, but no code of conduct applies at repository or organization level.
+    evidence:
+      - https://github.com/eic/.github/blob/3231e4d33f430f9806db8703b2feaafca084e18e/.github/ISSUE_TEMPLATE/config.yml
+      - metrics:community.files.code_of_conduct = false
+    gaps:
+      - No code of conduct with a reporting contact.
+    actions:
+      - action: Add `CODE_OF_CONDUCT.md` linking the ePIC collaboration code of conduct and its reporting contact.
+        priority: high
+        effort: S
+  dist.packaging:
+    level: 2
+    confidence: high
+    rationale: >-
+      PyPI provides the latest release 1.2.0 and the package ships in eic-shell, but the eic-spack recipe only offers `main` and eic-shell pins a commit that predates v1.1.0 and v1.2.0.
+    evidence:
+      - metrics:packaging.pypi.latest = 1.2.0
+      - metrics:packaging.in_eic_shell = true
+      - metrics:packaging.eic_shell_version = git.30735bc79b3d78afae1744775f863bb194527fe2
+      - https://github.com/eic/eic-spack/blob/5b666599332b0974af162067e1a075d1661a3580/spack_repo/eic/packages/py_epic_capybara/package.py#L24
+    gaps:
+      - The eic-spack recipe has no versioned releases, so eic-shell is not updated per project release.
+    actions:
+      - action: Add `version("1.2.0", ...)` (and later releases) to the eic-spack `py-epic-capybara` recipe and require it in eic/containers `packages.yaml`.
+        priority: medium
+        effort: S
+  dist.releases:
+    level: 1
+    confidence: high
+    rationale: >-
+      Three releases with generated notes were made between July and August 2026 and none in the preceding 12 months, and no version scheme is documented.
+    evidence:
+      - metrics:releases.count_24m = 3
+      - metrics:releases.with_notes_fraction_24m = 1.0
+      - https://github.com/eic/epic-capybara/releases/tag/v1.2.0
+    gaps:
+      - No documented version scheme (SemVer or CalVer).
+      - Releases do not cover the 24-month window at 2 per year.
+    actions:
+      - action: State in the README that releases follow SemVer and tag a release at least every six months.
+        priority: medium
+        effort: S
+  dist.dependencies:
+    level: 1
+    confidence: high
+    rationale: >-
+      Dependencies are declared in `pyproject.toml`, but only `bokeh` (and `uproot` in the `rntuple` extra) carry minimum versions; Dependabot covers GitHub Actions only, which are not SHA-pinned.
+    evidence:
+      - https://github.com/eic/epic-capybara/blob/6fb78eff9b612ffd2d829aa142c3fbe07bfbe53b/pyproject.toml#L27-L42
+      - https://github.com/eic/epic-capybara/blob/6fb78eff9b612ffd2d829aa142c3fbe07bfbe53b/.github/dependabot.yml#L6-L11
+      - metrics:ci.action_refs_not_sha_pinned = 23
+    gaps:
+      - No minimum versions for `awkward`, `click`, `hist`, `PyGithub`, `requests`, `scipy`, `uproot`, although `bara.py` uses version-dependent SciPy APIs (`PermutationMethod(rng=...)`).
+    actions:
+      - action: Add tested minimum versions to every entry in `[project] dependencies` in `pyproject.toml`.
+        priority: medium
+        effort: S
+  dist.reproducibility:
+    level: 1
+    confidence: low
+    rationale: >-
+      `pyproject.toml` and the Hatch environment declare the dependency set and Anderson-Darling subsampling uses per-key deterministic seeds, but there is no lockfile, container or documented eic-shell version.
+    evidence:
+      - https://github.com/eic/epic-capybara/blob/6fb78eff9b612ffd2d829aa142c3fbe07bfbe53b/epic_capybara/cli/bara.py#L27-L38
+      - metrics:files.lockfile = []
+    gaps:
+      - No machine-readable pinned environment (lockfile, container image, or eic-shell version).
+      - Reports do not record the epic-capybara or dependency versions used.
+    actions:
+      - action: Document the eic-shell version in which each release is tested and write the capybara version into the generated `index.html`.
+        priority: medium
+        effort: S
+  dist.portability:
+    level: 1
+    confidence: high
+    rationale: >-
+      CI runs only on `ubuntu-latest` with the runner's default Python; no other Python version or OS is tested, and no site-specific paths were found.
+    evidence:
+      - metrics:ci.runs_on = [ubuntu-latest]
+      - metrics:code.site_specific_paths = []
+    gaps:
+      - Only one Python version and one OS are tested.
+    actions:
+      - action: Add a Python-version matrix (for example 3.10 and 3.13) with `actions/setup-python` to the build job in `build.yml`.
+        priority: medium
+        effort: S
+  eic.reuse:
+    level: 3
+    confidence: high
+    rationale: >-
+      Reading of podio TTree and RNTuple files uses uproot and awkward with no parallel implementations, and the tool is reused by the CI of EICrecon, epic, npsim and eic/containers.
+    evidence:
+      - https://github.com/eic/epic-capybara/blob/6fb78eff9b612ffd2d829aa142c3fbe07bfbe53b/epic_capybara/cli/bara.py#L122-L139
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/.github/workflows/linux-eic-shell.yml#L1362-L1364
+      - https://github.com/eic/epic/blob/2e1d4f73eed9201b8d1ad925497fee96fe55726b/.github/workflows/linux-eic-shell.yml#L627-L630
+    gaps: []
+    actions: []
+  eic.data-model:
+    level: 2
+    confidence: medium
+    rationale: >-
+      Inputs are EDM4hep/EDM4eic podio ROOT files (TTree or RNTuple) read via uproot; outputs are an HTML report, not physics data; no data-model version is checked.
+    evidence:
+      - https://github.com/eic/epic-capybara/blob/6fb78eff9b612ffd2d829aa142c3fbe07bfbe53b/epic_capybara/cli/bara.py#L60-L85
+      - https://github.com/eic/epic-capybara/blob/6fb78eff9b612ffd2d829aa142c3fbe07bfbe53b/epic_capybara/cli/bara.py#L122-L139
+    gaps:
+      - No check of the podio or EDM4eic version of input files.
+      - No tests reading TTree and RNTuple inputs.
+    actions:
+      - action: Read the podio/EDM4eic version from the input file metadata, print it in the report, and warn when the two inputs differ.
+        priority: medium
+        effort: S
+  eic.environment:
+    level: 1
+    confidence: high
+    rationale: >-
+      The package ships in eic-shell and is run there by downstream CI, but its own CI runs on a plain `ubuntu-latest` runner and the README does not document eic-shell use.
+    evidence:
+      - metrics:ci.uses_eic_shell = false
+      - metrics:packaging.in_eic_shell = true
+    gaps:
+      - CI does not build or test in an eic container image.
+      - The README does not document building or running in eic-shell.
+    actions:
+      - action: Add a job to `build.yml` that installs and runs `capybara bara` inside eic-shell with `eic/run-cvmfs-osg-eic-shell`.
+        priority: medium
+        effort: S
+  eic.currency:
+    level: 2
+    confidence: medium
+    rationale: >-
+      The current eic-shell ships the package and the EICrecon eic-shell CI runs it, so it is compatible with the current stack; there is no nightly eic-shell CI and eic-shell pins a commit from before v1.1.0.
+    evidence:
+      - metrics:packaging.eic_shell_version = git.30735bc79b3d78afae1744775f863bb194527fe2
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/spack-environment/packages.yaml#L507-L509
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/.github/workflows/linux-eic-shell.yml#L1362-L1364
+    gaps:
+      - No CI against eic-shell nightly to catch incompatibilities with new uproot, awkward or podio releases.
+      - eic-shell does not ship the latest release (v1.2.0).
+    actions:
+      - action: Add an eic-shell nightly job (`platform-release` set to `eic_xl:nightly`) to `build.yml`.
+        priority: medium
+        effort: S
+  via.license:
+    level: 2
+    confidence: high
+    rationale: >-
+      The MIT license is detected by GitHub and declared in `pyproject.toml`; SPDX headers appear only in some files and there are no contribution terms.
+    evidence:
+      - metrics:repo.license_spdx = MIT
+      - https://github.com/eic/epic-capybara/blob/6fb78eff9b612ffd2d829aa142c3fbe07bfbe53b/pyproject.toml#L10
+      - https://github.com/eic/epic-capybara/blob/6fb78eff9b612ffd2d829aa142c3fbe07bfbe53b/epic_capybara/__about__.py#L1-L3
+    gaps:
+      - SPDX headers are missing from `bara.py`, `capy.py`, `cate.py`, `util.py`, `github.py` and `filesystem.py`.
+      - No documented contribution terms (inbound = outbound or DCO).
+    actions:
+      - action: Add `SPDX-License-Identifier` MIT headers to all source files and state inbound = outbound licensing in a CONTRIBUTING file.
+        priority: low
+        effort: S
+  via.citation:
+    level: 0
+    confidence: high
+    rationale: >-
+      There is no CITATION.cff, `.zenodo.json`, codemeta, DOI or citation request in the README.
+    evidence: []
+    gaps:
+      - No citation metadata or software DOI.
+    actions:
+      - action: Add `CITATION.cff` listing all contributors and enable the Zenodo-GitHub integration for releases.
+        priority: high
+        effort: S
+  via.adoption:
+    level: 3
+    confidence: high
+    rationale: >-
+      The package ships in eic-shell and is part of the regression checks in the CI of EICrecon, epic, npsim and the eic/containers cross-architecture comparison.
+    evidence:
+      - metrics:packaging.in_eic_shell = true
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/.github/workflows/linux-eic-shell.yml#L1362-L1364
+      - https://github.com/eic/npsim/blob/ca28828f22e9fbeefc42636ed08dd35f084246d2/.github/workflows/linux-eic-shell.yml#L146-L149
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/.github/workflows/capybara-cross-arch.yml
+    gaps: []
+    actions: []
+  via.support:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The repository is hosted in the eic organization with copyright held by "Electron-Ion Collider (EIC) Software", but no ePIC body is named as owner and no funding or institutional commitment is stated.
+    evidence:
+      - https://github.com/eic/epic-capybara/blob/6fb78eff9b612ffd2d829aa142c3fbe07bfbe53b/LICENSE#L3
+      - https://github.com/eic/epic-capybara/blob/6fb78eff9b612ffd2d829aa142c3fbe07bfbe53b/pyproject.toml#L12-L14
+    gaps:
+      - Maintenance responsibility is not assigned to an EIC or ePIC working group in the documentation.
+    actions:
+      - action: State in the README which ePIC software working group owns epic-capybara and the maintainers' institutions.
+        priority: high
+        effort: S

@@ -1,0 +1,438 @@
+schema_version: 1
+project: containers
+pass: "2026-10-12"
+commit: a5bead855571a4df268ee89cd4030c58c14ce795
+assessor: { agent: claude-code, model: claude-opus-5-5 }
+summary: >-
+  The repository has no license file or citation metadata, no named maintainers or governance
+  document, one author wrote 69.7% of commits in 24 months, and the documented quick start pulls an
+  image tag (`latest`) that does not exist. Every PR and the default branch build all image flavors
+  for amd64 and arm64 under a ruleset that requires one approval and the eicweb pipeline, which runs
+  npsim/EICrecon end-to-end jobs and the detector and physics benchmarks on both default and nightly
+  images (96% of default-branch runs succeed). Tagged CalVer images are published every month and are
+  the eic-shell environment used across EIC CI and production.
+criteria:
+  eng.change-control:
+    level: 2
+    confidence: medium
+    rationale: >-
+      89.6% of first-parent commits in 12 months came from PRs and 93.3% of merged PRs were reviewed,
+      under an active ruleset requiring one approval, with the eic organization PR template applying;
+      about 37 commits were pushed directly through the ruleset's always-bypass team, so not nearly all changes arrive through PRs.
+    evidence:
+      - metrics:git.first_parent_pr_fraction_12m = 0.896
+      - metrics:prs.reviewed_fraction_12m = 0.933
+      - metrics:repo.rulesets = 2
+      - https://github.com/eic/.github/blob/3231e4d33f430f9806db8703b2feaafca084e18e/.github/pull_request_template.md
+    gaps:
+      - "The \"Default\" ruleset gives one team always-bypass, and about 10% of default-branch commits in 12 months bypassed PRs."
+      - No CODEOWNERS file.
+    actions:
+      - action: Change the bypass team in the "Default" ruleset to `pull_request` bypass mode so that all changes go through PRs.
+        priority: medium
+        effort: S
+      - action: Add `.github/CODEOWNERS` naming at least two owners for `spack-environment/`, `containers/` and `.github/workflows/`.
+        priority: medium
+        effort: S
+  eng.ci:
+    level: 3
+    confidence: medium
+    rationale: >-
+      `build-push.yml` builds the base, eic_ci and eic_xl images for amd64, amd64_v3 and arm64 on every PR and push and runs npsim/EICrecon jobs in the built image,
+      the eicweb pipeline builds every other flavor (cuda, tf, dbg, jl, prod, cvmfs) and triggers the detector and physics benchmarks,
+      and the ruleset requires the eicweb status and the four manifest jobs; 96% of default-branch runs succeeded.
+    evidence:
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/.github/workflows/build-push.yml#L3-L19
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/.github/workflows/build-push.yml#L440-L474
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/.gitlab-ci.yml#L382-L438
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/.gitlab-ci.yml#L627-L682
+      - https://eicweb.phy.anl.gov/containers/eic_container/-/pipelines/150479
+      - metrics:ci.default_branch_success_rate = 0.96
+    gaps: []
+    actions: []
+  eng.testing:
+    level: 1
+    confidence: medium
+    rationale: >-
+      Tests are end-to-end only: npsim/EICrecon runs, a user Spack environment build and the benchmarks, all against the eic_ci image;
+      the eic_xl, cuda, tf, dbg, jl and prod images are only built, and the build scripts have no tests.
+    evidence:
+      - metrics:code.test_files = 0
+      - metrics:prs.test_touching_fraction_12m = 0.0
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/.github/workflows/build-push.yml#L491-L499
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/.gitlab-ci.yml#L517-L538
+    gaps:
+      - No test exercises the eic_xl image that eic-shell installs by default, or the cuda, tf, dbg, jl and prod images.
+      - The capybara comparisons with the previous master artifacts are reported in a PR comment but never fail the job.
+      - "`scripts/build-*.sh`, `scripts/resolve_git_ref` and `scripts/check_image_size` have no tests."
+    actions:
+      - action: Add a smoke-test job per image flavor that runs `eic-info` and imports key Python modules (ROOT, podio, edm4eic, acts) inside each pipeline-tagged image.
+        priority: medium
+        effort: S
+      - action: Add the eic_xl image to the npsim/EICrecon job matrix in `.github/workflows/build-push.yml`.
+        priority: medium
+        effort: S
+  eng.static-quality:
+    level: 2
+    confidence: medium
+    rationale: >-
+      pre-commit.ci runs whitespace and end-of-file fixers, check-yaml, actionlint and shellcheck (`--severity=warning`) on every PR,
+      and all Dockerfiles set `#check=error=true`; hadolint is skipped on pre-commit.ci and excludes both main Dockerfiles, and pre-commit.ci is not a required check.
+    evidence:
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/.pre-commit-config.yaml#L1-L10
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/.pre-commit-config.yaml#L56-L84
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/containers/eic/Dockerfile#L1-L2
+    gaps:
+      - hadolint never runs in CI and excludes `containers/debian/Dockerfile` and `containers/eic/Dockerfile`.
+      - "`containers/debian/bashrc` is excluded from shellcheck, and pre-commit.ci is not a required status check."
+    actions:
+      - action: Add `pre-commit.ci - pr` to the required status checks of the "Default" ruleset.
+        priority: medium
+        effort: S
+      - action: Add a CI step that runs `docker buildx build --check` on both main Dockerfiles, replacing the skipped hadolint hook.
+        priority: medium
+        effort: S
+  eng.modularity:
+    level: 2
+    confidence: medium
+    rationale: >-
+      Images are built from multi-stage Dockerfiles through `scripts/build-base.sh` and `scripts/build-eic.sh`, with versions and variants kept in Spack
+      environment files and pinned version scripts; the GitHub Actions and GitLab pipelines duplicate job logic, and version overrides are applied with `sed` on marker comments.
+    evidence:
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/containers/eic/Dockerfile#L8-L30
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/containers/eic/Dockerfile#L161-L170
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/docs/architecture.md
+    gaps:
+      - Build logic is maintained twice (`build-push.yml` and `.gitlab-ci.yml`), and the npsim/EICrecon jobs are copy-pasted four times.
+      - The image runtime interface (environment variables, `profile.d` scripts, `eic-info`, tag scheme) is not documented as a stable interface.
+    actions:
+      - action: Document the image runtime interface (tags, environment variables, `/etc/eic_info`, `profile.d` hooks) in `docs/image-interface.md`.
+        priority: medium
+        effort: S
+      - action: Move the duplicated npsim/EICrecon job steps in `build-push.yml` into one reusable workflow.
+        priority: low
+        effort: M
+  doc.user:
+    level: 1
+    confidence: high
+    rationale: >-
+      The README only links eic-shell; the hosted docs give prerequisites, local build commands, build options and troubleshooting,
+      but the quick start pulls `ghcr.io/eic/eic_xl:latest` and `build-eic.sh` falls back to `:latest`, a tag that does not exist on ghcr.io.
+    evidence:
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/README.md
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/docs/README.md#L26-L42
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/docs/building-locally.md#L5-L62
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/docs/building-locally.md#L209-L239
+    gaps:
+      - "`docker pull ghcr.io/eic/eic_xl:latest` fails: ghcr.io has `nightly`, `master` and `<version>-stable` tags but no `latest`."
+      - The README itself has no usage or build instructions, and the docs list 3 of the 12 image flavors.
+    actions:
+      - action: Replace `:latest` with `:nightly` and a `<version>-stable` example in `docs/README.md` and in the fallback of `scripts/build-eic.sh`.
+        priority: high
+        effort: S
+      - action: Add a "Using the images" section to `README.md` linking the docs site and listing the image flavors and tag scheme.
+        priority: medium
+        effort: S
+  doc.developer:
+    level: 2
+    confidence: medium
+    rationale: >-
+      `docs/architecture.md`, `docs/build-pipeline.md` and `docs/spack-environment.md` describe the build tracks, caches and environments with diagrams,
+      build-script options and build arguments are documented, and the Docsify site is deployed by CI; parts are stale.
+    evidence:
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/docs/architecture.md#L1-L40
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/docs/building-locally.md#L138-L207
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/.github/workflows/docs.yml
+      - https://eic.github.io/containers/
+    gaps:
+      - "`docs/architecture.md` and `docs/building-locally.md` name buildcache `spack-v2025.07.0`; the pinned spack-packages is v2026.06.0."
+      - The GitLab pipeline, which builds most flavors and runs the benchmarks, is described only in AGENTS.md.
+    actions:
+      - action: Update the buildcache references and image table in `docs/` and add a page describing the eicweb GitLab pipeline and benchmark triggers.
+        priority: medium
+        effort: S
+  doc.contributing:
+    level: 2
+    confidence: medium
+    rationale: >-
+      There is no CONTRIBUTING.md, but AGENTS.md (addressed to coding agents) covers local builds, coding conventions, validation steps,
+      commit format and PR rules, and the eic organization PR and issue templates apply; review expectations are one line and no newcomer issues are labeled.
+    evidence:
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/AGENTS.md#L182-L307
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/docs/building-locally.md#L16-L62
+      - https://github.com/eic/.github/tree/3231e4d33f430f9806db8703b2feaafca084e18e/.github/ISSUE_TEMPLATE
+    gaps:
+      - Contributor guidance is in a file addressed to Copilot agents and is not linked from README.md.
+      - No issue carries the `good first issue` label; no devcontainer or documented ready-made development environment.
+    actions:
+      - action: Add `CONTRIBUTING.md` (linked from README.md) with the review expectations, how to propose new packages or flavors, and the local build workflow.
+        priority: medium
+        effort: S
+      - action: Label at least three open issues (for example #89) `good first issue`.
+        priority: low
+        effort: S
+  com.responsiveness:
+    level: 1
+    confidence: medium
+    rationale: >-
+      Median first response is 1.84 days and 1 of 7 open issues is older than a year, but no issue opened in 12 months was labeled,
+      there are no milestones, and 26.1% of new issues received no response.
+    evidence:
+      - metrics:issues.median_first_response_days_12m = 1.84
+      - metrics:issues.labeled_fraction_12m = 0.0
+      - metrics:issues.unanswered_fraction_12m = 0.261
+      - metrics:prs.open_older_90d = 16
+    gaps:
+      - No issue triage; 0% of new issues labeled, no milestones or project board.
+      - 16 of 30 open PRs are older than 90 days.
+    actions:
+      - action: Apply the existing `bug`/`enhancement`/`question` labels to every new issue and document the triage practice in CONTRIBUTING.md.
+        priority: medium
+        effort: S
+      - action: Close or rebase the 16 PRs older than 90 days.
+        priority: low
+        effort: S
+  com.contributors:
+    level: 1
+    confidence: medium
+    rationale: >-
+      10 authors from 4 e-mail domains committed in 24 months with 5 new authors in 12 months, but no merged PR in 12 months came from outside the maintainer group.
+    evidence:
+      - metrics:git.authors_24m = 10
+      - metrics:git.email_domains_24m = 4
+      - metrics:git.new_authors_12m = 5
+      - metrics:prs.external_fraction_12m = 0.0
+    gaps:
+      - No external PRs merged in 12 months.
+    actions:
+      - action: Invite package requests as PRs to `spack-environment/` from ePIC working groups and document how in CONTRIBUTING.md.
+        priority: medium
+        effort: S
+  com.bus-factor:
+    level: 1
+    confidence: high
+    rationale: >-
+      One author wrote 69.7% of commits in 24 months (bus factor 1), while 8 people reviewed and 3 merged PRs in 12 months; no CODEOWNERS or maintainer list exists.
+    evidence:
+      - metrics:git.bus_factor_50_24m = 1
+      - metrics:git.top_author_share_24m = 0.697
+      - metrics:prs.distinct_reviewers_12m = 8
+      - metrics:prs.distinct_mergers_12m = 3
+      - metrics:releases.authors_24m = 2
+    gaps:
+      - Bus factor (50%) is 1.
+      - No CODEOWNERS or maintainer list.
+    actions:
+      - action: Add `.github/CODEOWNERS` with two owners per directory and document the release-tagging and backport procedure in `docs/releasing.md`.
+        priority: high
+        effort: S
+  com.governance:
+    level: 0
+    confidence: medium
+    rationale: >-
+      Changes are discussed in public PRs, but neither the README, the docs nor a CODEOWNERS file names maintainers, and there is no decision process, roadmap or milestone.
+    evidence:
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/docs/README.md#L63-L67
+      - https://github.com/eic/containers/milestones
+    gaps:
+      - No maintainers named and no decision process or path to maintainership.
+      - Requirements for which packages ship in eic-shell are not documented.
+    actions:
+      - action: Add `GOVERNANCE.md` naming the maintainers, the owning ePIC body, how package additions are decided, and how to become a maintainer.
+        priority: high
+        effort: S
+  com.conduct:
+    level: 1
+    confidence: high
+    rationale: >-
+      The eic organization issue-template configuration links the ePIC Mattermost and weekly Indico meetings and the docs point to GitHub issues,
+      but no code of conduct applies at repository or organization level.
+    evidence:
+      - https://github.com/eic/.github/blob/3231e4d33f430f9806db8703b2feaafca084e18e/.github/ISSUE_TEMPLATE/config.yml
+      - metrics:community.files.code_of_conduct = false
+    gaps:
+      - No code of conduct with a reporting contact.
+    actions:
+      - action: Add `CODE_OF_CONDUCT.md` to `eic/.github` (or link the collaboration code) with a reporting contact.
+        priority: high
+        effort: S
+  dist.packaging:
+    level: 3
+    confidence: medium
+    rationale: >-
+      The project's product is the eic-shell image set: every release tag is built and published as OCI images (Docker Hub `eicweb/eic_xl:26.10.0-stable`, ghcr.io)
+      and distributed through OSG CVMFS, which the eic-shell installer uses; there is no package recipe, which does not apply to an image build.
+    evidence:
+      - https://hub.docker.com/r/eicweb/eic_xl/tags?name=26.10.0-stable
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/install.sh
+      - https://github.com/eic/eic-shell/blob/70c57ee44b025f000139d99cca38d681a82bdf10/install.sh#L144-L157
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/.github/workflows/mirror.yaml#L15-L21
+    gaps: []
+    actions: []
+  dist.releases:
+    level: 1
+    confidence: high
+    rationale: >-
+      42 tags in 24 months follow `vYY.MM.P-stable`, and the 15 GitHub releases since January 2026 have generated notes, but the version scheme is not documented,
+      the 2025 tags have no release notes, and there is no changelog.
+    evidence:
+      - metrics:git.tags_24m = 42
+      - metrics:releases.count_24m = 15
+      - https://github.com/eic/containers/releases/tag/v26.10.0-stable
+    gaps:
+      - The CalVer scheme (`vYY.MM.P-stable`, release branches `vYY.MM-stable`) is not documented.
+      - Tags before 2026 have no release notes; no changelog flags breaking changes.
+    actions:
+      - action: Document the version scheme, release branches and backport labels in README.md.
+        priority: medium
+        effort: S
+  dist.dependencies:
+    level: 2
+    confidence: medium
+    rationale: >-
+      Spack, spack-packages, key4hep-spack and eic-spack are pinned to tags or SHAs, packages.yaml pins versions with `require`,
+      Dependabot covers GitHub Actions and literal Docker `FROM` lines, and a nightly workflow opens eic-spack bump PRs; there is no SECURITY.md.
+    evidence:
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/spack.sh#L1-L25
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/spack-environment/packages.yaml#L34-L40
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/.github/dependabot.yml
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/.github/workflows/update-eic-spack.yml
+    gaps:
+      - No SECURITY.md or vulnerability reporting route for images used across EIC.
+      - Base images set in CI configuration (`debian:trixie-slim`, `nvidia/cuda`) are not monitored by Dependabot.
+    actions:
+      - action: Add `SECURITY.md` naming a private vulnerability reporting route and enable GitHub private vulnerability reporting.
+        priority: medium
+        effort: S
+  dist.reproducibility:
+    level: 3
+    confidence: medium
+    rationale: >-
+      The environment is defined by pinned Spack environments and Dockerfiles, each release tag yields immutable tagged images,
+      CI runs npsim/EICrecon with fixed seeds inside the pipeline-built image, and each image records the Spack report and full package/variant list in `/etc/eic_info`.
+    evidence:
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/containers/eic/Dockerfile#L321-L325
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/.github/workflows/build-push.yml#L440-L474
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/.github/workflows/build-push.yml#L208-L218
+    gaps: []
+    actions: []
+  dist.portability:
+    level: 3
+    confidence: medium
+    rationale: >-
+      CI builds amd64, amd64_v3 and arm64 images and runs npsim/EICrecon on amd64 and arm64 with cross-architecture capybara comparisons,
+      the base image ships GCC and Clang, CUDA images are built, and the images run unmodified from OSG CVMFS through eic-shell and `eic/run-cvmfs-osg-eic-shell`.
+    evidence:
+      - metrics:ci.runs_on = ["ubuntu-24.04-arm", "ubuntu-latest"]
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/.github/workflows/build-push.yml#L83-L136
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/.github/workflows/build-push.yml#L807-L863
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/containers/debian/Dockerfile#L117-L138
+      - https://github.com/eic/run-cvmfs-osg-eic-shell/blob/10a8540a01bf46c03a2b267cb122d96a1cb5c09a/action.yml#L19-L26
+    gaps: []
+    actions: []
+  eic.reuse:
+    level: 3
+    confidence: high
+    rationale: >-
+      The images assemble EIC-supported components from eic-spack, key4hep-spack and Spack recipes without parallel implementations,
+      and the project provides the environment that EICrecon, epic and other EIC repositories build and test in.
+    evidence:
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/spack-environment/xl/epic/spack.yaml#L19-L28
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/eic-spack.sh
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/.github/workflows/linux-eic-shell.yml#L160-L176
+    gaps: []
+    actions: []
+  eic.data-model:
+    level: null
+    not_applicable: >-
+      The project builds container images and reads or writes no physics or detector data itself; its CI only runs other components (npsim, EICrecon).
+    confidence: high
+    rationale: >-
+      Build and distribution infrastructure with no physics I/O of its own.
+    evidence: []
+    gaps: []
+    actions: []
+  eic.environment:
+    level: 3
+    confidence: medium
+    rationale: >-
+      The project builds the eic-shell images and every PR tests the pipeline-built images: npsim/EICrecon jobs on the default build
+      and the detector and physics benchmarks on both the default (pinned versions) and nightly builds; using the images is documented.
+    evidence:
+      - metrics:ci.uses_eic_shell = true
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/.gitlab-ci.yml#L638-L682
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/docs/README.md#L26-L42
+    gaps: []
+    actions: []
+  eic.currency:
+    level: 2
+    confidence: medium
+    rationale: >-
+      The pins in packages.yaml define the current eic-shell (EICrecon 1.42.0, epic 26.10.0, DD4hep 1.38, ROOT 6.40.04) and eic-spack is bumped nightly,
+      but npsim 1.9.0 (2026-09-08) was not adopted in v26.10.0-stable and ACTS stays at 46.8.1 after 47.0.0 (2026-07-14) and 48.0.0.
+    evidence:
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/spack-environment/packages.yaml#L34-L37
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/spack-environment/packages.yaml#L393-L395
+      - https://github.com/eic/npsim/releases/tag/v1.9.0
+      - https://github.com/acts-project/acts/releases/tag/v47.0.0
+    gaps:
+      - npsim 1.9.0 was not adopted within one monthly release cycle.
+      - ACTS is pinned two major versions behind upstream with no documented reason.
+    actions:
+      - action: Bump npsim to 1.9.0 in `spack-environment/packages.yaml` and record the reason for the ACTS 46.8.1 pin in a comment next to it.
+        priority: medium
+        effort: S
+  via.license:
+    level: 0
+    confidence: medium
+    rationale: >-
+      The repository has no LICENSE file and GitHub detects no license; only an OCI image label in `containers/debian/Dockerfile` declares `GPL-3.0-or-later`.
+    evidence:
+      - metrics:repo.license_spdx = null
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/containers/debian/Dockerfile#L10-L17
+    gaps:
+      - No license file grants rights to the repository content.
+    actions:
+      - action: Add a `LICENSE` file with the GPL-3.0-or-later text that the image label already declares (or another chosen OSI license) so GitHub detects it.
+        priority: high
+        effort: S
+  via.citation:
+    level: 0
+    confidence: high
+    rationale: >-
+      No CITATION.cff, .zenodo.json, codemeta or DOI exists.
+    evidence:
+      - metrics:files.citation_cff = []
+    gaps:
+      - No citation information.
+    actions:
+      - action: Add `CITATION.cff` and enable the Zenodo-GitHub integration so each `-stable` release gets a DOI.
+        priority: high
+        effort: S
+  via.adoption:
+    level: 3
+    confidence: high
+    rationale: >-
+      The images are eic-shell: the eic-shell installer and `eic/run-cvmfs-osg-eic-shell` use them, EICrecon and epic CI run in them,
+      and EICrecon and epic pipelines trigger container builds on eicweb.
+    evidence:
+      - https://github.com/eic/eic-shell/blob/70c57ee44b025f000139d99cca38d681a82bdf10/install.sh#L10-L12
+      - https://github.com/eic/EICrecon/blob/b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8/.github/workflows/linux-eic-shell.yml#L160-L176
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/.gitlab-ci.yml#L517-L523
+    gaps: []
+    actions: []
+  via.support:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The image label names "Electron-Ion Collider Software Working Groups" with a mailing-list contact as authors and the docs link the organization for support,
+      but no document assigns maintenance to a named ePIC body or acknowledges institutional support.
+    evidence:
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/containers/debian/Dockerfile#L10-L17
+      - https://github.com/eic/containers/blob/a5bead855571a4df268ee89cd4030c58c14ce795/docs/README.md#L63-L67
+    gaps:
+      - No owning ePIC body, maintainer institutions or funding stated in README or docs.
+    actions:
+      - action: State in README.md the ePIC computing body that owns eic-shell, the maintainers' institutions and any funding acknowledgement.
+        priority: high
+        effort: S

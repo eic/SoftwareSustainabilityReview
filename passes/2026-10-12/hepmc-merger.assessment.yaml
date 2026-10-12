@@ -1,0 +1,465 @@
+schema_version: 1
+project: hepmc-merger
+pass: "2026-10-12"
+commit: a86fdd66ffd5facfa0bfebc87b70377a2fe47e23
+assessor: { agent: claude-code, model: claude-opus-5-5 }
+summary: >-
+  The repository has no license (issue #10 open since 2024), no citation metadata, no unit tests
+  or static analysis, one author wrote 50% of commits in 24 months, and the README usage example
+  uses command-line options removed in v2.0.0. All default-branch changes in 12 months arrived
+  through reviewed PRs under a ruleset that requires an approval and the eic-shell CI checks, and
+  each release (8 in 24 months) is packaged in eic-spack the same day and shipped in eic-shell,
+  where ePIC production workflows run it.
+criteria:
+  eng.change-control:
+    level: 3
+    confidence: high
+    rationale: >-
+      All first-parent commits on `main` in 12 months came from PRs and every merged PR was
+      reviewed by someone other than the author; an active ruleset requires one approving review,
+      resolved threads and the `build`/`smoke-test` checks, and the eic organization PR template applies.
+    evidence:
+      - metrics:git.first_parent_pr_fraction_12m = 1.0
+      - metrics:prs.reviewed_fraction_12m = 1.0
+      - metrics:repo.rulesets = 1
+      - https://github.com/eic/.github/blob/3231e4d33f430f9806db8703b2feaafca084e18e/.github/pull_request_template.md
+      - https://github.com/eic/HEPMC_Merger/pull/31
+    gaps: []
+    actions: []
+  eng.ci:
+    level: 1
+    confidence: medium
+    rationale: >-
+      `linux-eic-shell.yml` builds in eic-shell on every PR and push to `main` (3 of 3 default-branch
+      runs succeeded) and is a required check, but it runs no test suite; the only check is one
+      smoke run whose result is verified by `ls -la` on the output file.
+    evidence:
+      - https://github.com/eic/HEPMC_Merger/blob/a86fdd66ffd5facfa0bfebc87b70377a2fe47e23/.github/workflows/linux-eic-shell.yml#L3-L9
+      - https://github.com/eic/HEPMC_Merger/blob/a86fdd66ffd5facfa0bfebc87b70377a2fe47e23/.github/workflows/linux-eic-shell.yml#L36-L66
+      - metrics:ci.default_branch_success_rate = 1.0
+      - metrics:ci.default_branch_runs = 3
+    gaps:
+      - No test suite (ctest) runs in CI; the smoke run checks only that the output file exists.
+      - The `actions/checkout` step fetches no tags, so CI builds report version `0.0.0-unknown` (CMake warning in run 37384280511).
+    actions:
+      - action: Register tests with `enable_testing()`/`add_test` in `CMakeLists.txt` and run `ctest --test-dir build` in the `build` job.
+        priority: medium
+        effort: S
+      - action: 'Set `fetch-depth: 0` on `actions/checkout` in `.github/workflows/linux-eic-shell.yml` so the built version matches the tag.'
+        priority: low
+        effort: S
+  eng.testing:
+    level: 1
+    confidence: high
+    rationale: >-
+      There are no test files or test framework; the only automated test is a CI smoke run of one
+      campaign configuration that checks the output file exists.
+    evidence:
+      - metrics:code.test_files = 0
+      - metrics:prs.test_touching_fraction_12m = 0.0
+      - https://github.com/eic/HEPMC_Merger/blob/a86fdd66ffd5facfa0bfebc87b70377a2fe47e23/.github/workflows/linux-eic-shell.yml#L50-L66
+    gaps:
+      - No unit tests for Poisson time placement, weighted sampling, background cycling or status shifting.
+      - No check of output content (event counts, vertex times, run attributes).
+    actions:
+      - action: Add Catch2 tests under `tests/` for `poissonTimes`, `parse_backgrounds` and skip wrapping using the small `.hepmc` files in `python/`, registered with `add_test`.
+        priority: medium
+        effort: M
+      - action: Add a CI step that runs the merger on local test files with a fixed `--rngSeed` and asserts placed event counts and GenRunInfo attributes with pyhepmc or uproot.
+        priority: medium
+        effort: S
+  eng.static-quality:
+    level: 0
+    confidence: high
+    rationale: >-
+      No formatter, linter, pre-commit or static-analysis configuration exists, and `CMakeLists.txt`
+      sets no warning flags.
+    evidence:
+      - metrics:files.clang_format = []
+      - metrics:files.pre_commit = []
+      - https://github.com/eic/HEPMC_Merger/blob/a86fdd66ffd5facfa0bfebc87b70377a2fe47e23/CMakeLists.txt#L40-L50
+    gaps:
+      - No formatter or linter configured or enforced.
+      - No compiler warning flags.
+    actions:
+      - action: Add `.clang-format` and `.pre-commit-config.yaml` with clang-format and enable pre-commit.ci.
+        priority: high
+        effort: S
+      - action: Add `target_compile_options(SignalBackgroundMerger PRIVATE -Wall -Wextra)` in `CMakeLists.txt`.
+        priority: high
+        effort: S
+  eng.modularity:
+    level: 1
+    confidence: medium
+    rationale: >-
+      CMake builds and installs one C++17 executable, but all logic (CLI parsing, I/O, sampling,
+      metadata) sits in one 824-line class, and the default signal input is a server URL compiled
+      into the source that had to be edited in PR #31 when the endpoint moved.
+    evidence:
+      - metrics:code.cxx_standard = ["17"]
+      - https://github.com/eic/HEPMC_Merger/blob/a86fdd66ffd5facfa0bfebc87b70377a2fe47e23/SignalBackgroundMerger.cpp#L63-L111
+      - https://github.com/eic/HEPMC_Merger/blob/a86fdd66ffd5facfa0bfebc87b70377a2fe47e23/SignalBackgroundMerger.cpp#L283-L285
+      - https://github.com/eic/HEPMC_Merger/pull/31
+      - https://github.com/eic/HEPMC_Merger/issues/11
+    gaps:
+      - Single-file monolithic class with public data members; no separation into components.
+      - Default input file URL hard-coded in source.
+      - Three legacy Python merger scripts and a notebook remain alongside the C++ code.
+    actions:
+      - action: Split `SignalBackgroundMerger.cpp` into a library (`include/`, `src/`) for slice building and readers, plus a thin `main`.
+        priority: medium
+        effort: M
+      - action: Remove the default `--signalFile` URL (require the option) and move or delete the legacy scripts in `python/`.
+        priority: medium
+        effort: S
+  doc.user:
+    level: 1
+    confidence: high
+    rationale: >-
+      The README gives build steps and a `--help` pointer, but lists ROOT and HepMC without versions,
+      does not mention eic-shell, and its usage example uses `--bg1File`/`--bg1Freq` options that the
+      current CLI (since v2.0.0) rejects.
+    evidence:
+      - https://github.com/eic/HEPMC_Merger/blob/a86fdd66ffd5facfa0bfebc87b70377a2fe47e23/README.md#L4-L13
+      - https://github.com/eic/HEPMC_Merger/blob/a86fdd66ffd5facfa0bfebc87b70377a2fe47e23/README.md#L28-L38
+      - https://github.com/eic/HEPMC_Merger/blob/a86fdd66ffd5facfa0bfebc87b70377a2fe47e23/SignalBackgroundMerger.cpp#L302-L305
+    gaps:
+      - README usage example and default-behaviour text are outdated and not runnable.
+      - Dependency versions and the eic-shell route are not documented.
+      - The `--bgFile` tuple and status-shift options are documented only in `--help`.
+    actions:
+      - action: Replace the README example with the `--bgFile <file> <freq> [skip] [status]` form from the CI smoke test and add an "Installation" section covering eic-shell and HepMC3 >= 3.2.6, ROOT >= 6.20.
+        priority: medium
+        effort: S
+  doc.developer:
+    level: 1
+    confidence: high
+    rationale: >-
+      A few methods carry comments and the README "Logic" section describes the sampling in one
+      paragraph, but there is no generated API reference and no architecture overview.
+    evidence:
+      - https://github.com/eic/HEPMC_Merger/blob/a86fdd66ffd5facfa0bfebc87b70377a2fe47e23/SignalBackgroundMerger.cpp#L494-L511
+      - https://github.com/eic/HEPMC_Merger/blob/a86fdd66ffd5facfa0bfebc87b70377a2fe47e23/README.md#L44-L52
+      - metrics:files.doxygen = []
+    gaps:
+      - No generated API documentation.
+      - No description of slice building, weighted sampling and the GenRunInfo attribute schema.
+    actions:
+      - action: Add `docs/design.md` describing the slice loop, weighted sampling, status shifting and the `hepmc_merger_*` run attributes, plus Doxygen comments on each method.
+        priority: medium
+        effort: S
+  doc.contributing:
+    level: 1
+    confidence: high
+    rationale: >-
+      Only the eic organization PR and issue templates apply; there is no CONTRIBUTING file
+      describing setup, building, testing or conventions.
+    evidence:
+      - metrics:community.files.contributing = false
+      - https://github.com/eic/.github/blob/3231e4d33f430f9806db8703b2feaafca084e18e/.github/pull_request_template.md
+      - https://github.com/eic/.github/tree/3231e4d33f430f9806db8703b2feaafca084e18e/.github/ISSUE_TEMPLATE
+    gaps:
+      - No CONTRIBUTING describing eic-shell setup, build, test and PR conventions.
+    actions:
+      - action: Add `CONTRIBUTING.md` covering building in eic-shell, running the smoke test, code style and the PR review rule.
+        priority: medium
+        effort: S
+  com.responsiveness:
+    level: 1
+    confidence: low
+    rationale: >-
+      All 3 issues opened in 12 months got a same-day response, but 9 of 10 open issues are older
+      than one year and no new issue is labeled.
+    evidence:
+      - metrics:issues.created_12m = 3
+      - metrics:issues.median_first_response_days_12m = 0.0
+      - metrics:issues.open_older_365d = 9
+      - metrics:issues.labeled_fraction_12m = 0.0
+      - https://github.com/eic/HEPMC_Merger/issues/5
+    gaps:
+      - More than half of open issues are older than one year (#1, #3–#7, #10, #11, #14).
+      - No issue labeling or triage.
+    actions:
+      - action: Close issues resolved by later PRs (#5 by the C++ rewrite with ROOT I/O, #14 by #15) and label the remaining open issues.
+        priority: medium
+        effort: S
+  com.contributors:
+    level: 1
+    confidence: medium
+    rationale: >-
+      Five authors committed in 24 months, but all commits map to one institutional e-mail domain,
+      no new authors joined in 12 months, and no merged PR came from outside the maintainer group.
+    evidence:
+      - metrics:git.authors_24m = 5
+      - metrics:git.email_domains_24m = 1
+      - metrics:git.new_authors_12m = 0
+      - metrics:prs.external_fraction_12m = 0.0
+    gaps:
+      - Contributions come from a single institutional domain per the metrics.
+      - No merged external PRs in 12 months.
+    actions:
+      - action: List the contributing institutions in the README and label newcomer issues to attract a contributor from a second institution.
+        priority: medium
+        effort: S
+  com.bus-factor:
+    level: 1
+    confidence: high
+    rationale: >-
+      The top author wrote 50% of commits in 24 months (bus factor 1), while three people review
+      and merge and two people cut releases; no CODEOWNERS exists and the README names one current maintainer.
+    evidence:
+      - metrics:git.bus_factor_50_24m = 1
+      - metrics:git.top_author_share_24m = 0.5
+      - metrics:prs.distinct_reviewers_12m = 3
+      - metrics:prs.distinct_mergers_12m = 3
+      - metrics:releases.authors_24m = 2
+      - https://github.com/eic/HEPMC_Merger/blob/a86fdd66ffd5facfa0bfebc87b70377a2fe47e23/README.md#L2-L3
+    gaps:
+      - Bus factor (50%) is 1.
+      - No CODEOWNERS or maintainer list naming at least two current maintainers.
+    actions:
+      - action: Add `.github/CODEOWNERS` naming at least two current maintainers and list them in the README.
+        priority: high
+        effort: S
+  com.governance:
+    level: 1
+    confidence: high
+    rationale: >-
+      The README names the C++ maintainer and decisions are discussed in public issues, but there is
+      no documented decision process or maintainer path, and the stated plan to retire the merger in
+      favour of TimeframeBuilder is recorded only in an issue comment.
+    evidence:
+      - https://github.com/eic/HEPMC_Merger/blob/a86fdd66ffd5facfa0bfebc87b70377a2fe47e23/README.md#L2-L3
+      - https://github.com/eic/HEPMC_Merger/issues/29
+    gaps:
+      - No documented decision process, maintainer path, roadmap or milestones.
+      - Deprecation plan relative to TimeframeBuilder not documented.
+    actions:
+      - action: Add a README section stating the owning ePIC group, how decisions are made, and the planned status relative to TimeframeBuilder.
+        priority: medium
+        effort: S
+  com.conduct:
+    level: 1
+    confidence: high
+    rationale: >-
+      The eic organization issue-template configuration links the ePIC Mattermost and meeting
+      series, but no code of conduct applies to the repository or organization.
+    evidence:
+      - https://github.com/eic/.github/blob/3231e4d33f430f9806db8703b2feaafca084e18e/.github/ISSUE_TEMPLATE/config.yml
+      - metrics:community.files.code_of_conduct = false
+    gaps:
+      - No code of conduct with a reporting contact.
+    actions:
+      - action: Link the ePIC collaboration code of conduct with its reporting contact from the README (or add `CODE_OF_CONDUCT.md` in `eic/.github`).
+        priority: high
+        effort: S
+  dist.packaging:
+    level: 3
+    confidence: high
+    rationale: >-
+      The eic-spack `hepmcmerger` recipe provides the latest release 2.4.0, which eic-shell ships,
+      and the recipe gained v2.2.0, v2.3.0 and v2.4.0 on their release days.
+    evidence:
+      - metrics:packaging.eic_spack.versions = ["main", "2.4.0", "2.3.0", "2.2.0", "2.1.0"]
+      - metrics:packaging.eic_shell_version = 2.4.0
+      - metrics:packaging.latest_release_packaged = true
+      - https://github.com/eic/eic-spack/commit/5476d222efd992e87e6906fa92b78df3cb2aacec
+    gaps: []
+    actions: []
+  dist.releases:
+    level: 1
+    confidence: high
+    rationale: >-
+      Eight releases with generated notes appeared in 24 months, but no version scheme is
+      documented and v2.0.0, which replaced the `--bgNFile` options, carries no migration note.
+    evidence:
+      - metrics:releases.count_24m = 8
+      - metrics:releases.with_notes_fraction_24m = 1.0
+      - https://github.com/eic/HEPMC_Merger/releases/tag/v2.0.0
+    gaps:
+      - No documented version scheme.
+      - No changelog flagging breaking changes.
+    actions:
+      - action: State SemVer in the README and add breaking-change and migration notes to release notes (starting from v2.0.0's CLI change).
+        priority: medium
+        effort: S
+  dist.dependencies:
+    level: 1
+    confidence: high
+    rationale: >-
+      HepMC3 (>= 3.2.6) and ROOT (>= 6.20) have minimum versions, but argparse is vendored without
+      a version and unchanged since 2024 (eic-shell ships CLI11), `python/requirements.txt` has no
+      versions, and there is no update monitoring.
+    evidence:
+      - https://github.com/eic/HEPMC_Merger/blob/a86fdd66ffd5facfa0bfebc87b70377a2fe47e23/CMakeLists.txt#L25-L32
+      - https://github.com/eic/HEPMC_Merger/blob/a86fdd66ffd5facfa0bfebc87b70377a2fe47e23/argparse/argparse.hpp#L1-L12
+      - https://github.com/eic/HEPMC_Merger/blob/a86fdd66ffd5facfa0bfebc87b70377a2fe47e23/python/requirements.txt
+      - metrics:ci.action_refs_not_sha_pinned = 8
+    gaps:
+      - Vendored argparse without recorded version.
+      - Python requirements unversioned.
+    actions:
+      - action: Replace `argparse/argparse.hpp` with `find_package(CLI11)` (shipped in eic-shell) or record the vendored argparse version.
+        priority: medium
+        effort: S
+      - action: Remove `python/requirements.txt` with the legacy scripts, or add minimum versions.
+        priority: low
+        effort: S
+  dist.reproducibility:
+    level: 1
+    confidence: medium
+    rationale: >-
+      Outputs record the merger version, input files, frequencies, skips and window in GenRunInfo,
+      but the random seed and status shifts are not recorded, and no environment (eic-shell version)
+      is documented in the repository.
+    evidence:
+      - https://github.com/eic/HEPMC_Merger/blob/a86fdd66ffd5facfa0bfebc87b70377a2fe47e23/SignalBackgroundMerger.cpp#L172-L213
+      - https://github.com/eic/HEPMC_Merger/blob/a86fdd66ffd5facfa0bfebc87b70377a2fe47e23/SignalBackgroundMerger.cpp#L331-L334
+    gaps:
+      - "`--rngSeed`, `--squashTime` and status shifts are not written to the output metadata."
+      - No documented eic-shell version or container for running.
+    actions:
+      - action: Add `hepmc_merger_rng_seed`, `hepmc_merger_squash_time` and status-shift attributes to the GenRunInfo in `merge()`.
+        priority: medium
+        effort: S
+      - action: Document in the README the eic-shell release that ships each merger release.
+        priority: medium
+        effort: S
+  dist.portability:
+    level: 1
+    confidence: high
+    rationale: >-
+      CI builds only on Linux with the eic-shell GCC toolchain; the source contains a macOS code path
+      that is not built in CI.
+    evidence:
+      - metrics:ci.runs_on = ["ubuntu-latest"]
+      - 'metrics:ci.container_images = ["platform-release: eic_xl:nightly"]'
+      - https://github.com/eic/HEPMC_Merger/blob/a86fdd66ffd5facfa0bfebc87b70377a2fe47e23/SignalBackgroundMerger.cpp#L1-L3
+    gaps:
+      - Single OS and compiler tested.
+    actions:
+      - action: Add a Clang build (`CXX=clang++` in eic-shell) or a `macos-latest` job to `.github/workflows/linux-eic-shell.yml`.
+        priority: medium
+        effort: S
+  eic.reuse:
+    level: 3
+    confidence: medium
+    rationale: >-
+      All event I/O uses HepMC3 readers and writers with no parallel implementation, and the merger
+      is an EIC-supported component run by the ePIC production payload and by the TimeframeBuilder CI.
+    evidence:
+      - metrics:eic.components_detected.hepmc3.files = 5
+      - https://github.com/eic/HEPMC_Merger/blob/a86fdd66ffd5facfa0bfebc87b70377a2fe47e23/SignalBackgroundMerger.cpp#L22-L28
+      - https://github.com/BNLNPPS/swf-epicprod/blob/5c83525e5affa4a3004e1bf4c9f704189a38bac1/swf_epicprod/payload/mergers/hepmcmerger.sh
+      - https://github.com/eic/TimeframeBuilder/blob/257e714ff960fa4348d52be4879923f8567b1038/.github/workflows/linux-eic-shell.yml#L196-L202
+    gaps: []
+    actions: []
+  eic.data-model:
+    level: 2
+    confidence: high
+    rationale: >-
+      Inputs and outputs are HepMC3 (ASCII or ROOT tree) with configuration stored as `hepmc_merger_*`
+      run attributes; no attribute-schema version is declared or checked and no round-trip test exists.
+    evidence:
+      - https://github.com/eic/HEPMC_Merger/blob/a86fdd66ffd5facfa0bfebc87b70377a2fe47e23/SignalBackgroundMerger.cpp#L215-L220
+      - https://github.com/eic/HEPMC_Merger/blob/a86fdd66ffd5facfa0bfebc87b70377a2fe47e23/SignalBackgroundMerger.cpp#L495-L508
+    gaps:
+      - No declared version of the run-attribute schema.
+      - No I/O round-trip test.
+    actions:
+      - action: Add a CI step that reads the merged output with uproot or pyhepmc and checks event count and `hepmc_merger_*` attributes.
+        priority: medium
+        effort: S
+  eic.environment:
+    level: 1
+    confidence: high
+    rationale: >-
+      CI builds and runs the merger in `eic_xl:nightly` through `eic/run-cvmfs-osg-eic-shell`, but
+      the README does not document building or running in eic-shell (only a commented-out ATHENA container line).
+    evidence:
+      - metrics:ci.uses_eic_shell = true
+      - https://github.com/eic/HEPMC_Merger/blob/a86fdd66ffd5facfa0bfebc87b70377a2fe47e23/.github/workflows/linux-eic-shell.yml#L20-L28
+      - https://github.com/eic/HEPMC_Merger/blob/a86fdd66ffd5facfa0bfebc87b70377a2fe47e23/README.md#L41
+    gaps:
+      - eic-shell use is not documented.
+      - No pinned stable eic-shell release is tested.
+    actions:
+      - action: Add a README section on running `SignalBackgroundMerger` from eic-shell and building it there.
+        priority: medium
+        effort: S
+  eic.currency:
+    level: 2
+    confidence: medium
+    rationale: >-
+      eic-shell ships the latest release 2.4.0 and the nightly eic-shell build passes, with HepMC3 and
+      ROOT minimums below the shipped 3.3.0 and 6.40.04; there is no record of adaptation timing to
+      component releases and the build emits a CMake deprecation warning for `cmake_minimum_required(VERSION 3.8)`.
+    evidence:
+      - metrics:packaging.eic_shell_version = 2.4.0
+      - https://github.com/eic/HEPMC_Merger/blob/a86fdd66ffd5facfa0bfebc87b70377a2fe47e23/CMakeLists.txt#L3
+      - https://github.com/eic/HEPMC_Merger/actions/runs/37384280511
+    gaps:
+      - No evidence of adapting to new component releases within one eic-shell cycle.
+      - CMake deprecation warning in CI.
+    actions:
+      - action: Raise `cmake_minimum_required` to 3.16 and the HepMC3 and ROOT minimums to the versions in current eic-shell.
+        priority: low
+        effort: S
+  via.license:
+    level: 0
+    confidence: high
+    rationale: >-
+      The repository has no LICENSE file and no license is detected; issue #10 requesting a free
+      software license has been open since June 2024.
+    evidence:
+      - metrics:repo.license_spdx = null
+      - https://github.com/eic/HEPMC_Merger/issues/10
+    gaps:
+      - No license.
+    actions:
+      - action: Add a `LICENSE` file (LGPL-3.0-or-later, as suggested in issue #10) so GitHub detects the SPDX identifier.
+        priority: high
+        effort: S
+  via.citation:
+    level: 0
+    confidence: high
+    rationale: >-
+      There is no CITATION.cff, Zenodo DOI, codemeta or author file, and the README does not ask
+      users to cite the software.
+    evidence:
+      - metrics:files.citation_cff = []
+      - metrics:files.zenodo_json = []
+    gaps:
+      - No citation information.
+    actions:
+      - action: Add `CITATION.cff` listing the authors named in the banner and enable the Zenodo–GitHub integration.
+        priority: high
+        effort: S
+  via.adoption:
+    level: 3
+    confidence: high
+    rationale: >-
+      The merger ships in eic-shell, is the default background merger of the ePIC production payload
+      (swf-epicprod), and is used by a JLab simulation pipeline to mix signal and background.
+    evidence:
+      - metrics:packaging.in_eic_shell = true
+      - https://github.com/BNLNPPS/swf-epicprod/blob/5c83525e5affa4a3004e1bf4c9f704189a38bac1/swf_epicprod/payload/mergers/hepmcmerger.sh
+      - https://github.com/JeffersonLab/msf-simulation-pipeline/blob/5432597f539faecf906c502795346c32abb950e1/simulation_pipeline/11_create_background_jobs.py#L112
+    gaps: []
+    actions: []
+  via.support:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The README and banner name maintainers with institutional affiliations, but no owning ePIC body,
+      institutional commitment or funding is stated, and the maintainer intends to retire the tool (issue #29).
+    evidence:
+      - https://github.com/eic/HEPMC_Merger/blob/a86fdd66ffd5facfa0bfebc87b70377a2fe47e23/README.md#L2-L3
+      - https://github.com/eic/HEPMC_Merger/blob/a86fdd66ffd5facfa0bfebc87b70377a2fe47e23/SignalBackgroundMerger.cpp#L370-L374
+      - https://github.com/eic/HEPMC_Merger/issues/29
+    gaps:
+      - No maintenance responsibility assigned within EIC/ePIC structures and no funding acknowledgement.
+    actions:
+      - action: State in the README the owning ePIC working group and the maintenance plan until TimeframeBuilder replaces the merger.
+        priority: medium
+        effort: S

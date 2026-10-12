@@ -1,0 +1,489 @@
+{
+  "schema_version": 1,
+  "project": "eicrecon",
+  "pass": "2026-10-12",
+  "repo_url": "https://github.com/eic/EICrecon",
+  "subdir": null,
+  "collected_at": "2026-10-12T19:42:25+00:00",
+  "collector_version": "0.1.0",
+  "windows_months": {
+    "short": 12,
+    "long": 24
+  },
+  "git": {
+    "head_sha": "b67b442e26a3bad8c9ca2ac7b58f8474eb3718f8",
+    "head_date": "2026-10-12T13:44:17Z",
+    "last_commit_date": "2026-10-12T13:44:17Z",
+    "commits_total": 2245,
+    "commits_12m": 256,
+    "commits_24m": 517,
+    "authors_total": 65,
+    "authors_12m": 29,
+    "authors_24m": 34,
+    "new_authors_12m": 10,
+    "bus_factor_50_24m": 1,
+    "bus_factor_80_24m": 4,
+    "top_author_share_24m": 0.518,
+    "email_domains_24m": 10,
+    "first_parent_commits_12m": 322,
+    "first_parent_pr_fraction_12m": 1.0,
+    "tags_total": 109,
+    "tags_24m": 43
+  },
+  "files": {
+    "readme": [
+      "README.md"
+    ],
+    "license": [
+      "LICENSE.LGPL3"
+    ],
+    "contributing": [
+      "CONTRIBUTING.md"
+    ],
+    "code_of_conduct": [],
+    "citation_cff": [],
+    "codemeta": [],
+    "zenodo_json": [],
+    "security": [],
+    "changelog": [],
+    "governance": [],
+    "codeowners": [],
+    "authors": [],
+    "pr_template": [
+      ".github/pull_request_template.md"
+    ],
+    "issue_templates": [],
+    "dependabot": [
+      ".github/dependabot.yml"
+    ],
+    "renovate": [],
+    "pre_commit": [
+      ".pre-commit-config.yaml"
+    ],
+    "clang_format": [
+      ".clang-format"
+    ],
+    "clang_tidy": [
+      ".clang-tidy"
+    ],
+    "editorconfig": [],
+    "python_lint": [],
+    "mypy": [],
+    "codecov": [],
+    "doxygen": [
+      "Doxyfile"
+    ],
+    "sphinx": [],
+    "mkdocs": [],
+    "dockerfile": [],
+    "apptainer_def": [],
+    "spack_env": [],
+    "conda_env": [],
+    "devcontainer": [
+      ".devcontainer/devcontainer.json",
+      ".devcontainer/postCreateCommand.sh"
+    ],
+    "lockfile": [],
+    "gitlab_ci": [],
+    "other_ci": [],
+    "cmake": [
+      "CMakeLists.txt"
+    ],
+    "pyproject": [],
+    "setup_py": [],
+    "docs_dir": 59,
+    "examples_dir": 0,
+    "github_workflows": [
+      ".github/workflows/fork-pr-comment.yml",
+      ".github/workflows/labeler.yml",
+      ".github/workflows/linux-eic-shell.yml",
+      ".github/workflows/pr-backport.yml",
+      ".github/workflows/stale.yml"
+    ]
+  },
+  "code": {
+    "languages": {
+      "cpp": {
+        "files": 490,
+        "lines": 54362
+      },
+      "cmake": {
+        "files": 90,
+        "lines": 2718
+      },
+      "python": {
+        "files": 4,
+        "lines": 270
+      },
+      "shell": {
+        "files": 1,
+        "lines": 1
+      }
+    },
+    "source_lines": 54632,
+    "largest_source_files": [
+      {
+        "path": "src/algorithms/digi/MPGDTrackerDigi.cc",
+        "lines": 2123
+      },
+      {
+        "path": "src/algorithms/tracking/TrackSeeding.cc",
+        "lines": 866
+      },
+      {
+        "path": "src/benchmarks/reconstruction/lfhcal_studies/lfhcal_studiesProcessor.cc",
+        "lines": 825
+      },
+      {
+        "path": "src/algorithms/digi/RandomNoisePixel.cc",
+        "lines": 823
+      },
+      {
+        "path": "src/services/io/podio/JEventProcessorPODIO.cc",
+        "lines": 765
+      }
+    ],
+    "test_files": 34,
+    "test_frameworks": [
+      "catch2",
+      "ctest"
+    ],
+    "cxx_standard": [
+      "20"
+    ],
+    "requires_python": null,
+    "site_specific_paths": []
+  },
+  "eic": {
+    "components_detected": {
+      "edm4eic": {
+        "files": 303,
+        "kind": "domain",
+        "examples": [
+          "CMakeLists.txt",
+          "cmake/jana_plugin.cmake",
+          "src/algorithms/calorimetry/CalorimeterClusterRecoCoG.cc"
+        ]
+      },
+      "algorithms": {
+        "files": 295,
+        "kind": "domain",
+        "examples": [
+          "CMakeLists.txt",
+          "cmake/jana_plugin.cmake",
+          "src/algorithms/calorimetry/CalorimeterClusterRecoCoG.cc"
+        ]
+      },
+      "edm4hep": {
+        "files": 198,
+        "kind": "domain",
+        "examples": [
+          "CMakeLists.txt",
+          "cmake/jana_plugin.cmake",
+          "src/algorithms/calorimetry/CalorimeterClusterRecoCoG.cc"
+        ]
+      },
+      "jana2": {
+        "files": 184,
+        "kind": "domain",
+        "examples": [
+          "CMakeLists.txt",
+          "src/benchmarks/reconstruction/femc_studies/femc_studies.cc",
+          "src/benchmarks/reconstruction/femc_studies/femc_studiesProcessor.cc"
+        ]
+      },
+      "dd4hep": {
+        "files": 102,
+        "kind": "domain",
+        "examples": [
+          "CMakeLists.txt",
+          "cmake/jana_plugin.cmake",
+          "src/algorithms/calorimetry/CalorimeterHitDigi.cc"
+        ]
+      },
+      "podio": {
+        "files": 85,
+        "kind": "domain",
+        "examples": [
+          ".github/workflows/linux-eic-shell.yml",
+          "CMakeLists.txt",
+          "cmake/jana_plugin.cmake"
+        ]
+      },
+      "spdlog": {
+        "files": 66,
+        "kind": "generic",
+        "examples": [
+          "CMakeLists.txt",
+          "src/algorithms/digi/PhotoMultiplierHitDigiConfig.h",
+          "src/algorithms/meta/CollectionCollector.h"
+        ]
+      },
+      "acts": {
+        "files": 52,
+        "kind": "domain",
+        "examples": [
+          "CMakeLists.txt",
+          "cmake/Acts_needs_allow_multiple_definition/a.cc",
+          "cmake/Acts_needs_allow_multiple_definition/b.cc"
+        ]
+      },
+      "root": {
+        "files": 52,
+        "kind": "generic",
+        "examples": [
+          "CMakeLists.txt",
+          "cmake/jana_plugin.cmake",
+          "src/algorithms/digi/MPGDTrackerDigi.cc"
+        ]
+      },
+      "fmt": {
+        "files": 35,
+        "kind": "generic",
+        "examples": [
+          "CMakeLists.txt",
+          "src/algorithms/calorimetry/CalorimeterHitReco.cc",
+          "src/algorithms/calorimetry/CalorimeterIslandCluster.cc"
+        ]
+      },
+      "eigen": {
+        "files": 17,
+        "kind": "generic",
+        "examples": [
+          "CMakeLists.txt",
+          "cmake/jana_plugin.cmake",
+          "src/algorithms/calorimetry/CalorimeterClusterShape.cc"
+        ]
+      },
+      "irt": {
+        "files": 11,
+        "kind": "domain",
+        "examples": [
+          "cmake/jana_plugin.cmake",
+          "src/algorithms/pid/IrtCherenkovParticleID.cc",
+          "src/algorithms/pid/IrtCherenkovParticleID.h"
+        ]
+      },
+      "npsim": {
+        "files": 5,
+        "kind": "domain",
+        "examples": [
+          ".github/workflows/linux-eic-shell.yml",
+          "src/algorithms/digi/MPGDTrackerDigiConfig.h",
+          "src/algorithms/digi/SiliconTrackerDigiConfig.h"
+        ]
+      },
+      "onnxruntime": {
+        "files": 4,
+        "kind": "generic",
+        "examples": [
+          "src/algorithms/onnx/InclusiveKinematicsML.cc",
+          "src/algorithms/onnx/InclusiveKinematicsML.h",
+          "src/algorithms/onnx/ONNXInference.cc"
+        ]
+      },
+      "fastjet": {
+        "files": 3,
+        "kind": "domain",
+        "examples": [
+          "cmake/jana_plugin.cmake",
+          "src/algorithms/reco/JetReconstruction.cc",
+          "src/algorithms/reco/JetReconstruction.h"
+        ]
+      },
+      "epic": {
+        "files": 2,
+        "kind": "domain",
+        "examples": [
+          ".github/workflows/linux-eic-shell.yml",
+          "src/services/geometry/dd4hep/DD4hep_service.cc"
+        ]
+      },
+      "xrootd": {
+        "files": 1,
+        "kind": "generic",
+        "examples": [
+          ".github/workflows/linux-eic-shell.yml"
+        ]
+      },
+      "afterburner": {
+        "files": 1,
+        "kind": "domain",
+        "examples": [
+          "src/algorithms/reco/UndoAfterBurner.cc"
+        ]
+      },
+      "uproot": {
+        "files": 1,
+        "kind": "generic",
+        "examples": [
+          "src/scripts/verify_for_dangling_references.py"
+        ]
+      },
+      "awkward": {
+        "files": 1,
+        "kind": "generic",
+        "examples": [
+          "src/scripts/verify_for_dangling_references.py"
+        ]
+      }
+    },
+    "domain_components": [
+      "acts",
+      "afterburner",
+      "algorithms",
+      "dd4hep",
+      "edm4eic",
+      "edm4hep",
+      "epic",
+      "fastjet",
+      "irt",
+      "jana2",
+      "npsim",
+      "podio"
+    ],
+    "is_component": "eicrecon",
+    "vendored_candidates": [],
+    "submodules": []
+  },
+  "ci": {
+    "workflow_count": 5,
+    "pr_triggered_workflows": [
+      ".github/workflows/fork-pr-comment.yml",
+      ".github/workflows/labeler.yml",
+      ".github/workflows/linux-eic-shell.yml",
+      ".github/workflows/pr-backport.yml"
+    ],
+    "runs_on": [
+      "ubuntu-24.04",
+      "ubuntu-latest",
+      "ubuntu-slim"
+    ],
+    "container_images": [
+      "platform-release: ${{ env.platform }}:${{ env.release }}",
+      "platform-release: ${{ env.platform }}:${{ matrix.release }}"
+    ],
+    "uses_eic_shell": true,
+    "actions_used": [
+      "actions/cache",
+      "actions/checkout",
+      "actions/deploy-pages",
+      "actions/download-artifact",
+      "actions/github-script",
+      "actions/labeler",
+      "actions/stale",
+      "actions/upload-artifact",
+      "actions/upload-artifact/merge",
+      "actions/upload-pages-artifact",
+      "cvmfs-contrib/github-action-cvmfs",
+      "dawidd6/action-download-artifact",
+      "eic/actions/.github/workflows/list-open-prs.yml",
+      "eic/run-cvmfs-osg-eic-shell",
+      "eic/trigger-gitlab-ci",
+      "korthout/backport-action",
+      "peter-evans/create-or-update-comment",
+      "peter-evans/create-pull-request",
+      "peter-evans/find-comment",
+      "platisd/clang-tidy-pr-comments"
+    ],
+    "action_refs_not_sha_pinned": 171,
+    "other_ci": [],
+    "default_branch_runs": 50,
+    "default_branch_success_rate": 0.92,
+    "last_default_branch_run": "2026-10-12T15:34:43Z"
+  },
+  "repo": {
+    "full_name": "eic/EICrecon",
+    "default_branch": "main",
+    "archived": false,
+    "fork": false,
+    "created_at": "2022-07-09T13:03:40Z",
+    "pushed_at": "2026-10-12T19:38:34Z",
+    "stars": 15,
+    "forks": 46,
+    "homepage": "https://eic.github.io/EICrecon",
+    "license_spdx": "LGPL-3.0",
+    "topics": [],
+    "has_issues": true,
+    "has_discussions": false,
+    "open_issues": 197,
+    "open_prs": 83,
+    "default_branch_protected": true,
+    "rulesets": 2,
+    "languages_github": {
+      "C++": 0.947,
+      "CMake": 0.047,
+      "Python": 0.004,
+      "Emacs Lisp": 0.001,
+      "Shell": 0.001,
+      "C": 0.0
+    }
+  },
+  "community": {
+    "health_percentage": 62,
+    "files": {
+      "code_of_conduct": false,
+      "code_of_conduct_file": false,
+      "contributing": true,
+      "issue_template": false,
+      "license": true,
+      "pull_request_template": true,
+      "readme": true
+    }
+  },
+  "releases": {
+    "count_total": 109,
+    "count_24m": 43,
+    "latest_tag": "v1.42.0",
+    "latest_date": "2026-10-03T06:26:02Z",
+    "authors_24m": 2,
+    "with_notes_fraction_24m": 1.0
+  },
+  "issues": {
+    "created_12m": 105,
+    "sampled": false,
+    "closed_of_created_12m": 47,
+    "median_first_response_days_12m": 5.11,
+    "unanswered_fraction_12m": 0.352,
+    "labeled_fraction_12m": 0.048,
+    "open_total": 197,
+    "open_older_365d": 139
+  },
+  "prs": {
+    "created_12m": 687,
+    "sampled": false,
+    "merged_12m": 567,
+    "median_days_to_merge_12m": 0.15,
+    "reviewed_fraction_12m": 0.492,
+    "external_fraction_12m": 0.0,
+    "test_touching_fraction_12m": 0.145,
+    "distinct_reviewers_12m": 24,
+    "top_reviewer_share_12m": 0.493,
+    "distinct_mergers_12m": 23,
+    "open_total": 83,
+    "open_older_90d": 55
+  },
+  "packaging": {
+    "spack_name": "eicrecon",
+    "eic_spack": {
+      "matches_repo": true,
+      "versions": [
+        "main",
+        "1.42.0",
+        "1.41.0",
+        "1.40.1",
+        "1.40.0"
+      ]
+    },
+    "spack_builtin": null,
+    "in_eic_shell": true,
+    "eic_shell_version": "1.42.0",
+    "eic_spack_dependents": [
+      "juggler"
+    ],
+    "conda_forge": null,
+    "pypi": null,
+    "latest_release_packaged": true
+  },
+  "errors": []
+}

@@ -1,0 +1,408 @@
+{
+  "schema_version": 1,
+  "project": "firebird",
+  "pass": "2026-10-12",
+  "repo_url": "https://github.com/eic/firebird",
+  "subdir": null,
+  "collected_at": "2026-10-12T19:54:02+00:00",
+  "collector_version": "0.2.0",
+  "windows_months": {
+    "short": 12,
+    "long": 24
+  },
+  "git": {
+    "head_sha": "ee65aa1055a78426ca042d4ed32fda653c3ae892",
+    "head_date": "2026-10-09T18:16:09-04:00",
+    "last_commit_date": "2026-10-09T18:16:09-04:00",
+    "commits_total": 324,
+    "commits_12m": 8,
+    "commits_24m": 158,
+    "authors_total": 4,
+    "authors_12m": 2,
+    "authors_24m": 4,
+    "new_authors_12m": 0,
+    "bus_factor_50_24m": 1,
+    "bus_factor_80_24m": 2,
+    "top_author_share_24m": 0.722,
+    "email_domains_24m": 0,
+    "first_parent_commits_12m": 10,
+    "first_parent_pr_fraction_12m": 0.9,
+    "tags_total": 0,
+    "tags_24m": 0,
+    "first_parent_resolved_via_api": 1
+  },
+  "files": {
+    "readme": [
+      "README.md"
+    ],
+    "license": [
+      "LICENSE"
+    ],
+    "contributing": [],
+    "code_of_conduct": [],
+    "citation_cff": [],
+    "codemeta": [],
+    "zenodo_json": [],
+    "security": [],
+    "changelog": [],
+    "governance": [],
+    "codeowners": [],
+    "authors": [],
+    "pr_template": [],
+    "issue_templates": [],
+    "dependabot": [
+      ".github/dependabot.yml"
+    ],
+    "renovate": [],
+    "pre_commit": [],
+    "clang_format": [],
+    "clang_tidy": [],
+    "editorconfig": [],
+    "python_lint": [],
+    "mypy": [],
+    "codecov": [],
+    "doxygen": [],
+    "sphinx": [],
+    "mkdocs": [],
+    "dockerfile": [],
+    "apptainer_def": [],
+    "spack_env": [],
+    "conda_env": [],
+    "devcontainer": [],
+    "lockfile": [
+      "pyrobird/uv.lock"
+    ],
+    "gitlab_ci": [],
+    "other_ci": [],
+    "cmake": [],
+    "pyproject": [],
+    "setup_py": [],
+    "docs_dir": 33,
+    "examples_dir": 0,
+    "github_workflows": [
+      ".github/workflows/docs.yaml",
+      ".github/workflows/frontend.yaml",
+      ".github/workflows/integration-tests.yml",
+      ".github/workflows/pyrobird.yaml"
+    ]
+  },
+  "code": {
+    "languages": {
+      "javascript": {
+        "files": 193,
+        "lines": 27837
+      },
+      "python": {
+        "files": 55,
+        "lines": 8880
+      },
+      "cpp": {
+        "files": 3,
+        "lines": 1420
+      },
+      "cmake": {
+        "files": 1,
+        "lines": 70
+      }
+    },
+    "source_lines": 38137,
+    "largest_source_files": [
+      {
+        "path": "packages/firebird-ng/display/src/lib/services/three.service.ts",
+        "lines": 1666
+      },
+      {
+        "path": "packages/firebird-ng/display/src/lib/services/event-display.service.ts",
+        "lines": 1356
+      },
+      {
+        "path": "packages/firebird-ng/display/src/lib/services/event-display.service.spec.ts",
+        "lines": 758
+      },
+      {
+        "path": "packages/epic/src/cool2-geometry-ruleset.ts",
+        "lines": 702
+      },
+      {
+        "path": "dd4hep-plugin/src/FirebirdTrajectoryWriterSteppingAction.cpp",
+        "lines": 605
+      }
+    ],
+    "test_files": 22,
+    "test_frameworks": [
+      "pytest",
+      "unittest"
+    ],
+    "cxx_standard": [
+      "20"
+    ],
+    "requires_python": null,
+    "site_specific_paths": [
+      "packages/firebird-core/src/loaders.spec.ts: /work/r",
+      "packages/firebird-ng/src/lib/builtin-loaders.spec.ts: /work/e",
+      "pyrobird/example_gunicorn_wsgi.py: /home/firebird/",
+      "pyrobird/pyrobird/cli/serve.py: /home/username/",
+      "test/open_xrootd_uproot.py: /work/e"
+    ]
+  },
+  "eic": {
+    "components_detected": {
+      "xrootd": {
+        "files": 18,
+        "kind": "generic",
+        "examples": [
+          "dd4hep-plugin/run_all_energies.py",
+          "packages/firebird-core/src/loaders.spec.ts",
+          "packages/firebird-core/src/loaders.ts"
+        ]
+      },
+      "dd4hep": {
+        "files": 17,
+        "kind": "domain",
+        "examples": [
+          "dd4hep-plugin/CMakeLists.txt",
+          "dd4hep-plugin/cuts_example_steering.py",
+          "dd4hep-plugin/firebird_steering.py"
+        ]
+      },
+      "eicrecon": {
+        "files": 16,
+        "kind": "domain",
+        "examples": [
+          "dd4hep-plugin/run_all_energies.py",
+          "packages/root2dex/src/edm4eic.ts",
+          "packages/root2dex/src/edm4hep.ts"
+        ]
+      },
+      "uproot": {
+        "files": 9,
+        "kind": "generic",
+        "examples": [
+          "pyrobird/pyrobird/cli/convert.py",
+          "pyrobird/pyrobird/edm4eic.py",
+          "pyrobird/pyrobird/server/__init__.py"
+        ]
+      },
+      "edm4eic": {
+        "files": 8,
+        "kind": "domain",
+        "examples": [
+          "packages/root2dex/src/edm4eic.ts",
+          "packages/root2dex/src/podio-file.ts",
+          "pyrobird/pyrobird/cli/convert.py"
+        ]
+      },
+      "edm4hep": {
+        "files": 8,
+        "kind": "domain",
+        "examples": [
+          "packages/root2dex/src/edm4hep.ts",
+          "packages/root2dex/src/mc-particles.ts",
+          "packages/root2dex/src/podio-file.ts"
+        ]
+      },
+      "geant4": {
+        "files": 4,
+        "kind": "domain",
+        "examples": [
+          "dd4hep-plugin/CMakeLists.txt",
+          "dd4hep-plugin/src/FirebirdTrajectoryWriterEventAction.cpp",
+          "dd4hep-plugin/src/FirebirdTrajectoryWriterSteppingAction.cpp"
+        ]
+      },
+      "fmt": {
+        "files": 4,
+        "kind": "generic",
+        "examples": [
+          "dd4hep-plugin/CMakeLists.txt",
+          "dd4hep-plugin/src/FirebirdTrajectoryWriterEventAction.cpp",
+          "dd4hep-plugin/src/FirebirdTrajectoryWriterSteppingAction.cpp"
+        ]
+      },
+      "npsim": {
+        "files": 3,
+        "kind": "domain",
+        "examples": [
+          "dd4hep-plugin/run_all_energies.py",
+          "test/run_background.py",
+          "test/run_many_energies.py"
+        ]
+      },
+      "root": {
+        "files": 3,
+        "kind": "generic",
+        "examples": [
+          "pyrobird/pyrobird/cern_root.py",
+          "pyrobird/tests/unit_tests/test_geo.py",
+          "pyrobird/tests/unit_tests/ttree_cutter.py"
+        ]
+      },
+      "awkward": {
+        "files": 3,
+        "kind": "generic",
+        "examples": [
+          "pyrobird/pyrobird/edm4eic.py",
+          "pyrobird/pyrobird/edm4hep.py",
+          "pyrobird/pyrobird/mc_particles.py"
+        ]
+      },
+      "podio": {
+        "files": 2,
+        "kind": "domain",
+        "examples": [
+          "pyrobird/pyrobird/edm4eic.py",
+          "pyrobird/pyrobird/edm4hep.py"
+        ]
+      },
+      "epic": {
+        "files": 1,
+        "kind": "domain",
+        "examples": [
+          "test/run_background.py"
+        ]
+      }
+    },
+    "domain_components": [
+      "dd4hep",
+      "edm4eic",
+      "edm4hep",
+      "eicrecon",
+      "epic",
+      "geant4",
+      "npsim",
+      "podio"
+    ],
+    "is_component": null,
+    "vendored_candidates": [],
+    "submodules": [
+      "https://github.com/dexvis/root-geo-tree-editor.git",
+      "https://github.com/dexvis/threejs-tree-editor.git",
+      "https://github.com/dexvis/app-shell-ng.git",
+      "https://github.com/dexvis/viewport-gizmo.git",
+      "https://github.com/dexvis/app-features-ng.git"
+    ]
+  },
+  "ci": {
+    "workflow_count": 4,
+    "pr_triggered_workflows": [
+      ".github/workflows/frontend.yaml",
+      ".github/workflows/integration-tests.yml",
+      ".github/workflows/pyrobird.yaml"
+    ],
+    "runs_on": [
+      "ubuntu-latest"
+    ],
+    "container_images": [],
+    "uses_eic_shell": false,
+    "actions_used": [
+      "actions/checkout",
+      "actions/configure-pages",
+      "actions/deploy-pages",
+      "actions/download-artifact",
+      "actions/setup-node",
+      "actions/setup-python",
+      "actions/upload-artifact",
+      "actions/upload-pages-artifact",
+      "astral-sh/setup-uv"
+    ],
+    "action_refs_not_sha_pinned": 17,
+    "other_ci": [],
+    "default_branch_runs": 35,
+    "default_branch_success_rate": 0.971,
+    "last_default_branch_run": "2026-10-09T22:16:27Z"
+  },
+  "repo": {
+    "full_name": "eic/firebird",
+    "default_branch": "main",
+    "archived": false,
+    "fork": false,
+    "created_at": "2024-04-24T18:50:20Z",
+    "pushed_at": "2026-10-09T22:16:12Z",
+    "stars": 1,
+    "forks": 4,
+    "homepage": "https://eic.github.io/firebird/",
+    "license_spdx": "GPL-3.0",
+    "topics": [],
+    "has_issues": true,
+    "has_discussions": true,
+    "open_issues": 19,
+    "open_prs": 13,
+    "default_branch_protected": true,
+    "rulesets": 2,
+    "languages_github": {
+      "TypeScript": 0.675,
+      "Python": 0.211,
+      "HTML": 0.053,
+      "C++": 0.036,
+      "SCSS": 0.023,
+      "CMake": 0.001
+    }
+  },
+  "community": {
+    "health_percentage": 50,
+    "files": {
+      "code_of_conduct": false,
+      "code_of_conduct_file": false,
+      "contributing": false,
+      "issue_template": false,
+      "license": true,
+      "pull_request_template": true,
+      "readme": true
+    }
+  },
+  "releases": {
+    "count_total": 0,
+    "count_24m": 0,
+    "latest_tag": null,
+    "latest_date": null,
+    "authors_24m": 0,
+    "with_notes_fraction_24m": null
+  },
+  "issues": {
+    "created_12m": 10,
+    "sampled": false,
+    "closed_of_created_12m": 4,
+    "median_first_response_days_12m": 0.18,
+    "unanswered_fraction_12m": 0.4,
+    "labeled_fraction_12m": 0.0,
+    "open_total": 19,
+    "open_older_365d": 13
+  },
+  "prs": {
+    "created_12m": 12,
+    "sampled": false,
+    "merged_12m": 7,
+    "median_days_to_merge_12m": 0.07,
+    "reviewed_fraction_12m": 0.571,
+    "external_fraction_12m": 0.0,
+    "test_touching_fraction_12m": 0.143,
+    "distinct_reviewers_12m": 2,
+    "top_reviewer_share_12m": 0.75,
+    "distinct_mergers_12m": 3,
+    "open_total": 13,
+    "open_older_90d": 13
+  },
+  "packaging": {
+    "spack_name": "pyrobird",
+    "eic_spack": {
+      "matches_repo": true,
+      "versions": [
+        "main",
+        "2026.10.0b1",
+        "0.2.7",
+        "0.2.6",
+        "0.2.4"
+      ]
+    },
+    "spack_builtin": null,
+    "in_eic_shell": true,
+    "eic_shell_version": "git.25b6556e473b99dbbb3b4663d34d683e28acfd5e",
+    "eic_spack_dependents": [],
+    "conda_forge": null,
+    "pypi": {
+      "latest": "0.2.7"
+    },
+    "latest_release_packaged": null
+  },
+  "errors": []
+}

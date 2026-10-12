@@ -1,0 +1,493 @@
+schema_version: 1
+project: afterburner
+pass: "2026-10-12"
+commit: 740f6356225fc81c9baee5c76d6dd19976c99417
+assessor: { agent: claude-code, model: claude-opus-5-5 }
+summary: >-
+  The repository has no license (issue #1 open since 2022), no code of conduct, and no citation
+  metadata; 4 of 5 issues opened in 12 months received no response, and one author wrote 52% of
+  commits in 24 months. All default-branch changes in 12 months arrived through reviewed PRs under
+  branch protection, and the latest release (v0.2.1) is packaged in eic-spack and shipped in
+  eic-shell, where it is used in ePIC simulation campaigns.
+criteria:
+  eng.change-control:
+    level: 3
+    confidence: medium
+    rationale: >-
+      All 12 first-parent commits in 12 months came from PRs (the 4 non-merge commits are squash
+      merges of PRs #15, #21, #23 and #26, so the 0.667 metric undercounts), every merged PR was
+      reviewed, branch protection requires one approving review, and the eic organization PR
+      template applies.
+    evidence:
+      - metrics:git.first_parent_pr_fraction_12m = 0.667
+      - metrics:prs.reviewed_fraction_12m = 1.0
+      - metrics:repo.default_branch_protected = true
+      - https://github.com/eic/afterburner/pull/26
+      - https://github.com/eic/afterburner/pull/15
+      - https://github.com/eic/.github/blob/3231e4d33f430f9806db8703b2feaafca084e18e/.github/pull_request_template.md
+    gaps: []
+    actions: []
+  eng.ci:
+    level: 1
+    confidence: high
+    rationale: >-
+      The single workflow builds in eic-shell and runs one end-to-end smoke run on PRs to `main`, but
+      it has no `push` trigger, so the default branch is never built, and it runs no test suite.
+    evidence:
+      - https://github.com/eic/afterburner/blob/740f6356225fc81c9baee5c76d6dd19976c99417/.github/workflows/linux-eic-shell.yml#L2-L5
+      - https://github.com/eic/afterburner/blob/740f6356225fc81c9baee5c76d6dd19976c99417/.github/workflows/linux-eic-shell.yml#L43-L58
+      - metrics:ci.default_branch_runs = 0
+    gaps:
+      - The workflow does not run on pushes to `main`; default-branch success rate cannot be measured.
+      - CI checks only that output files exist; no test suite (ctest/pytest) runs.
+      - Branch protection has no required status checks.
+    actions:
+      - action: "Add `push: branches: [main]` to the `on:` block of `.github/workflows/linux-eic-shell.yml`."
+        priority: medium
+        effort: S
+      - action: Run `pytest python/test_abconv.py` with `TEST_ABCONV_EXE=install/bin/abconv` (and `ctest` once tests are registered) in the "Run test" step.
+        priority: medium
+        effort: S
+  eng.testing:
+    level: 1
+    confidence: high
+    rationale: >-
+      The only test file checks that `abconv --help` prints usage and is not run in CI; CI runs one
+      end-to-end conversion and checks only that output files exist, with no unit tests of the
+      afterburner algorithms.
+    evidence:
+      - https://github.com/eic/afterburner/blob/740f6356225fc81c9baee5c76d6dd19976c99417/python/test_abconv.py#L12-L18
+      - https://github.com/eic/afterburner/blob/740f6356225fc81c9baee5c76d6dd19976c99417/.github/workflows/linux-eic-shell.yml#L48-L56
+      - metrics:prs.test_touching_fraction_12m = 0.0
+      - https://github.com/eic/afterburner/issues/11
+    gaps:
+      - No unit tests for `Afterburner`, `Smearer` or `EicConfigurator` presets.
+      - "`enable_testing()` is called but no tests are registered with CTest."
+      - The Pythia8 comparison in `python/comparison.ipynb` is manual and not automated.
+    actions:
+      - action: Add Catch2 unit tests under `cpp/tests/` for `Smearer` and `Afterburner::process_event` (crossing angle and vertex widths per preset) registered with `add_test`.
+        priority: medium
+        effort: M
+      - action: Assert in CI that output vertex and angle distributions of the generated sample match expected crossing angle and widths within tolerance.
+        priority: medium
+        effort: M
+  eng.static-quality:
+    level: 0
+    confidence: high
+    rationale: >-
+      No formatter, linter, static analyzer or compiler warning flags are configured in the
+      repository or CI.
+    evidence:
+      - metrics:files.clang_format = []
+      - metrics:files.pre_commit = []
+      - https://github.com/eic/afterburner/blob/740f6356225fc81c9baee5c76d6dd19976c99417/cpp/CMakeLists.txt#L1-L50
+    gaps:
+      - No `.clang-format`, `.clang-tidy` or pre-commit configuration.
+      - No `-Wall -Wextra` or equivalent warning flags in the CMake files.
+    actions:
+      - action: Add `.clang-format` and `.pre-commit-config.yaml` with clang-format and enable pre-commit.ci.
+        priority: high
+        effort: S
+      - action: Add `target_compile_options(... PRIVATE -Wall -Wextra -Wpedantic)` to the three targets in `cpp/*/CMakeLists.txt`.
+        priority: high
+        effort: S
+  eng.modularity:
+    level: 1
+    confidence: high
+    rationale: >-
+      CMake builds a static `afterburner` library, a `benchmark` library and the `abconv` tool with
+      C++20, but all beam presets are compiled into a 2172-line `EicConfigurator.cc` and only the
+      `abconv` executable is installed (no library, headers or package config).
+    evidence:
+      - https://github.com/eic/afterburner/blob/740f6356225fc81c9baee5c76d6dd19976c99417/cpp/CMakeLists.txt#L5-L9
+      - https://github.com/eic/afterburner/blob/740f6356225fc81c9baee5c76d6dd19976c99417/cpp/afterburner/EicConfigurator.cc#L13-L50
+      - https://github.com/eic/afterburner/blob/740f6356225fc81c9baee5c76d6dd19976c99417/cpp/abconv/CMakeLists.txt#L56
+      - https://github.com/eic/afterburner/blob/740f6356225fc81c9baee5c76d6dd19976c99417/beam_configs/default.yaml#L1-L18
+      - https://github.com/eic/afterburner/issues/27
+    gaps:
+      - Beam parameters are hard-coded in C++; `beam_configs/default.yaml` is placeholder content and YAML loading is not implemented.
+      - The `afterburner` library and headers are not installed, although the README advertises a C++ API.
+      - "`cpp/afterburner/CMakeLists.txt` references a non-existent `../external/json_struct/` directory."
+    actions:
+      - action: Move the beam presets from `EicConfigurator.cc` into YAML files under `beam_configs/` loaded at run time (issue #27).
+        priority: medium
+        effort: M
+      - action: Install the `afterburner` library and its headers with `install(TARGETS ... EXPORT)` and `install(DIRECTORY ...)`.
+        priority: medium
+        effort: S
+  doc.user:
+    level: 1
+    confidence: high
+    rationale: >-
+      The README has build steps, CLI examples and an options table, but lists only yaml-cpp as a
+      dependency although CMake requires HepMC3, CLHEP, GSL and ROOT, gives no versions, and has no
+      runnable example input.
+    evidence:
+      - https://github.com/eic/afterburner/blob/740f6356225fc81c9baee5c76d6dd19976c99417/README.md#L20-L44
+      - https://github.com/eic/afterburner/blob/740f6356225fc81c9baee5c76d6dd19976c99417/README.md#L122-L137
+      - https://github.com/eic/afterburner/blob/740f6356225fc81c9baee5c76d6dd19976c99417/cpp/CMakeLists.txt#L16-L31
+      - https://github.com/eic/tutorial-analysis/blob/3739c6e78d10101f08d216048aca578a30faef14/episodes/04-full_chain_analysis.md
+    gaps:
+      - HepMC3, CLHEP, GSL and ROOT and all minimum versions are missing from the install instructions.
+      - Examples use a user-supplied `my.hepmc`; `python/gen_hepmc_event.py` is not documented as a quick-start input.
+      - README links to beam parameters point to the old eicweb.phy.anl.gov repository.
+    actions:
+      - action: List every `find_package` dependency with minimum versions in the README "Installation" section and state that eic-shell provides them.
+        priority: medium
+        effort: S
+      - action: Add a README quick start that generates input with `python/gen_hepmc_event.py` and runs `abconv` on it.
+        priority: medium
+        effort: S
+  doc.developer:
+    level: 1
+    confidence: high
+    rationale: >-
+      Some header members have Doxygen-style comments and the README describes the algorithm steps,
+      but there is no generated API reference and no architecture overview of the library, converter
+      and benchmark components.
+    evidence:
+      - https://github.com/eic/afterburner/blob/740f6356225fc81c9baee5c76d6dd19976c99417/cpp/afterburner/Afterburner.hh#L25-L35
+      - https://github.com/eic/afterburner/blob/740f6356225fc81c9baee5c76d6dd19976c99417/README.md#L69-L88
+      - metrics:files.doxygen = []
+    gaps:
+      - No Doxygen or other generated API documentation.
+      - No architecture overview of `afterburner`, `abconv` and `benchmark`.
+    actions:
+      - action: Add a `Doxyfile` and a GitHub Pages workflow publishing the API docs for `cpp/afterburner/*.hh`.
+        priority: medium
+        effort: S
+      - action: Add `docs/architecture.md` describing the library, converter and histogrammer and their data flow.
+        priority: medium
+        effort: S
+  doc.contributing:
+    level: 1
+    confidence: low
+    rationale: >-
+      Only the eic organization PR template and issue templates apply; there is no CONTRIBUTING file
+      describing setup, building, tests or conventions.
+    evidence:
+      - metrics:community.files.contributing = false
+      - metrics:community.files.pull_request_template = true
+      - https://github.com/eic/.github/tree/3231e4d33f430f9806db8703b2feaafca084e18e/.github/ISSUE_TEMPLATE
+    gaps:
+      - No `CONTRIBUTING.md` covering eic-shell setup, build, tests and PR conventions.
+    actions:
+      - action: Add `CONTRIBUTING.md` describing development in eic-shell, the CMake build, running the CI smoke test locally, and PR conventions.
+        priority: medium
+        effort: S
+  com.responsiveness:
+    level: 0
+    confidence: medium
+    rationale: >-
+      Four of the five issues opened in 12 months have no response, no new issue is labeled, and 8
+      of 12 open issues are older than one year.
+    evidence:
+      - metrics:issues.unanswered_fraction_12m = 0.8
+      - metrics:issues.labeled_fraction_12m = 0.0
+      - metrics:issues.open_older_365d = 8
+      - https://github.com/eic/afterburner/issues/35
+      - https://github.com/eic/afterburner/issues/34
+    gaps:
+      - Most issues opened in 12 months received no response.
+      - External PRs #36 and #37 are open without review.
+    actions:
+      - action: Respond to and label issues #31, #34 and #35, and review PRs #36 and #37.
+        priority: high
+        effort: S
+      - action: Close or label the eight issues older than one year (#1, #3, #4, #5, #11, #12, #16, #17).
+        priority: medium
+        effort: S
+  com.contributors:
+    level: 1
+    confidence: medium
+    rationale: >-
+      Six authors from two email domains committed in 24 months, but no PR from outside the
+      maintainer group was merged in 12 months, and the two open external PRs are unreviewed.
+    evidence:
+      - metrics:git.authors_24m = 6
+      - metrics:git.email_domains_24m = 2
+      - metrics:prs.external_fraction_12m = 0.0
+      - https://github.com/eic/afterburner/pull/36
+    gaps:
+      - No external PRs merged in the last 12 months.
+    actions:
+      - action: Review and merge or close external PRs #36 and #37.
+        priority: medium
+        effort: S
+  com.bus-factor:
+    level: 1
+    confidence: high
+    rationale: >-
+      The top author wrote 52% of commits in 24 months, while three people review and four merge;
+      no CODEOWNERS or maintainer list exists in the repository.
+    evidence:
+      - metrics:git.bus_factor_50_24m = 1
+      - metrics:git.top_author_share_24m = 0.524
+      - metrics:prs.distinct_reviewers_12m = 3
+      - metrics:prs.distinct_mergers_12m = 4
+      - metrics:releases.authors_24m = 2
+    gaps:
+      - Bus factor (50%) is 1.
+      - No CODEOWNERS or maintainer list naming at least two people.
+    actions:
+      - action: Add `.github/CODEOWNERS` naming at least two owners for `cpp/`.
+        priority: high
+        effort: S
+  com.governance:
+    level: 0
+    confidence: medium
+    rationale: >-
+      Design decisions are discussed in public issues (#11, #12), but neither the README nor a
+      CODEOWNERS file identifies the maintainers, and there is no documented decision process,
+      roadmap or milestone.
+    evidence:
+      - https://github.com/eic/afterburner/issues/12
+      - metrics:files.governance = []
+      - metrics:files.codeowners = []
+    gaps:
+      - Maintainers are not named in the repository.
+      - No documented decision process or path to maintainership.
+    actions:
+      - action: Add a "Maintainers" section to the README naming the maintainers, their roles and the owning ePIC working group.
+        priority: high
+        effort: S
+  com.conduct:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The eic organization issue-template configuration links the ePIC Mattermost for questions, but
+      no code of conduct applies to the repository or the organization.
+    evidence:
+      - https://github.com/eic/.github/blob/3231e4d33f430f9806db8703b2feaafca084e18e/.github/ISSUE_TEMPLATE/config.yml
+      - metrics:community.files.code_of_conduct = false
+    gaps:
+      - No code of conduct with a reporting contact.
+    actions:
+      - action: Add `CODE_OF_CONDUCT.md` with a reporting contact, or link the ePIC collaboration code of conduct from the README.
+        priority: high
+        effort: S
+  dist.packaging:
+    level: 3
+    confidence: high
+    rationale: >-
+      The eic-spack recipe provides the latest release 0.2.1, eic-shell ships 0.2.1, and the recipe
+      was updated within one day of the v0.2.0 and v0.2.1 releases.
+    evidence:
+      - metrics:packaging.in_eic_shell = true
+      - metrics:packaging.eic_shell_version = 0.2.1
+      - metrics:packaging.latest_release_packaged = true
+      - https://github.com/eic/eic-spack/commit/29d442bc03
+      - https://github.com/eic/eic-spack/commit/cf34155b74
+    gaps: []
+    actions: []
+  dist.releases:
+    level: 1
+    confidence: high
+    rationale: >-
+      Three releases with generated notes appeared in 24 months, but only one between October 2024
+      and October 2025, no version scheme is documented, and `abconv --version` reports 0.1.3 while
+      CMake declares 1.0.0 at tag v0.2.1.
+    evidence:
+      - metrics:releases.count_24m = 3
+      - https://github.com/eic/afterburner/releases/tag/v0.2.1
+      - https://github.com/eic/afterburner/blob/740f6356225fc81c9baee5c76d6dd19976c99417/cpp/abconv/ArgumentProcessor.cc#L39
+      - https://github.com/eic/afterburner/blob/740f6356225fc81c9baee5c76d6dd19976c99417/cpp/CMakeLists.txt#L3
+    gaps:
+      - Fewer than 2 releases in the first 12 months of the 24-month window.
+      - No documented version scheme; the version strings disagree with the tags.
+    actions:
+      - action: State SemVer in the README and derive the `--version` string from `project(VERSION ...)` set to the release tag.
+        priority: medium
+        effort: S
+      - action: Tag a release at least every six months with generated release notes.
+        priority: medium
+        effort: S
+  dist.dependencies:
+    level: 1
+    confidence: high
+    rationale: >-
+      Dependencies are declared with `find_package` but without versions, CLI11 2.0.0 and HepMC3's
+      example `ReaderGZ`/gzstream are vendored, and there is no update monitoring or SHA pinning.
+    evidence:
+      - https://github.com/eic/afterburner/blob/740f6356225fc81c9baee5c76d6dd19976c99417/cpp/CMakeLists.txt#L17-L34
+      - https://github.com/eic/afterburner/blob/740f6356225fc81c9baee5c76d6dd19976c99417/cpp/external/CLI/Version.hpp
+      - metrics:eic.vendored_candidates = ["cpp/external/CLI"]
+      - metrics:ci.action_refs_not_sha_pinned = 5
+    gaps:
+      - No minimum versions on any `find_package` call.
+      - Vendored CLI11 2.0.0 while eic-shell ships CLI11 2.4.2; vendored `ReaderGZ.h` and gzstream.
+      - "`cpp/afterburner/CMakeLists.txt` lists a non-existent `external/json_struct` include path."
+    actions:
+      - action: Add `VERSION` arguments to the `find_package` calls for HepMC3, yaml-cpp, CLHEP, GSL and ROOT.
+        priority: medium
+        effort: S
+      - action: Replace `cpp/external/CLI` with `find_package(CLI11)` and drop the `json_struct` include path.
+        priority: medium
+        effort: S
+  dist.reproducibility:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The README points to eic-shell, where a pinned version is preinstalled, and abconv writes the
+      beam configuration into HepMC3 run attributes, but no eic-shell version is documented, and the
+      random seed is fixed at 1 in code, cannot be configured, and is not recorded.
+    evidence:
+      - https://github.com/eic/afterburner/blob/740f6356225fc81c9baee5c76d6dd19976c99417/README.md#L44
+      - https://github.com/eic/afterburner/blob/740f6356225fc81c9baee5c76d6dd19976c99417/cpp/abconv/Converter.cc#L202-L226
+      - https://github.com/eic/afterburner/blob/740f6356225fc81c9baee5c76d6dd19976c99417/cpp/afterburner/Afterburner.cc#L31
+    gaps:
+      - No documented eic-shell version or other machine-readable environment in the repository.
+      - The random seed is hard-coded (`_smear(1)`); `AfterburnerConfig::random_seed` is unused and not written to output.
+    actions:
+      - action: Add a `--seed` option wired to `AfterburnerConfig::random_seed` and write the seed and abconv version into the GenRunInfo attributes.
+        priority: medium
+        effort: S
+      - action: Document in the README the eic-shell release that ships each afterburner release.
+        priority: medium
+        effort: S
+  dist.portability:
+    level: 1
+    confidence: high
+    rationale: >-
+      CI builds only on Linux x86_64 with the eic-shell GCC toolchain; no other compiler,
+      architecture or OS is tested, although no site-specific paths appear in the code.
+    evidence:
+      - metrics:ci.runs_on = ["ubuntu-latest"]
+      - metrics:code.site_specific_paths = []
+      - https://github.com/eic/afterburner/pull/2
+    gaps:
+      - No second compiler, architecture or OS in CI.
+    actions:
+      - action: Add a CI matrix job building with Clang (`CXX=clang++` in eic-shell) or on `macos-latest` with Homebrew dependencies.
+        priority: medium
+        effort: S
+  eic.reuse:
+    level: 1
+    confidence: medium
+    rationale: >-
+      Event I/O uses HepMC3 readers and writers, but `cpp/abconv/ReaderGZ.h` and gzstream are an old
+      copy of HepMC3 code for compressed input that HepMC3 has provided in its library (`ReaderGZ`,
+      `deduce_reader`) since 3.2.5.
+    evidence:
+      - metrics:eic.components_detected.hepmc3.files = 16
+      - https://github.com/eic/afterburner/blob/740f6356225fc81c9baee5c76d6dd19976c99417/cpp/abconv/ReaderGZ.h#L1-L28
+      - https://github.com/eic/afterburner/blob/740f6356225fc81c9baee5c76d6dd19976c99417/cpp/abconv/FileFormats.cc#L26-L52
+    gaps:
+      - Local copy of HepMC3 gzip reader instead of the HepMC3 library's compressed I/O.
+    actions:
+      - action: Remove `ReaderGZ.h`, `gzstream.*` and the `gz` format path, and rely on `HepMC3::deduce_reader` with HepMC3 built with compression.
+        priority: medium
+        effort: S
+  eic.data-model:
+    level: 2
+    confidence: high
+    rationale: >-
+      Inputs and outputs are HepMC3 (ASCII or ROOT tree), the EIC generator standard, with beam
+      configuration stored as run-info attributes; no format version is declared or checked and no
+      round-trip test exists.
+    evidence:
+      - https://github.com/eic/afterburner/blob/740f6356225fc81c9baee5c76d6dd19976c99417/cpp/abconv/FileFormats.cc#L29-L52
+      - https://github.com/eic/afterburner/blob/740f6356225fc81c9baee5c76d6dd19976c99417/cpp/abconv/Converter.cc#L202-L226
+    gaps:
+      - No declared or checked version of the run-info attribute schema.
+      - No I/O round-trip test.
+    actions:
+      - action: Add an attribute recording the afterburner version and attribute schema version, and a CI test that reads the output back with pyHepMC3 or uproot and checks the attributes.
+        priority: medium
+        effort: S
+  eic.environment:
+    level: 2
+    confidence: medium
+    rationale: >-
+      The README directs users to the preinstalled version in eic-shell, and CI builds and runs abconv
+      in `eic_xl:nightly` through `eic/run-cvmfs-osg-eic-shell`; no pinned stable eic-shell release is
+      tested.
+    evidence:
+      - metrics:ci.uses_eic_shell = true
+      - https://github.com/eic/afterburner/blob/740f6356225fc81c9baee5c76d6dd19976c99417/.github/workflows/linux-eic-shell.yml#L8-L9
+      - https://github.com/eic/afterburner/blob/740f6356225fc81c9baee5c76d6dd19976c99417/README.md#L44
+    gaps:
+      - CI tests only the nightly image, not a pinned stable eic-shell release.
+      - The README does not state that the from-source build is done inside eic-shell.
+    actions:
+      - action: Add a matrix over `platform-release` with a pinned `eic_xl:<release>` and `eic_xl:nightly` in `.github/workflows/linux-eic-shell.yml`.
+        priority: medium
+        effort: S
+  eic.currency:
+    level: 2
+    confidence: medium
+    rationale: >-
+      The current release is built and shipped in eic-shell against HepMC3 3.3.0 and ROOT 6.40, and
+      CI passes on the nightly image; the vendored HepMC3 compressed reader and CLI11 2.0.0 lag the
+      versions in the stack.
+    evidence:
+      - metrics:packaging.eic_shell_version = 0.2.1
+      - https://github.com/eic/afterburner/actions/runs/28753120348
+      - https://github.com/eic/afterburner/blob/740f6356225fc81c9baee5c76d6dd19976c99417/cpp/external/CLI/Version.hpp
+    gaps:
+      - Vendored copies of HepMC3 reader code and CLI11 2.0.0 are not kept current with the stack.
+    actions:
+      - action: Drop the vendored `ReaderGZ.h` and CLI11 copies in favour of the HepMC3 and CLI11 versions shipped in eic-shell.
+        priority: medium
+        effort: S
+  via.license:
+    level: 0
+    confidence: high
+    rationale: >-
+      The repository has no LICENSE file and GitHub detects no license; issue #1 requesting one has
+      been open since 2022, while the repository contains BSD-3-Clause (CLI11) and LGPL-2.1
+      (gzstream) third-party code.
+    evidence:
+      - metrics:repo.license_spdx = null
+      - https://github.com/eic/afterburner/issues/1
+      - https://github.com/eic/afterburner/blob/740f6356225fc81c9baee5c76d6dd19976c99417/cpp/abconv/gzstream.h#L1-L8
+    gaps:
+      - No license; the code is all rights reserved.
+    actions:
+      - action: Add a `LICENSE` file with an OSI-approved license compatible with the bundled LGPL-2.1 gzstream code, agreed by the copyright holders.
+        priority: high
+        effort: S
+  via.citation:
+    level: 0
+    confidence: high
+    rationale: >-
+      There is no CITATION.cff, Zenodo DOI, codemeta or author list; the README references a beam
+      effects note but does not ask users to cite the software.
+    evidence:
+      - metrics:files.citation_cff = []
+      - metrics:files.zenodo_json = []
+      - https://github.com/eic/afterburner/blob/740f6356225fc81c9baee5c76d6dd19976c99417/README.md#L252-L256
+    gaps:
+      - No citation information or contributor list.
+    actions:
+      - action: Add `CITATION.cff` listing the contributors and enable the Zenodo-GitHub integration.
+        priority: high
+        effort: S
+  via.adoption:
+    level: 3
+    confidence: high
+    rationale: >-
+      afterburner ships in eic-shell and its output is used in ePIC simulation campaign datasets and
+      productions, and it is taught in the EIC analysis tutorial.
+    evidence:
+      - metrics:packaging.in_eic_shell = true
+      - https://github.com/eic/simulation_campaign_datasets/blob/99a906b0e3540bc80c8c9f96b15b0834ceefe487/EXCLUSIVE/DVCS/EpIC_v1.1.6-1.2_DVCS_BH_18x275_q2_1_100_abconv.csv
+      - https://github.com/eic/epic-prod/blob/bb75f8ad55bf2102d1f1125d1d927e1d7e44919f/docs/RECO/25.10.3/index.md
+      - https://github.com/eic/tutorial-analysis/blob/3739c6e78d10101f08d216048aca578a30faef14/episodes/04-full_chain_analysis.md
+    gaps: []
+    actions: []
+  via.support:
+    level: 1
+    confidence: low
+    rationale: >-
+      Maintainers are identifiable through the eic-spack recipe and commit email domains, but the
+      repository states no owning ePIC working group, institutional commitment or funding.
+    evidence:
+      - metrics:git.email_domains_24m = 2
+      - https://github.com/eic/eic-spack/blob/29d442bc03f9d9439cb002ac768398c404d7c22d/spack_repo/eic/packages/afterburner/package.py
+    gaps:
+      - No maintenance responsibility assigned within the EIC/ePIC structure is documented.
+    actions:
+      - action: State in the README the ePIC working group that owns afterburner and the maintainers' institutions.
+        priority: medium
+        effort: S

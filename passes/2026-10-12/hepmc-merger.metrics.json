@@ -1,0 +1,284 @@
+{
+  "schema_version": 1,
+  "project": "hepmc-merger",
+  "pass": "2026-10-12",
+  "repo_url": "https://github.com/eic/HEPMC_Merger",
+  "subdir": null,
+  "collected_at": "2026-10-12T20:00:27+00:00",
+  "collector_version": "0.2.0",
+  "windows_months": {
+    "short": 12,
+    "long": 24
+  },
+  "git": {
+    "head_sha": "a86fdd66ffd5facfa0bfebc87b70377a2fe47e23",
+    "head_date": "2026-10-05T17:43:33-05:00",
+    "last_commit_date": "2026-10-05T17:43:33-05:00",
+    "commits_total": 44,
+    "commits_12m": 6,
+    "commits_24m": 14,
+    "authors_total": 7,
+    "authors_12m": 3,
+    "authors_24m": 5,
+    "new_authors_12m": 0,
+    "bus_factor_50_24m": 1,
+    "bus_factor_80_24m": 4,
+    "top_author_share_24m": 0.5,
+    "email_domains_24m": 1,
+    "first_parent_commits_12m": 7,
+    "first_parent_pr_fraction_12m": 1.0,
+    "tags_total": 13,
+    "tags_24m": 8
+  },
+  "files": {
+    "readme": [
+      "README.md"
+    ],
+    "license": [],
+    "contributing": [],
+    "code_of_conduct": [],
+    "citation_cff": [],
+    "codemeta": [],
+    "zenodo_json": [],
+    "security": [],
+    "changelog": [],
+    "governance": [],
+    "codeowners": [],
+    "authors": [],
+    "pr_template": [],
+    "issue_templates": [],
+    "dependabot": [],
+    "renovate": [],
+    "pre_commit": [],
+    "clang_format": [],
+    "clang_tidy": [],
+    "editorconfig": [],
+    "python_lint": [],
+    "mypy": [],
+    "codecov": [],
+    "doxygen": [],
+    "sphinx": [],
+    "mkdocs": [],
+    "dockerfile": [],
+    "apptainer_def": [],
+    "spack_env": [],
+    "conda_env": [],
+    "devcontainer": [],
+    "lockfile": [],
+    "gitlab_ci": [],
+    "other_ci": [],
+    "cmake": [
+      "CMakeLists.txt"
+    ],
+    "pyproject": [],
+    "setup_py": [],
+    "docs_dir": 0,
+    "examples_dir": 0,
+    "github_workflows": [
+      ".github/workflows/linux-eic-shell.yml"
+    ]
+  },
+  "code": {
+    "languages": {
+      "cpp": {
+        "files": 2,
+        "lines": 3007
+      },
+      "python": {
+        "files": 3,
+        "lines": 1139
+      },
+      "cmake": {
+        "files": 2,
+        "lines": 125
+      }
+    },
+    "source_lines": 4146,
+    "largest_source_files": [
+      {
+        "path": "argparse/argparse.hpp",
+        "lines": 2183
+      },
+      {
+        "path": "SignalBackgroundMerger.cpp",
+        "lines": 824
+      },
+      {
+        "path": "python/Signal_Background_Merger_ALWAYS_At_Least_One_Event.py",
+        "lines": 486
+      },
+      {
+        "path": "python/signal_background_merger.py",
+        "lines": 469
+      },
+      {
+        "path": "python/orig_signal_background_merger.py",
+        "lines": 184
+      }
+    ],
+    "test_files": 0,
+    "test_frameworks": [],
+    "cxx_standard": [
+      "17"
+    ],
+    "requires_python": null,
+    "site_specific_paths": []
+  },
+  "eic": {
+    "components_detected": {
+      "hepmc3": {
+        "files": 5,
+        "kind": "domain",
+        "examples": [
+          "CMakeLists.txt",
+          "SignalBackgroundMerger.cpp",
+          "python/Signal_Background_Merger_ALWAYS_At_Least_One_Event.py"
+        ]
+      },
+      "xrootd": {
+        "files": 2,
+        "kind": "generic",
+        "examples": [
+          ".github/workflows/linux-eic-shell.yml",
+          "SignalBackgroundMerger.cpp"
+        ]
+      },
+      "root": {
+        "files": 1,
+        "kind": "generic",
+        "examples": [
+          "CMakeLists.txt"
+        ]
+      },
+      "dd4hep": {
+        "files": 1,
+        "kind": "domain",
+        "examples": [
+          "SignalBackgroundMerger.cpp"
+        ]
+      }
+    },
+    "domain_components": [
+      "dd4hep",
+      "hepmc3"
+    ],
+    "is_component": "hepmcmerger",
+    "vendored_candidates": [],
+    "submodules": []
+  },
+  "ci": {
+    "workflow_count": 1,
+    "pr_triggered_workflows": [
+      ".github/workflows/linux-eic-shell.yml"
+    ],
+    "runs_on": [
+      "ubuntu-latest"
+    ],
+    "container_images": [
+      "platform-release: eic_xl:nightly"
+    ],
+    "uses_eic_shell": true,
+    "actions_used": [
+      "actions/checkout",
+      "actions/download-artifact",
+      "actions/upload-artifact",
+      "cvmfs-contrib/github-action-cvmfs",
+      "eic/run-cvmfs-osg-eic-shell"
+    ],
+    "action_refs_not_sha_pinned": 8,
+    "other_ci": [],
+    "default_branch_runs": 3,
+    "default_branch_success_rate": 1.0,
+    "last_default_branch_run": "2026-10-05T22:43:38Z"
+  },
+  "repo": {
+    "full_name": "eic/HEPMC_Merger",
+    "default_branch": "main",
+    "archived": false,
+    "fork": false,
+    "created_at": "2023-04-12T17:23:05Z",
+    "pushed_at": "2026-10-05T22:43:34Z",
+    "stars": 0,
+    "forks": 0,
+    "homepage": null,
+    "license_spdx": null,
+    "topics": [],
+    "has_issues": true,
+    "has_discussions": false,
+    "open_issues": 10,
+    "open_prs": 1,
+    "default_branch_protected": true,
+    "rulesets": 1,
+    "languages_github": {
+      "C++": 0.554,
+      "Python": 0.281,
+      "Jupyter Notebook": 0.14,
+      "CMake": 0.025
+    }
+  },
+  "community": {
+    "health_percentage": 37,
+    "files": {
+      "code_of_conduct": false,
+      "code_of_conduct_file": false,
+      "contributing": false,
+      "issue_template": false,
+      "license": false,
+      "pull_request_template": true,
+      "readme": true
+    }
+  },
+  "releases": {
+    "count_total": 11,
+    "count_24m": 8,
+    "latest_tag": "v2.4.0",
+    "latest_date": "2026-07-17T15:03:26Z",
+    "authors_24m": 2,
+    "with_notes_fraction_24m": 1.0
+  },
+  "issues": {
+    "created_12m": 3,
+    "sampled": false,
+    "closed_of_created_12m": 2,
+    "median_first_response_days_12m": 0.0,
+    "unanswered_fraction_12m": 0.0,
+    "labeled_fraction_12m": 0.0,
+    "open_total": 10,
+    "open_older_365d": 9
+  },
+  "prs": {
+    "created_12m": 9,
+    "sampled": false,
+    "merged_12m": 6,
+    "median_days_to_merge_12m": 0.36,
+    "reviewed_fraction_12m": 1.0,
+    "external_fraction_12m": 0.0,
+    "test_touching_fraction_12m": 0.0,
+    "distinct_reviewers_12m": 3,
+    "top_reviewer_share_12m": 0.5,
+    "distinct_mergers_12m": 3,
+    "open_total": 1,
+    "open_older_90d": 0
+  },
+  "packaging": {
+    "spack_name": "hepmcmerger",
+    "eic_spack": {
+      "matches_repo": true,
+      "versions": [
+        "main",
+        "2.4.0",
+        "2.3.0",
+        "2.2.0",
+        "2.1.0"
+      ]
+    },
+    "spack_builtin": null,
+    "in_eic_shell": true,
+    "eic_shell_version": "2.4.0",
+    "eic_spack_dependents": [],
+    "conda_forge": null,
+    "pypi": null,
+    "latest_release_packaged": true
+  },
+  "errors": []
+}

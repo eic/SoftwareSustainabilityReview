@@ -1,0 +1,473 @@
+schema_version: 1
+project: jana2
+pass: '2026-10-12'
+commit: dc56dab0216cc1864ed9ee30dde06a34383c926f
+assessor: { agent: claude-code, model: claude-opus-5-5 }
+summary: >-
+  The main risks are concentration of authorship and review (one author wrote 90.9% of commits in 24
+  months, no merged PR in 12 months had a non-author review, a single person merges), the absence of
+  any formatter or linter, and a modified BSD-style license that is not machine-detectable. Established
+  practices are CI on every PR across Ubuntu, macOS and eic-shell nightly with downstream EICrecon and
+  GlueX builds, eic-spack packaging shipped in eic-shell at the latest release, and CalVer releases with
+  notes and per-release Zenodo DOIs.
+criteria:
+  eng.change-control:
+    level: 1
+    confidence: high
+    rationale: >-
+      84.4% of first-parent commits in 12 months arrived through PRs, but none of the merged PRs had a
+      review from someone other than the author, below the 50% required for level 2.
+    evidence:
+      - metrics:git.first_parent_pr_fraction_12m = 0.844
+      - metrics:prs.reviewed_fraction_12m = 0.0
+      - metrics:prs.distinct_mergers_12m = 1
+      - metrics:repo.default_branch_protected = true
+      - metrics:repo.rulesets = 0
+    gaps:
+      - No merged PR in 12 months was reviewed by a non-author.
+      - Branch protection requires no approving review and no status checks; no CODEOWNERS or PR template.
+    actions:
+      - action: Require one approving review on `master` through branch protection or a ruleset, and have a second maintainer review each PR.
+        priority: high
+        effort: S
+  eng.ci:
+    level: 2
+    confidence: high
+    rationale: >-
+      Six workflows build and run ctest or the unit-test binary on every PR and push to `master` (Ubuntu,
+      macOS, eic-shell nightly, a full-dependency container), with EICrecon and GlueX downstream builds,
+      and 88% of recent default-branch runs succeed. Passing CI is not required before merge, and the GlueX
+      integration workflow has failed on every `master` push since 2026-08-21.
+    evidence:
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/.github/workflows/test_platform_ubuntu.yml#L3-L55
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/.github/workflows/test_dependency_matrix.yml#L48-L65
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/.github/workflows/test_integration_epic.yml#L112-L183
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/.github/workflows/test_integration_gluex.yml#L19-L30
+      - https://github.com/JeffersonLab/JANA2/actions/runs/32760005033
+      - metrics:ci.default_branch_success_rate = 0.88
+    gaps:
+      - No required status checks on `master` (branch protection lists none).
+      - Default-branch success rate 88%, below 90%; GlueX integration fails on `master` since 2026-08-21.
+      - The CUDA platform workflow is disabled by targeting a non-existent branch.
+    actions:
+      - action: Fix the failing `test_integration_gluex.yml` job and mark the Ubuntu, macOS, dependency-matrix and ePIC workflows as required status checks on `master`.
+        priority: medium
+        effort: S
+  eng.testing:
+    level: 2
+    confidence: medium
+    rationale: >-
+      Catch2 unit tests cover the Components, Engine, Services, Topology and Utils modules and run in CI on
+      every PR, and end-to-end runs (TimesliceExample, EICrecon on npsim output) exist. There is no coverage
+      measurement, no comparison against reference outputs in CI, and 30.8% of merged PRs touch tests.
+    evidence:
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/src/programs/unit_tests/CMakeLists.txt#L1-L53
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/src/examples/misc/TimesliceExample/CMakeLists.txt#L9-L17
+      - metrics:code.test_files = 50
+      - metrics:prs.test_touching_fraction_12m = 0.308
+      - metrics:files.codecov = []
+    gaps:
+      - No coverage measured or published.
+      - No regression test comparing outputs with reference files; the `regressiontest` plugin is not run in CI.
+      - 30.8% of merged PRs touch tests, below 40%.
+      - Calibrations, Geometry and CLI libraries have no unit tests.
+    actions:
+      - action: Add a coverage build (`--coverage` with lcov or gcovr) to `test_platform_ubuntu.yml` and publish it to Codecov.
+        priority: medium
+        effort: S
+      - action: Add a CI step that compares the TimesliceExample or EICrecon output with a stored reference using epic-capybara.
+        priority: medium
+        effort: M
+  eng.static-quality:
+    level: 0
+    confidence: high
+    rationale: >-
+      The project configures no formatter, linter or static analyzer; the only `.clang-format` and
+      `.clang-tidy` files belong to vendored pybind11. Compiler warnings (`-Wall -Wextra` in Debug,
+      `-Werror` on macOS) and optional ASan/TSan build options exist but are not linters.
+    evidence:
+      - metrics:files.clang_format = ["src/python/externals/pybind11-2.10.3/.clang-format"]
+      - metrics:files.pre_commit = []
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/CMakeLists.txt#L14
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/CMakeLists.txt#L128-L136
+    gaps:
+      - No project formatter or linter configuration.
+      - No sanitizer or static-analysis job in CI.
+    actions:
+      - action: Add a `.clang-format` matching the documented conventions and a `.pre-commit-config.yaml` with clang-format, and enable pre-commit.ci on PRs.
+        priority: high
+        effort: S
+  eng.modularity:
+    level: 2
+    confidence: high
+    rationale: >-
+      CMake builds components (core library, plugins, programs) with C++17 as default, configuration goes
+      through the parameter manager, and an exported `JANAConfig.cmake` with `JANA::` targets is installed.
+      All headers, including Engine and Topology internals, are installed by glob, so public API and internals
+      are not separated.
+    evidence:
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/CMakeLists.txt#L9-L12
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/cmake/MakeConfig.cmake#L4-L19
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/src/libraries/JANA/CMakeLists.txt#L134-L155
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/docs/concepts.md#L4-L40
+      - metrics:code.cxx_standard = ["17"]
+    gaps:
+      - Every header under Engine/, Topology/ and Utils/ is installed; no separation of public API from internals.
+      - The build still accepts C++14.
+    actions:
+      - action: Install only the user-facing headers (or move internals to an `internal/` directory excluded from install) and drop C++14 from the accepted standards.
+        priority: medium
+        effort: M
+  doc.user:
+    level: 1
+    confidence: high
+    rationale: >-
+      The README and the hosted docs give CMake build-and-run commands, a tutorial and a configuration how-to,
+      but no list of dependencies or minimum versions and no eic-shell or Spack install route.
+    evidence:
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/README.md#L33-L44
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/docs/install.md#L1-L28
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/docs/howto/configuration.md
+      - metrics:repo.homepage = https://jeffersonlab.github.io/JANA2/
+    gaps:
+      - Dependencies (CMake 3.16, ROOT, podio, ZeroMQ, Xerces-C, Python) and their versions are not listed.
+      - No eic-shell or Spack installation route documented.
+      - The tutorial links to `src/examples/Tutorial`, which no longer exists.
+    actions:
+      - action: Add a dependency table with minimum versions and an "Installing via eic-shell / eic-spack" section to `docs/install.md`.
+        priority: medium
+        effort: S
+  doc.developer:
+    level: 1
+    confidence: medium
+    rationale: >-
+      An architecture overview (`docs/concepts.md`, `docs/behavior.md`) exists and Doxygen is generated and
+      deployed to Pages by CI, but most public methods lack doc comments (for example `JApplicationFwd.h`
+      declarations and `JComponent.h` carry none).
+    evidence:
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/docs/concepts.md#L4-L40
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/.github/workflows/build_documentation.yml#L20-L78
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/src/libraries/JANA/JApplicationFwd.h#L46-L110
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/src/libraries/JANA/Components/JComponent.h
+    gaps:
+      - Most public methods of JApplication, JComponent, JEventUnfolder and JEventProcessor have no Doxygen comments.
+    actions:
+      - action: Add Doxygen comments to every public method in the installed headers of `src/libraries/JANA/` starting with JApplication, JComponent, JEventProcessor and JEventUnfolder.
+        priority: medium
+        effort: M
+  doc.contributing:
+    level: 1
+    confidence: high
+    rationale: >-
+      The inherited organization CONTRIBUTING.md gives a generic fork-and-PR note and
+      `docs/development/contributing.md` lists coding conventions and the release procedure, but neither
+      covers development setup or running the tests, and there are no issue or PR templates.
+    evidence:
+      - https://github.com/JeffersonLab/.github/blob/6d612851b7c17d02026bbf788bdbecd6ed695fa1/CONTRIBUTING.md
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/docs/development/contributing.md#L4-L46
+      - metrics:files.pr_template = []
+      - metrics:files.issue_templates = []
+    gaps:
+      - No documented development setup or test commands (`ctest`).
+      - No issue or PR templates.
+    actions:
+      - action: Add `CONTRIBUTING.md` covering eic-shell setup, the CMake options used in CI, running `ctest`, and the PR process, plus `.github/pull_request_template.md` and issue templates.
+        priority: medium
+        effort: S
+  com.responsiveness:
+    level: 0
+    confidence: medium
+    rationale: >-
+      6 of 11 issues opened in 12 months (54.5%) received no response, a majority; most of these are
+      maintainer-filed tracking issues, but one external report (#496) is also unanswered. No issue opened in
+      12 months is labeled and 44 of 50 open issues are older than one year.
+    evidence:
+      - metrics:issues.unanswered_fraction_12m = 0.545
+      - metrics:issues.median_first_response_days_12m = 0.53
+      - metrics:issues.labeled_fraction_12m = 0.0
+      - metrics:issues.open_older_365d = 44
+      - https://github.com/JeffersonLab/JANA2/issues/496
+    gaps:
+      - Most issues opened in 12 months have no response.
+      - No labeling or triage of new issues; 88% of open issues are older than one year.
+    actions:
+      - action: Respond to and label every new issue (existing `bug`/`enhancement` labels), and close or label the 44 open issues older than one year.
+        priority: high
+        effort: S
+  com.contributors:
+    level: 2
+    confidence: high
+    rationale: >-
+      8 authors from 3 e-mail domains committed in 24 months and 15.4% of merged PRs came from outside the
+      maintainer group; fewer than 10 active authors prevents level 3.
+    evidence:
+      - metrics:git.authors_24m = 8
+      - metrics:git.email_domains_24m = 3
+      - metrics:git.new_authors_12m = 1
+      - metrics:prs.external_fraction_12m = 0.154
+    gaps:
+      - Fewer than 10 active authors in 24 months; external PRs are 15.4% of merges, below 20%.
+    actions:
+      - action: Label newcomer issues and invite EICrecon and GlueX developers to take ownership of specific components through PRs.
+        priority: medium
+        effort: M
+  com.bus-factor:
+    level: 0
+    confidence: high
+    rationale: >-
+      The top author wrote 90.9% of commits in 24 months, no merged PR in 12 months had a non-author
+      reviewer, and one person merged all PRs.
+    evidence:
+      - metrics:git.top_author_share_24m = 0.909
+      - metrics:git.bus_factor_50_24m = 1
+      - metrics:prs.distinct_reviewers_12m = 0
+      - metrics:prs.distinct_mergers_12m = 1
+      - metrics:releases.authors_24m = 2
+      - metrics:files.codeowners = []
+    gaps:
+      - One person writes over 80% of commits and nobody else reviews or merges.
+      - No CODEOWNERS or maintainer list.
+    actions:
+      - action: Add `CODEOWNERS` naming at least two maintainers and have a second maintainer review and merge PRs.
+        priority: high
+        effort: S
+  com.governance:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The LICENSE file lists authors and the docs describe the release procedure, but there is no documented
+      decision process or path to maintainership; the only open milestone is past its due date.
+    evidence:
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/LICENSE#L31
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/docs/development/contributing.md#L13-L46
+      - https://github.com/JeffersonLab/JANA2/milestone/7
+    gaps:
+      - No GOVERNANCE document or description of who decides and how to become a maintainer.
+    actions:
+      - action: Add `GOVERNANCE.md` naming the maintainers, the decision process, the path to maintainership and the link to the ePIC software meetings where JANA2 changes are discussed.
+        priority: medium
+        effort: S
+  com.conduct:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The JeffersonLab organization Contributor Covenant applies with a reporting phone number, but neither the
+      README nor the docs name a support channel; GitHub Discussions is enabled with only a welcome post and
+      release announcements.
+    evidence:
+      - https://github.com/JeffersonLab/.github/blob/6d612851b7c17d02026bbf788bdbecd6ed695fa1/CODE_OF_CONDUCT.md
+      - https://github.com/JeffersonLab/JANA2/discussions/483
+      - metrics:community.files.code_of_conduct = true
+    gaps:
+      - No support channel documented in the README or docs.
+    actions:
+      - action: Add a "Getting help" section to `README.md` and `docs/index.md` linking GitHub Discussions (or the EIC Mattermost channel) and the issue tracker.
+        priority: medium
+        effort: S
+  dist.packaging:
+    level: 3
+    confidence: high
+    rationale: >-
+      The eic-spack recipe provides the latest release 2026.03.01, which eic-shell ships; the recipe was
+      updated one day after the release.
+    evidence:
+      - metrics:packaging.eic_spack.versions = ["master", "2026.03.01", "2026.03.00", "2026.02.00", "2.4.3"]
+      - metrics:packaging.in_eic_shell = true
+      - metrics:packaging.eic_shell_version = 2026.03.01
+      - metrics:releases.latest_tag = v2026.03.01
+      - https://github.com/eic/eic-spack/pull/1012
+    gaps: []
+    actions: []
+  dist.releases:
+    level: 2
+    confidence: high
+    rationale: >-
+      10 releases in 24 months, a documented CalVer scheme (YEAR.MAJOR.PATCH), and notes for every release.
+      Releases are cut manually, there is no deprecation policy, and breaking changes are not consistently
+      flagged with migration notes.
+    evidence:
+      - metrics:releases.count_24m = 10
+      - metrics:releases.with_notes_fraction_24m = 1.0
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/docs/development/contributing.md#L13-L46
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/docs/Download.md#L14-L60
+    gaps:
+      - No release workflow; the release procedure is manual.
+      - No deprecation policy; breaking changes lack a consistent section and migration notes.
+    actions:
+      - action: Add a tag-triggered `.github/workflows/release.yml` that creates the GitHub release, and add a "Breaking changes / Migration" section and a deprecation policy to `docs/Download.md`.
+        priority: medium
+        effort: M
+  dist.dependencies:
+    level: 1
+    confidence: high
+    rationale: >-
+      Dependencies are declared through `find_package` in `CMakeLists.txt` without minimum versions, and
+      vendored code includes Catch2 2.13.7 (2021) and a 2002 md5 implementation.
+    evidence:
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/CMakeLists.txt#L80-L126
+      - metrics:eic.vendored_candidates = ["src/external/catch2", "src/external/md5", "src/external/tomlplusplus", "src/python/externals/pybind11-2.10.3"]
+      - metrics:ci.action_refs_not_sha_pinned = 29
+      - metrics:files.dependabot = []
+    gaps:
+      - No `VERSION` on `find_package` for podio, ROOT, cppzmq or Xerces-C.
+      - Vendored Catch2 v2 and md5 are no longer maintained upstream; no Dependabot or SECURITY.md.
+    actions:
+      - action: Add minimum `VERSION` arguments to every `find_package` and use the Catch2 v3 package from eic-shell/Spack instead of `src/external/catch2`.
+        priority: medium
+        effort: S
+  dist.reproducibility:
+    level: 1
+    confidence: medium
+    rationale: >-
+      Containerfiles for development environments exist, but only the CUDA container is documented, CI
+      images are unpinned (`:latest`, `nightly`), and configuration is only dumped on request rather than
+      recorded with outputs.
+    evidence:
+      - https://github.com/JeffersonLab/JANA2/tree/dc56dab0216cc1864ed9ee30dde06a34383c926f/containers
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/docs/development/containers.md
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/.github/workflows/test_dependency_matrix.yml#L13-L14
+    gaps:
+      - No documented, versioned environment (eic-shell version or tagged image) per release.
+      - Parameter values and software versions are not recorded with outputs by default.
+    actions:
+      - action: State in `docs/Download.md` the eic-shell release each JANA2 release is tested with, and document running in that image.
+        priority: medium
+        effort: S
+  dist.portability:
+    level: 3
+    confidence: medium
+    rationale: >-
+      CI builds and tests on Linux (GCC, eic-shell) and macOS (AppleClang), with no site-specific paths in
+      code, JANA2 runs unmodified in ePIC production campaigns through EICrecon, and CUDA support is provided
+      through an example plugin and documented container.
+    evidence:
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/.github/workflows/test_platform_mac.yml#L12-L41
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/.github/workflows/test_platform_ubuntu.yml#L12-L55
+      - https://github.com/eic/simulation_campaign_hepmc3/blob/3244c0a9ef7a82de3ef35ec213b6c2b42f81af96/scripts/run.sh#L265-L281
+      - https://github.com/JeffersonLab/JANA2/tree/dc56dab0216cc1864ed9ee30dde06a34383c926f/src/examples/misc/SubeventCUDAExample
+      - metrics:ci.runs_on = ["self-hosted", "ubuntu-20.04", "ubuntu-22.04", "ubuntu-24.04", "ubuntu-latest"]
+    gaps: []
+    actions: []
+  eic.reuse:
+    level: 3
+    confidence: medium
+    rationale: >-
+      JANA2 is itself the EIC-supported reconstruction framework and integrates podio for its data model;
+      EICrecon and ejana in eic-spack depend on it.
+    evidence:
+      - metrics:eic.is_component = jana2
+      - metrics:eic.eic_spack_dependents = ["eicrecon", "ejana"]
+      - metrics:eic.components_detected.podio.files = 15
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/src/libraries/JANA/Components/JPodioOutput.h
+    gaps: []
+    actions: []
+  eic.data-model:
+    level: 2
+    confidence: medium
+    rationale: >-
+      JANA2 inserts and retrieves podio collections in `podio::Frame`s and its examples read and write podio
+      ROOT files; it does not declare or check a data-model version and has no I/O round-trip test.
+    evidence:
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/src/programs/unit_tests/Components/PodioTests.cc#L25-L60
+      - https://github.com/JeffersonLab/JANA2/tree/dc56dab0216cc1864ed9ee30dde06a34383c926f/src/examples/misc/PodioFileWriter
+      - https://github.com/JeffersonLab/JANA2/tree/dc56dab0216cc1864ed9ee30dde06a34383c926f/src/examples/misc/PodioFileReader
+    gaps:
+      - No write-then-read round-trip test of podio files in ctest.
+      - Only compile-time podio version guards; no data-model version recorded or checked.
+    actions:
+      - action: Add a ctest that writes a podio file with PodioFileWriter, reads it back with PodioFileReader and compares collection contents.
+        priority: medium
+        effort: S
+  eic.environment:
+    level: 1
+    confidence: medium
+    rationale: >-
+      CI builds, tests and runs EICrecon in the `eic_xl:nightly` image, but neither the README nor the docs
+      describe building or running JANA2 in eic-shell.
+    evidence:
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/.github/workflows/test_integration_epic.yml#L11-L35
+      - metrics:ci.uses_eic_shell = true
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/docs/install.md#L1-L28
+    gaps:
+      - Building and running in eic-shell is not documented.
+      - CI tests only the nightly image, not a pinned stable eic-shell release.
+    actions:
+      - action: Document in `docs/install.md` how to use the eic-shell JANA2 and how to build a development copy inside eic-shell.
+        priority: medium
+        effort: S
+  eic.currency:
+    level: 3
+    confidence: medium
+    rationale: >-
+      eic-shell ships the latest JANA2 release with ROOT 6.40.04 and podio 1.8; ROOT 6.40 incompatibility
+      (#500) was fixed the day it was reported and podio's removed `operator->` was handled before removal
+      (#477). The nightly eic-shell build shows deprecation warnings in JANA2 code only from pybind11 and the
+      Python C API, not from EIC-supported components.
+    evidence:
+      - https://github.com/JeffersonLab/JANA2/issues/500
+      - https://github.com/JeffersonLab/JANA2/pull/498
+      - https://github.com/JeffersonLab/JANA2/pull/477
+      - https://github.com/JeffersonLab/JANA2/actions/runs/32760005015
+      - metrics:packaging.eic_shell_version = 2026.03.01
+    gaps: []
+    actions: []
+  via.license:
+    level: 1
+    confidence: medium
+    rationale: >-
+      LICENSE carries a BSD-3-Clause-style text modified with "All Rights Reserved", "as a licensed user"
+      and a U.S. Government clause, which GitHub does not recognize as an SPDX license.
+    evidence:
+      - metrics:repo.license_spdx = NOASSERTION
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/LICENSE#L1-L28
+    gaps:
+      - No recognized SPDX identifier; the license text deviates from standard BSD-3-Clause.
+    actions:
+      - action: Replace LICENSE with the standard BSD-3-Clause text (keeping the government notice in a separate NOTICE file) so GitHub detects `BSD-3-Clause`.
+        priority: high
+        effort: S
+  via.citation:
+    level: 1
+    confidence: high
+    rationale: >-
+      CITATION.cff and a Zenodo concept DOI with a DOI for every release exist, but both name a single
+      collective author and no contributor list is maintained.
+    evidence:
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/CITATION.cff#L1-L18
+      - https://doi.org/10.5281/zenodo.3890173
+      - metrics:files.authors = []
+    gaps:
+      - No maintained author or contributor list; CITATION.cff and Zenodo list one collective author.
+    actions:
+      - action: List the individual contributors in `CITATION.cff` (or `.zenodo.json`) and the ACAT 2019 paper as `preferred-citation`.
+        priority: medium
+        effort: S
+  via.adoption:
+    level: 3
+    confidence: high
+    rationale: >-
+      JANA2 ships in eic-shell, is the framework of EICrecon used in ePIC production campaigns, and is used by
+      GlueX's halld_recon outside EIC.
+    evidence:
+      - metrics:packaging.in_eic_shell = true
+      - metrics:eic.eic_spack_dependents = ["eicrecon", "ejana"]
+      - https://github.com/eic/simulation_campaign_hepmc3/blob/3244c0a9ef7a82de3ef35ec213b6c2b42f81af96/scripts/run.sh#L265-L281
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/.github/workflows/test_integration_gluex.yml#L19-L30
+    gaps: []
+    actions: []
+  via.support:
+    level: 2
+    confidence: medium
+    rationale: >-
+      The repository is owned by Jefferson Lab and the LICENSE states the software was developed under a
+      U.S. Government contract by Jefferson Science Associates; there is no documented multi-institution
+      maintenance commitment or succession plan.
+    evidence:
+      - https://github.com/JeffersonLab/JANA2/blob/dc56dab0216cc1864ed9ee30dde06a34383c926f/LICENSE#L1-L17
+      - metrics:git.top_author_share_24m = 0.909
+    gaps:
+      - No documented multi-institution maintenance commitment or succession plan.
+    actions:
+      - action: Document in the README the maintaining institutions, the owning ePIC/JLab software group, and the plan for maintainer turnover.
+        priority: medium
+        effort: S

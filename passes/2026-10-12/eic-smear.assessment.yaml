@@ -1,0 +1,472 @@
+schema_version: 1
+project: eic-smear
+pass: "2026-10-12"
+commit: 9e00d758e9c87a067ceb6e902648a8b28783491c
+assessor: { agent: claude-code, model: claude-opus-5-5 }
+summary: >-
+  One author wrote 83% of commits in 24 months (bus factor 1), there are no automated tests, 59% of
+  default-branch commits in 12 months were pushed directly, and there is no code of conduct or
+  citation metadata. The project is GPL-3.0 licensed, ships in eic-shell with eic-spack recipes
+  updated on the day of each release, and CI builds every PR and push in the eic_xl nightly image.
+criteria:
+  eng.change-control:
+    level: 1
+    confidence: high
+    rationale: >-
+      Only 41% of first-parent commits in 12 months came from PRs; version bumps and code fixes are
+      pushed directly, and the ruleset requires no approving review.
+    evidence:
+      - metrics:git.first_parent_pr_fraction_12m = 0.412
+      - metrics:prs.reviewed_fraction_12m = 0.833
+      - https://github.com/eic/eic-smear/commit/9e00d758e9c87a067ceb6e902648a8b28783491c
+      - https://github.com/eic/eic-smear/commit/820d80614102ea1cb5433fe77507cbdfff57a9d2
+      - https://github.com/eic/eic-smear/rules/10735385
+    gaps:
+      - Fewer than 80% of default-branch changes in 12 months arrived through PRs.
+      - The `master` ruleset only blocks deletion and force-push and requests Copilot review; no human approval is required.
+    actions:
+      - action: Add a `pull_request` rule with one required approving review to ruleset 10735385 so code fixes and version bumps go through PRs.
+        priority: medium
+        effort: S
+  eng.ci:
+    level: 1
+    confidence: high
+    rationale: >-
+      The single workflow builds and installs in the eic_xl nightly image on every PR and push to
+      `master` (12 of 12 default-branch runs succeeded), but runs no tests.
+    evidence:
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/.github/workflows/linux-eic-shell.yml#L3-L8
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/.github/workflows/linux-eic-shell.yml#L27-L33
+      - metrics:ci.default_branch_success_rate = 1.0
+    gaps:
+      - CI runs no test suite or example; it only compiles and installs.
+    actions:
+      - action: Add a step to `.github/workflows/linux-eic-shell.yml` that runs `ctest` (once tests exist) and a `BuildTree`/`SmearTree`/`TreeToHepMC` run on a small committed input file.
+        priority: medium
+        effort: S
+  eng.testing:
+    level: 0
+    confidence: high
+    rationale: >-
+      The repository contains no test files, no CTest registration and no test framework; no merged
+      PR in 12 months touched tests.
+    evidence:
+      - metrics:code.test_files = 0
+      - metrics:prs.test_touching_fraction_12m = 0.0
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/CMakeLists.txt#L329-L344
+    gaps:
+      - No unit tests for the generator readers, `Smear::Detector`/`Smearer` classes or `TreeToHepMC`.
+      - The README says example files are included for testing, but none are in the repository.
+    actions:
+      - action: Add `enable_testing()` and a CTest test that runs `BuildTree` on a small committed generator text file per supported format and checks the event count.
+        priority: high
+        effort: M
+      - action: Add a test that converts a committed tree with `TreeToHepMC` and checks particle counts and cross-section units in the HepMC3 output.
+        priority: high
+        effort: S
+  eng.static-quality:
+    level: 1
+    confidence: high
+    rationale: >-
+      `-Wall -Wextra -pedantic` are enabled and the README asks contributors to run a bundled copy of
+      cpplint, but no formatter or linter runs in CI or pre-commit.
+    evidence:
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/CMakeLists.txt#L125-L126
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/README.md#L263-L275
+      - metrics:files.clang_format = []
+      - metrics:files.pre_commit = []
+    gaps:
+      - No formatter configuration and no linter enforced on PRs.
+    actions:
+      - action: Add `.clang-format` (Google-based, matching the README conventions) and a `.pre-commit-config.yaml` with clang-format, enabled on pre-commit.ci.
+        priority: medium
+        effort: S
+      - action: Replace the vendored `eicpy/cpplint.py` with a CI job running upstream `cpplint` with the README filter on changed files.
+        priority: medium
+        effort: S
+  eng.modularity:
+    level: 1
+    confidence: high
+    rationale: >-
+      Code is split into `erhic`, `Smear` and `hadronic` namespaces and installs an exported
+      `eicsmearConfig.cmake`, but the declared language standard is C++11 and the `eicpy` scripts use
+      Python 2 syntax.
+    evidence:
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/CMakeLists.txt#L122-L123
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/CMakeLists.txt#L419-L427
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/eicpy/build.py#L85-L87
+      - metrics:code.cxx_standard = ["11", "14"]
+    gaps:
+      - Declared C++ standard is C++11 (`cxx_std_11`), below C++17.
+      - "`eicpy/*.py` use Python 2 `print` statements; stale files (`Forester.cxx.orig`, `*.betterbutdifferent`) remain in the source tree."
+    actions:
+      - action: Set `target_compile_features(eicsmear PUBLIC cxx_std_17)` (or higher) on all targets in `CMakeLists.txt`.
+        priority: medium
+        effort: S
+      - action: Port `eicpy/` to Python 3 or remove it, and delete the `.orig` and `.betterbutdifferent` files.
+        priority: low
+        effort: S
+  doc.user:
+    level: 1
+    confidence: high
+    rationale: >-
+      The README gives CMake build and run instructions, but its prerequisites (CMake 3.1, ROOT 6.10)
+      disagree with `CMakeLists.txt` (3.10, 6.20), omit HepMC3 and zlib, and give no eic-shell route.
+    evidence:
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/README.md#L80-L108
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/CMakeLists.txt#L24-L59
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/README.md#L41
+      - https://eic.github.io/software/eicsmear.html
+    gaps:
+      - Dependencies and minimum versions in the README do not match the build files; HepMC3 and zlib are missing.
+      - No runnable example in the repository; the README one-liner uses an input file that is not included.
+      - Using the eic-shell installation is not documented.
+    actions:
+      - action: Update the README "Prerequisites" to CMake >= 3.10, ROOT >= 6.20, HepMC3 and zlib, and add an "Using eic-shell" section.
+        priority: medium
+        effort: S
+      - action: Add `examples/` with a small generator text file and a macro running `BuildTree`, `SmearTree` and `TreeToHepMC`.
+        priority: medium
+        effort: S
+  doc.developer:
+    level: 2
+    confidence: medium
+    rationale: >-
+      Public headers carry Doxygen comments, a `Doxyfile` generates API docs, and the README and EIC
+      web page describe the tree-building and smearing components and the namespace layout; the only
+      hosted API docs are for version 1.0.3.
+    evidence:
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/include/eicsmear/smear/Detector.h#L1-L80
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/Doxyfile#L41
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/README.md#L12-L73
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/README.md#L224-L261
+    gaps:
+      - API docs are not published by CI; the hosted copy at www4.rcf.bnl.gov is version 1.0.3 and eic-smear classes are not found on the central EIC Doxygen site the README cites.
+      - Smearing algorithms and data flow are not documented with references.
+    actions:
+      - action: Add a workflow that runs `doxygen` on pushes to `master` and tags and deploys `doxygen/html` to GitHub Pages, and link it from the README.
+        priority: medium
+        effort: S
+  doc.contributing:
+    level: 1
+    confidence: high
+    rationale: >-
+      The README "Developer Notes" cover coding conventions and a one-line fork-and-PR note, and the
+      eic organization PR and issue templates apply, but there is no description of running tests or
+      of a development environment.
+    evidence:
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/README.md#L239-L290
+      - metrics:community.files.contributing = false
+      - metrics:community.files.pull_request_template = true
+    gaps:
+      - No `CONTRIBUTING` file describing development environment setup, building and running tests, and the PR process.
+    actions:
+      - action: Move the README developer notes into `CONTRIBUTING.md` and add eic-shell setup, build, test commands and PR review expectations.
+        priority: medium
+        effort: S
+  com.responsiveness:
+    level: 1
+    confidence: low
+    rationale: >-
+      The 2 issues opened in 12 months were answered (median 0.69 days) and closed, but all 3 open
+      issues are older than one year and no new issue was labeled.
+    evidence:
+      - metrics:issues.created_12m = 2
+      - metrics:issues.median_first_response_days_12m = 0.69
+      - metrics:issues.open_older_365d = 3
+      - metrics:issues.labeled_fraction_12m = 0.0
+      - https://github.com/eic/eic-smear/issues/26
+    gaps:
+      - All open issues (#6, #9, #26) are older than one year; #26 concerns a cross-section unit bug the ChangeLog reports fixed in 2023.
+      - No labels or other triage on new issues.
+    actions:
+      - action: Close or label issues #6, #9 and #26 (verify #26 against the 1.1.12 fix) and label new issues on arrival.
+        priority: medium
+        effort: S
+  com.contributors:
+    level: 1
+    confidence: medium
+    rationale: >-
+      Four authors committed in 24 months, but no merged PR in 12 months came from outside the
+      maintainer group and only one institution (BNL) is documented for contributors.
+    evidence:
+      - metrics:git.authors_24m = 4
+      - metrics:git.new_authors_12m = 1
+      - metrics:git.email_domains_24m = 0
+      - metrics:prs.external_fraction_12m = 0.0
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/README.md#L8-L10
+    gaps:
+      - At least 2 contributing institutions are not publicly documented.
+      - No external PRs merged in 12 months.
+    actions:
+      - action: List contributors' institutions in `AUTHORS` and label newcomer issues to attract PRs from outside the maintainer group.
+        priority: medium
+        effort: S
+  com.bus-factor:
+    level: 1
+    confidence: high
+    rationale: >-
+      One author wrote 83% of commits in 24 months (bus factor 1), while 4 people reviewed and 3
+      people merged PRs in 12 months.
+    evidence:
+      - metrics:git.bus_factor_50_24m = 1
+      - metrics:git.top_author_share_24m = 0.833
+      - metrics:prs.distinct_reviewers_12m = 4
+      - metrics:prs.distinct_mergers_12m = 3
+      - metrics:files.codeowners = []
+    gaps:
+      - Bus factor (50%) is 1.
+      - No CODEOWNERS; `AUTHORS` names a single maintainer.
+    actions:
+      - action: Add `CODEOWNERS` naming two maintainers for `src/`, `include/` and `CMakeLists.txt`, and have the second maintainer author changes and cut a release.
+        priority: high
+        effort: S
+  com.governance:
+    level: 1
+    confidence: high
+    rationale: >-
+      The README names two contacts and `AUTHORS` names a maintainer, but there is no documented
+      decision process, maintainer path or roadmap.
+    evidence:
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/AUTHORS#L1-L2
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/README.md#L8-L10
+      - metrics:files.governance = []
+    gaps:
+      - No documented decision process or path to becoming a reviewer or maintainer.
+    actions:
+      - action: Add `GOVERNANCE.md` (or a README section) naming the maintainers, how decisions are made, and how to become a maintainer.
+        priority: medium
+        effort: S
+  com.conduct:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The eic organization issue-template configuration links the ePIC Mattermost for questions and
+      the README lists contact e-mails, but no code of conduct applies.
+    evidence:
+      - https://github.com/eic/.github/blob/3231e4d33f430f9806db8703b2feaafca084e18e/.github/ISSUE_TEMPLATE/config.yml
+      - metrics:community.files.code_of_conduct = false
+    gaps:
+      - No code of conduct with a reporting contact.
+    actions:
+      - action: Add `CODE_OF_CONDUCT.md` with a reporting contact, or link the ePIC collaboration code of conduct from the README.
+        priority: high
+        effort: S
+  dist.packaging:
+    level: 3
+    confidence: high
+    rationale: >-
+      The eic-spack recipe provides the latest release 1.2.3, eic-shell ships 1.2.2, and the recipe
+      gained 1.1.17, 1.2.1, 1.2.2 and 1.2.3 on the day of each release.
+    evidence:
+      - metrics:packaging.latest_release_packaged = true
+      - metrics:packaging.in_eic_shell = true
+      - metrics:packaging.eic_shell_version = 1.2.2
+      - https://github.com/eic/eic-spack/blob/5b666599332b0974af162067e1a075d1661a3580/spack_repo/eic/packages/eic_smear/package.py#L24-L28
+    gaps: []
+    actions: []
+  dist.releases:
+    level: 1
+    confidence: high
+    rationale: >-
+      Eight tags in 24 months and a documented SemVer scheme exist, but release 1.2.1 has no notes,
+      1.2.2 has only a compare link, and only one tag (1.1.13) falls in the first of the two years.
+    evidence:
+      - metrics:git.tags_24m = 8
+      - metrics:releases.with_notes_fraction_24m = 0.833
+      - https://github.com/eic/eic-smear/releases/tag/1.2.1
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/README.md#L292-L294
+    gaps:
+      - Not every release has release notes.
+      - Fewer than 2 releases between October 2024 and October 2025.
+    actions:
+      - action: Generate release notes for every tag (GitHub "Generate release notes") and backfill notes for 1.2.1 and 1.2.2.
+        priority: medium
+        effort: S
+  dist.dependencies:
+    level: 1
+    confidence: high
+    rationale: >-
+      ROOT has a minimum version, but HepMC3 and zlib are found without versions, and the source
+      vendors gzstream (2002) and a copy of HepMC3 `ReaderFactory.h` for HepMC3 older than 3.2.4.
+    evidence:
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/CMakeLists.txt#L39-L59
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/src/erhic/EventFactoryHepMC.cxx#L39-L47
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/include/eicsmear/gzstream.h#L1-L25
+      - metrics:ci.action_refs_not_sha_pinned = 3
+    gaps:
+      - "`find_package(HepMC3)` and `find_package(ZLIB)` have no minimum versions."
+      - Unmaintained vendored gzstream and HepMC3 compatibility header remain.
+    actions:
+      - action: Add `VERSION` minimums to `find_package(HepMC3 3.2.4 ...)` and `find_package(ZLIB ...)` and delete `include/eicsmear/HepMC_3_2_4_ReaderFactory.h`.
+        priority: medium
+        effort: S
+      - action: Replace vendored `gzstream` with ROOT or Boost.Iostreams zlib streams, or document its version and provenance in a third-party notice.
+        priority: low
+        effort: M
+  dist.reproducibility:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The README lists dependency versions in prose and the smearing output stores the detector
+      configuration, but the repository documents no machine-readable environment and records no
+      random seed or software version in outputs.
+    evidence:
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/README.md#L80-L84
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/src/smear/SmearTree.cxx#L106-L107
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/src/smear/Distributor.cxx#L48
+      - metrics:files.dockerfile = []
+    gaps:
+      - Running in a specific eic-shell version or other machine-readable environment is not documented.
+      - Random seeds (`gRandom`) are not recorded in smeared output.
+    actions:
+      - action: Document in the README which eic-shell release ships each eic-smear version and how to run in it.
+        priority: medium
+        effort: S
+      - action: Write the `gRandom` seed and eic-smear version as `TNamed` objects next to the `detector` object in `SmearTree` output.
+        priority: medium
+        effort: S
+  dist.portability:
+    level: 1
+    confidence: high
+    rationale: >-
+      CI builds only on Linux x86_64 with the eic_xl container's GCC; macOS is mentioned in the README
+      but not tested.
+    evidence:
+      - metrics:ci.runs_on = ["ubuntu-latest"]
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/.github/workflows/linux-eic-shell.yml#L21-L33
+    gaps:
+      - No second compiler, architecture or OS in CI.
+    actions:
+      - action: Add a Clang build (`CXX=clang++` in eic-shell) and a `macos-latest` job with Homebrew ROOT to the CI matrix.
+        priority: medium
+        effort: S
+  eic.reuse:
+    level: 1
+    confidence: medium
+    rationale: >-
+      HepMC3 is used for HepMC input and output, but generator events and smeared particles use
+      custom ROOT classes in place of HepMC3/EDM4hep/EDM4eic records, and a verbatim copy of HepMC3
+      `ReaderFactory.h` is kept.
+    evidence:
+      - metrics:eic.components_detected.hepmc3.files = 6
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/src/erhic/EventFactoryHepMC.cxx#L39-L47
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/README.md#L169-L173
+    gaps:
+      - Vendored HepMC3 `ReaderFactory.h` duplicates HepMC3 functionality.
+      - Smeared output uses custom `Smear::ParticleMCS` classes instead of EDM4eic, without documented justification.
+    actions:
+      - action: Remove `include/eicsmear/HepMC_3_2_4_ReaderFactory.h` and require HepMC3 >= 3.2.4.
+        priority: medium
+        effort: S
+      - action: Document in the README why the EicTree/Smeared formats are kept instead of HepMC3/EDM4eic, or add an EDM4eic writer for smeared output.
+        priority: medium
+        effort: M
+  eic.data-model:
+    level: 1
+    confidence: medium
+    rationale: >-
+      HepMC2/3 input and HepMC3 output are supported, but the primary outputs are ROOT TTrees of
+      custom eic-smear classes whose schema is documented only in header comments and that need the
+      eic-smear dictionaries to read.
+    evidence:
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/README.md#L43-L59
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/README.md#L137-L163
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/src/smear/SmearTree.cxx#L106-L107
+    gaps:
+      - The EicTree and Smeared tree schemas and the EIC text input format are not documented as file formats.
+      - Smeared output is not in an EIC-standard format (EDM4eic).
+    actions:
+      - action: Add a document listing every branch and field of the EicTree and Smeared trees and the EIC text input format.
+        priority: medium
+        effort: M
+  eic.environment:
+    level: 1
+    confidence: medium
+    rationale: >-
+      CI builds in the eic_xl nightly image and eic-shell ships eic-smear, but the README does not
+      document building or running in eic-shell and CI runs no tests there.
+    evidence:
+      - metrics:ci.uses_eic_shell = true
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/.github/workflows/linux-eic-shell.yml#L17-L33
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/README.md#L78-L108
+    gaps:
+      - The README has no eic-shell instructions.
+      - CI in eic-shell builds but does not test.
+    actions:
+      - action: Add an eic-shell section to the README and run a `BuildTree`/`SmearTree` example in the existing eic-shell CI job.
+        priority: medium
+        effort: S
+  eic.currency:
+    level: 2
+    confidence: medium
+    rationale: >-
+      The current eic-shell ships 1.2.2 and the nightly-image build succeeds with ROOT 6.40.04 and
+      HepMC3 3.3.0 without deprecation warnings, but compatibility code for HepMC3 older than 3.2.4
+      remains and adaptation timing cannot be measured from public evidence.
+    evidence:
+      - metrics:packaging.eic_shell_version = 1.2.2
+      - https://github.com/eic/eic-smear/actions/runs/36442095456
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/src/erhic/EventFactoryHepMC.cxx#L39-L47
+    gaps:
+      - Compatibility code for HepMC3 < 3.2.4 is retained; declared minimums (C++11, ROOT 6.20) lag the stack.
+    actions:
+      - action: Raise minimums to the current eic-shell versions (ROOT 6.40, HepMC3 3.3, C++20) and remove the HepMC3 compatibility branch.
+        priority: medium
+        effort: S
+  via.license:
+    level: 2
+    confidence: high
+    rationale: >-
+      A single GPL-3.0 license is detected, compatible with ROOT (LGPL), HepMC3 (GPL-3.0) and gzstream
+      (LGPL-2.1+); source files carry no SPDX headers and there are no contribution terms.
+    evidence:
+      - metrics:repo.license_spdx = GPL-3.0
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/LICENSE
+    gaps:
+      - No SPDX headers; third-party code (gzstream, HepMC3 header, cpplint) is not listed in a license inventory.
+      - No documented contribution terms (DCO or inbound = outbound).
+    actions:
+      - action: Add `SPDX-License-Identifier` headers, a REUSE `LICENSES/` directory covering gzstream and cpplint, and the REUSE lint to CI.
+        priority: low
+        effort: M
+  via.citation:
+    level: 0
+    confidence: high
+    rationale: >-
+      There is no CITATION.cff, Zenodo record, codemeta file or citation request in the README.
+    evidence: []
+    gaps:
+      - No machine-readable citation metadata or DOI.
+    actions:
+      - action: Add `CITATION.cff` listing the authors in `AUTHORS` and enable the Zenodo-GitHub integration for releases.
+        priority: high
+        effort: S
+  via.adoption:
+    level: 3
+    confidence: high
+    rationale: >-
+      eic-smear ships in eic-shell, is a dependency of eicsmeardetectors and ejana, and is used in
+      sPHENIX collaboration analysis code.
+    evidence:
+      - metrics:packaging.in_eic_shell = true
+      - metrics:eic.eic_spack_dependents = ["ejana"]
+      - https://github.com/eic/eicsmeardetectors/blob/433b13bd25f01350f109501209b17a5db8b302a9/CMakeLists.txt#L10
+      - https://github.com/sPHENIX-Collaboration/analysis/blob/93c9699663c7f508ad7dc83827a2991cf58e596a/EICMCAnalysis/analysis_eicsmear/eic_sphenix.C#L21
+    gaps: []
+    actions: []
+  via.support:
+    level: 1
+    confidence: medium
+    rationale: >-
+      The maintainer and contacts are identified with BNL addresses, but no owning EIC/ePIC body,
+      institutional commitment or funding is stated.
+    evidence:
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/AUTHORS#L1-L2
+      - https://github.com/eic/eic-smear/blob/9e00d758e9c87a067ceb6e902648a8b28783491c/README.md#L8-L10
+    gaps:
+      - Maintenance responsibility within the EIC/ePIC structure is not documented.
+    actions:
+      - action: State in the README the EIC/ePIC working group that owns eic-smear and any funding or institutional support.
+        priority: medium
+        effort: S
