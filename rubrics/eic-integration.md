@@ -26,6 +26,13 @@ framework: JANA2, EICrecon; tracking: ACTS; simulation: Geant4, npsim; generator
 analysis: ROOT, uproot, awkward; and so on). `reference/eic-stack-snapshot.yaml` lists what the
 current eic-shell ships, and at which versions.
 
+**Upstream projects** (`role: upstream` in `projects.yaml`) are themselves EIC-supported components,
+developed outside EIC for a wider community. For them, `eic.reuse` judges reuse of the *other*
+components they could build on. For `eic.environment` and `eic.currency`, testing by the EIC stack
+counts as well as the project's own CI: for example eic/containers building and testing the
+project, or EIC repositories running it in their CI. Where a gap can only be closed on the EIC
+side, still record it, and begin its action with "(EIC side)".
+
 ## `eic.reuse` — Reuse of EIC-supported components
 
 **Question.** Where the project needs functionality that an EIC-supported component provides, does

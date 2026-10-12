@@ -73,6 +73,7 @@ nav a[aria-current="page"] { color: var(--text); font-weight: 600; }
 
 .chip { display: inline-block; font-size: 0.72rem; padding: 0 0.4rem; margin-left: 0.3rem; border: 1px solid var(--border); border-radius: 999px; color: var(--text-2); vertical-align: middle; white-space: nowrap; }
 .chip.core { border-color: var(--lvl-2); }
+.chip.upstream { border-style: dashed; }
 
 /* Level cells: the number is always shown; color is secondary. */
 .cell { display: inline-flex; align-items: center; justify-content: center; width: 1.6rem; height: 1.6rem; border-radius: 4px; font-weight: 650; font-size: 0.85rem; text-decoration: none !important; }

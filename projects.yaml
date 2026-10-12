@@ -13,6 +13,7 @@
 #                infrastructure | tooling
 #   role:        core      - part of the EIC-supported stack / ePIC production chain
 #                community - developed in the EIC community, not (yet) part of the core stack
+#                upstream  - EIC-supported dependency developed outside EIC for a wider community
 #   packages:    optional package names where they differ from the repository name or must be
 #                checked explicitly: { spack: ..., pypi: ..., conda: ... }. PyPI and conda-forge
 #                are checked only when listed here.
@@ -134,3 +135,46 @@ projects:
     repo: https://github.com/eic/ai-epic-background
     domain: simulation
     role: community
+
+  # Upstream dependencies of the EIC-supported stack.
+
+  - id: podio
+    name: podio
+    repo: https://github.com/AIDASoft/podio
+    domain: data-model
+    role: upstream
+
+  - id: dd4hep
+    name: DD4hep
+    repo: https://github.com/AIDASoft/DD4hep
+    domain: geometry
+    role: upstream
+
+  - id: edm4hep
+    name: EDM4hep
+    repo: https://github.com/key4hep/EDM4hep
+    domain: data-model
+    role: upstream
+
+  - id: acts
+    name: ACTS
+    repo: https://github.com/acts-project/acts
+    domain: reconstruction
+    role: upstream
+
+  - id: geant4
+    name: Geant4
+    repo: https://github.com/Geant4/geant4
+    domain: simulation
+    role: upstream
+    notes: >-
+      The GitHub repository is a read-only mirror that imports release source trees; development happens in a
+      CERN GitLab repository that is not public, and issues are handled outside GitHub (bugzilla, user forum).
+      Apply the rubric's public-evidence rule to what is publicly visible, including the Geant4 website,
+      release notes, and bug tracker.
+
+  - id: root
+    name: ROOT
+    repo: https://github.com/root-project/root
+    domain: analysis
+    role: upstream
