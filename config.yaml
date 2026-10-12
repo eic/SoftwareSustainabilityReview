@@ -1,0 +1,64 @@
+# Repository-wide settings for `ssr`.
+
+site:
+  title: EIC Software Sustainability Review
+  # GitHub repository that hosts this review; used for links in the site and PR summaries.
+  repo: eic/SoftwareSustainabilityReview
+  url: https://eic.github.io/SoftwareSustainabilityReview/
+
+collect:
+  # Local cache for project checkouts and helper clones (not committed).
+  cache_dir: ~/.cache/ssr
+  # Commit authors / reviewers matching these (case-insensitive substrings of name, e-mail, or
+  # login) are bots and excluded from people counts.
+  bot_patterns:
+    - "[bot]"
+    - "-bot"
+    - "bot@"
+    - "github-actions"
+    - "dependabot"
+    - "pre-commit-ci"
+    - "renovate"
+    - "noreply@anthropic.com"
+    - "eic-container-ci"
+  # Exact (case-insensitive) author names or logins that are agents, not people.
+  bot_names:
+    - copilot
+    - claude
+    - github
+  # E-mail domains that say nothing about institutional affiliation.
+  generic_email_domains:
+    - gmail.com
+    - googlemail.com
+    - users.noreply.github.com
+    - noreply.github.com
+    - hotmail.com
+    - outlook.com
+    - live.com
+    - yahoo.com
+    - icloud.com
+    - me.com
+    - mac.com
+    - protonmail.com
+    - proton.me
+    - pm.me
+    - qq.com
+    - 163.com
+    - 126.com
+    - gmx.de
+    - gmx.net
+    - web.de
+    - mail.ru
+    - yandex.ru
+    - localhost
+    - localdomain
+
+stack:
+  containers_repo: eic/containers
+  containers_ref: master
+  environment_file: spack-environment/xl/spack.yaml
+  packages_file: spack-environment/packages.yaml
+  eic_spack_repo: eic/eic-spack
+  eic_spack_packages_dir: spack_repo/eic/packages
+  spack_builtin_repo: spack/spack-packages
+  spack_builtin_packages_dir: repos/spack_repo/builtin/packages

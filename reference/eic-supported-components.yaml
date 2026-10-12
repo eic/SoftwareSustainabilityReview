@@ -1,0 +1,279 @@
+# EIC-supported software components: curated (human-owned).
+#
+# The EIC-supported stack is what ships in the EIC software environment (eic-shell, built from
+# https://github.com/eic/containers). This file lists the components that matter for the
+# `eic.reuse` and `eic.data-model` criteria: what functionality each one provides, and regular
+# expressions that `ssr collect` uses to find where a project uses it. Which components ship now,
+# and at which versions, is in the generated `eic-stack-snapshot.yaml` (`ssr refresh-stack`).
+#
+# Fields:
+#   kind:     domain  - EIC/HEP domain functionality that a project should reuse rather than
+#                       reimplement.
+#             generic - general-purpose libraries. Using them is good practice, but it does not
+#                       show integration with the EIC stack on its own.
+#   provides: the functionality a project would otherwise duplicate.
+#   spack:    the package name in eic-shell (spack).
+#   patterns: Python regular expressions, matched line by line against source and build files.
+
+components:
+  dd4hep:
+    kind: domain
+    repo: https://github.com/AIDASoft/DD4hep
+    spack: dd4hep
+    provides: Detector geometry description (compact XML + C++ plugins), geometry services, Geant4 simulation glue (DDG4).
+    patterns:
+      - 'find_package\(\s*DD4hep'
+      - '#include\s*[<"](DD4hep|DDG4|DDRec|DDSegmentation)/'
+      - '^\s*(import|from)\s+(DDG4|dd4hep)\b'
+      - '<lccdd\b'
+      - '\bddsim\b'
+
+  epic:
+    kind: domain
+    repo: https://github.com/eic/epic
+    spack: epic
+    provides: The ePIC detector geometry (DD4hep compact files and plugins), detector configurations.
+    patterns:
+      - '\$\{?DETECTOR_PATH\b'
+      - '\$\{?DETECTOR_CONFIG\b'
+      - '\bepic(_craterlake|_brycecanyon|_ip6)\w*\.xml\b'
+
+  npsim:
+    kind: domain
+    repo: https://github.com/eic/npsim
+    spack: npsim
+    provides: ePIC full simulation front-end (ddsim-based) and simulation plugins.
+    patterns:
+      - '\bnpsim\b'
+
+  geant4:
+    kind: domain
+    repo: https://github.com/Geant4/geant4
+    spack: geant4
+    provides: Particle transport and detector simulation.
+    patterns:
+      - 'find_package\(\s*Geant4'
+      - '#include\s*[<"]G4\w+\.hh[>"]'
+
+  podio:
+    kind: domain
+    repo: https://github.com/AIDASoft/podio
+    spack: podio
+    provides: Event data model generation and I/O (ROOT/SIO/RNTuple backends), frames, collections.
+    patterns:
+      - 'find_package\(\s*podio'
+      - '\bpodio::'
+      - '#include\s*[<"]podio/'
+      - '^\s*(import|from)\s+podio\b'
+
+  edm4hep:
+    kind: domain
+    repo: https://github.com/key4hep/EDM4hep
+    spack: edm4hep
+    provides: Common HEP event data model (MC particles, hits, tracks, clusters).
+    patterns:
+      - 'find_package\(\s*EDM4HEP'
+      - '\bedm4hep::'
+      - '#include\s*[<"]edm4hep/'
+      - '^\s*(import|from)\s+edm4hep\b'
+
+  edm4eic:
+    kind: domain
+    repo: https://github.com/eic/EDM4eic
+    spack: edm4eic
+    provides: EIC extension of EDM4hep (reconstructed particles, PID, calorimetry, tracking types).
+    patterns:
+      - 'find_package\(\s*EDM4EIC'
+      - '\bedm4eic::'
+      - '#include\s*[<"]edm4eic/'
+      - '^\s*(import|from)\s+edm4eic\b'
+
+  jana2:
+    kind: domain
+    repo: https://github.com/JeffersonLab/JANA2
+    spack: jana2
+    provides: Multi-threaded event/timeframe processing framework (factories, processors, plugins).
+    patterns:
+      - 'find_package\(\s*JANA'
+      - '#include\s*[<"]JANA/'
+      - '\bJ(Factory|EventProcessor|EventSource|Application|OmniFactory)\b'
+
+  eicrecon:
+    kind: domain
+    repo: https://github.com/eic/EICrecon
+    spack: eicrecon
+    provides: ePIC reconstruction (JANA2 plugins, algorithms, configuration), reconstruction output.
+    patterns:
+      - 'find_package\(\s*EICrecon'
+      - '\beicrecon\b'
+      - '\bEICrecon\b'
+
+  algorithms:
+    kind: domain
+    repo: https://github.com/eic/algorithms
+    spack: algorithms
+    provides: Framework-independent algorithm interface (properties, services, logging) used by EICrecon.
+    patterns:
+      - 'find_package\(\s*algorithms'
+      - '#include\s*[<"]algorithms/'
+      - '\balgorithms::(Algorithm|Service|Property)'
+
+  acts:
+    kind: domain
+    repo: https://github.com/acts-project/acts
+    spack: acts
+    provides: Track reconstruction (propagation, fitting, finding, vertexing), tracking geometry.
+    patterns:
+      - 'find_package\(\s*Acts'
+      - '\bActs::'
+      - '#include\s*[<"]Acts/'
+      - '^\s*(import|from)\s+acts\b'
+
+  covfie:
+    kind: domain
+    repo: https://github.com/acts-project/covfie
+    spack: covfie
+    provides: Vector field (magnetic field map) storage and interpolation, CPU and GPU.
+    patterns:
+      - 'find_package\(\s*covfie'
+      - '#include\s*[<"]covfie/'
+
+  irt:
+    kind: domain
+    repo: https://github.com/eic/irt
+    spack: irt
+    provides: Indirect ray tracing for Cherenkov detector reconstruction.
+    patterns:
+      - 'find_package\(\s*IRT'
+      - '#include\s*[<"]IRT/'
+
+  hepmc3:
+    kind: domain
+    repo: https://gitlab.cern.ch/hepmc/HepMC3
+    spack: hepmc3
+    provides: Generator event record and I/O.
+    patterns:
+      - 'find_package\(\s*HepMC3'
+      - '\bHepMC3::'
+      - '#include\s*[<"]HepMC3/'
+      - '^\s*(import|from)\s+pyhepmc\b'
+
+  afterburner:
+    kind: domain
+    repo: https://github.com/eic/afterburner
+    spack: afterburner
+    provides: Beam effects (crossing angle, beam divergence, vertex spread) applied to generator events.
+    patterns:
+      - '\bafterburner\b'
+      - '\babconv\b'
+
+  hepmcmerger:
+    kind: domain
+    repo: https://github.com/eic/HEPMC_Merger
+    spack: hepmcmerger
+    provides: Merging signal and background HepMC events into time frames.
+    patterns:
+      - '\bSignalBackgroundMerger\b'
+      - '\bhepmcmerger\b'
+
+  pythia8:
+    kind: domain
+    repo: https://gitlab.com/Pythia8/releases
+    spack: pythia8
+    provides: General-purpose event generator.
+    patterns:
+      - 'find_package\(\s*Pythia8'
+      - '#include\s*[<"]Pythia8/'
+      - '^\s*(import|from)\s+pythia8\b'
+
+  fastjet:
+    kind: domain
+    repo: https://fastjet.fr
+    spack: fastjet
+    provides: Jet clustering.
+    patterns:
+      - 'find_package\(\s*FastJet'
+      - '#include\s*[<"]fastjet/'
+      - '^\s*(import|from)\s+fastjet\b'
+
+  root:
+    kind: generic
+    repo: https://github.com/root-project/root
+    spack: root
+    provides: Data analysis framework, ROOT file I/O, histogramming, fitting, RDataFrame.
+    patterns:
+      - 'find_package\(\s*ROOT'
+      - '#include\s*[<"]T[A-Z]\w+\.h[>"]'
+      - '#include\s*[<"]ROOT/'
+      - '^\s*(import|from)\s+ROOT\b'
+
+  uproot:
+    kind: generic
+    repo: https://github.com/scikit-hep/uproot5
+    spack: py-uproot
+    provides: Python ROOT file I/O without ROOT.
+    patterns:
+      - '^\s*(import|from)\s+uproot\b'
+
+  awkward:
+    kind: generic
+    repo: https://github.com/scikit-hep/awkward
+    spack: py-awkward
+    provides: Jagged-array analysis in Python.
+    patterns:
+      - '^\s*(import|from)\s+awkward\b'
+
+  onnxruntime:
+    kind: generic
+    repo: https://github.com/microsoft/onnxruntime
+    spack: onnx
+    provides: ML model inference (ONNX) inside reconstruction.
+    patterns:
+      - '#include\s*[<"]onnxruntime'
+      - '^\s*(import|from)\s+onnxruntime\b'
+
+  eigen:
+    kind: generic
+    repo: https://gitlab.com/libeigen/eigen
+    spack: eigen
+    provides: Linear algebra.
+    patterns:
+      - 'find_package\(\s*Eigen3'
+      - '#include\s*[<"]Eigen/'
+
+  spdlog:
+    kind: generic
+    repo: https://github.com/gabime/spdlog
+    spack: spdlog
+    provides: Logging.
+    patterns:
+      - 'find_package\(\s*spdlog'
+      - '#include\s*[<"]spdlog/'
+
+  fmt:
+    kind: generic
+    repo: https://github.com/fmtlib/fmt
+    spack: fmt
+    provides: Formatting.
+    patterns:
+      - 'find_package\(\s*fmt\b'
+      - '#include\s*[<"]fmt/'
+
+  xrootd:
+    kind: generic
+    repo: https://github.com/xrootd/xrootd
+    spack: xrootd
+    provides: Remote file access (root:// URLs), including the EIC data stores.
+    patterns:
+      - 'root://'
+      - '#include\s*[<"]XrdCl/'
+      - '^\s*(import|from)\s+XRootD\b'
+
+  snakemake:
+    kind: generic
+    repo: https://github.com/snakemake/snakemake
+    spack: snakemake
+    provides: Workflow management (used by the ePIC benchmarks).
+    patterns:
+      - '(^|/)Snakefile$'
+      - '^\s*rule\s+\w+\s*:'

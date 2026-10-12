@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Rubrics · {{ site.title }}{% endblock %}
+{% block content %}
+<h1>Rubrics</h1>
+<nav class="toc" aria-label="Categories">
+  <a href="#method">Method</a>
+  {% for cat in categories %}<a href="#cat-{{ cat.id }}">{{ cat.title }}</a>{% endfor %}
+</nav>
+<section id="method" class="prose">{{ common_html }}</section>
+{% for cat, html in rubric_html %}
+<section id="cat-{{ cat.id }}" class="prose rubric">{{ html }}</section>
+{% endfor %}
+{% endblock %}

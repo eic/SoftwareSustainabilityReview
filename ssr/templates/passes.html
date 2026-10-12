@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Passes · {{ site.title }}{% endblock %}
+{% block content %}
+<h1>Review passes</h1>
+<p class="lede">Each pass assesses some or all projects at one point in time. It is recorded in
+  <code>passes/&lt;id&gt;/</code> and merged through a pull request.</p>
+{% if passes %}
+<table class="kv">
+  <thead><tr><th scope="col">Pass</th><th scope="col">Projects</th><th scope="col">Assessor</th><th scope="col">Rubrics commit</th></tr></thead>
+  <tbody>{% for x in passes %}
+    <tr><td><a href="passes/{{ x.id }}.html">{{ x.id }}</a></td>
+      <td>{{ (x.manifest.projects or [])|length }}</td>
+      <td><code>{{ (x.manifest.assessor or {}).model }}</code></td>
+      <td>{% if x.manifest.rubrics_commit %}<a href="https://github.com/{{ site.repo }}/tree/{{ x.manifest.rubrics_commit }}/rubrics"><code>{{ x.manifest.rubrics_commit[:12] }}</code></a>{% endif %}</td></tr>
+  {% endfor %}</tbody>
+</table>
+{% else %}<p class="empty">No passes yet.</p>{% endif %}
+{% endblock %}

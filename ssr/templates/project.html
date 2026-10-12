@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}{{ p.name }} · {{ site.title }}{% endblock %}
+{% block content %}
+<p class="crumbs"><a href="../index.html">Overview</a> /</p>
+<h1>{{ p.name }}</h1>
+<p class="meta">
+  <a href="{{ p.repo }}">{{ p.repo|replace('https://', '') }}</a>
+  <span class="chip">{{ p.domain }}</span><span class="chip {% if p.role == 'core' %}core{% endif %}">{{ p.role }}</span>
+  · pass <a href="../passes/{{ r.pass }}.html">{{ r.pass }}</a>
+  · commit <a href="{{ p.repo }}/tree/{{ a.commit }}"><code>{{ a.commit[:12] }}</code></a>
+  · assessor <code>{{ a.assessor.model }}</code>
+</p>
+
+<p class="summary">{{ a.summary|md_inline }}</p>
+
+<section class="scorecard" aria-label="Scores by category">
+  <div class="score-total"><span class="big">{{ r.scores.overall|score }}</span><span class="muted">overall, of 3</span></div>
+  {% for cat in categories %}
+  <div class="score-cat">
+    <div class="score-cat-head"><a href="#cat-{{ cat.id }}">{{ cat.title }}</a><span class="score {{ r.scores.categories[cat.id]|scoreclass }}">{{ r.scores.categories[cat.id]|score }}</span></div>
+    <div class="cells">{% for c in cat.criteria %}{% set x = a.criteria[c.id] %}<a class="cell {{ x.level|lvlclass }}" href="#{{ c.id }}"
+      data-tip-title="{{ c.title }}" data-tip-level="{{ x.level if x.level is not none else '–' }} {{ LEVEL_NAMES[x.level] }}" data-tip-body="{{ x.rationale|replace('`', '') }}">{{ x.level if x.level is not none else '–' }}</a>{% endfor %}</div>
+  </div>
+  {% endfor %}
+</section>
+
+<section id="actions">
+  <h2>Action plan</h2>
+  <p class="muted">The smallest steps that raise each criterion to its next level, in priority order.
+    <a href="{{ p.id }}.feedback.md" download>Download as Markdown</a> ·
+    <button type="button" class="linkish" data-copy="feedback-md">Copy as Markdown checklist</button></p>
+  {% if actions %}
+  <table class="actions">
+    <thead><tr><th scope="col">Priority</th><th scope="col">Effort</th><th scope="col">Criterion</th><th scope="col">Action</th></tr></thead>
+    <tbody>{% for x in actions %}
+      <tr><td><span class="prio prio-{{ x.priority }}">{{ x.priority }}</span></td><td>{{ x.effort }}</td>
+        <td><a href="#{{ x.criterion }}"><code>{{ x.criterion }}</code></a> <span class="muted">({{ x.level }})</span></td>
+        <td>{{ x.action|md_inline }}</td></tr>
+    {% endfor %}</tbody>
+  </table>
+  {% else %}<p>No actions: every criterion is at level 3.</p>{% endif %}
+  <textarea id="feedback-md" hidden>{{ feedback }}</textarea>
+</section>
+
+<section id="criteria">
+  <h2>Assessment by criterion</h2>
+  {% for cat in categories %}
+  <h3 id="cat-{{ cat.id }}">{{ cat.title }} <span class="score {{ r.scores.categories[cat.id]|scoreclass }}">{{ r.scores.categories[cat.id]|score }}</span></h3>
+  {% for c in cat.criteria %}{% set x = a.criteria[c.id] %}
+  <article class="crit" id="{{ c.id }}">
+    <header>
+      <span class="cell {{ x.level|lvlclass }}">{{ x.level if x.level is not none else '–' }}</span>
+      <h4>{{ c.title }} <a class="muted small" href="../rubrics.html#{{ c.id }}"><code>{{ c.id }}</code></a></h4>
+      <span class="muted small">{{ LEVEL_NAMES[x.level] }} · confidence {{ x.confidence }}</span>
+    </header>
+    {% if x.not_applicable %}<p><em>Not applicable:</em> {{ x.not_applicable|md_inline }}</p>{% endif %}
+    <p>{{ x.rationale|md_inline }}</p>
+    {% if x.evidence %}<details><summary>Evidence ({{ x.evidence|length }})</summary><ul class="evidence">{% for e in x.evidence %}<li>{{ e|evidence }}</li>{% endfor %}</ul></details>{% endif %}
+    {% if x.gaps %}<p class="label">Gaps to the next level</p><ul>{% for g in x.gaps %}<li>{{ g|md_inline }}</li>{% endfor %}</ul>{% endif %}
+    {% if x.actions %}<p class="label">Actions</p><ul>{% for act in x.actions %}<li><span class="prio prio-{{ act.priority }}">{{ act.priority }}</span> <span class="muted">{{ act.effort }}</span> {{ act.action|md_inline }}</li>{% endfor %}</ul>{% endif %}
+  </article>
+  {% endfor %}
+  {% endfor %}
+</section>
+
+<section id="metrics">
+  <h2>Key metrics</h2>
+  <p class="muted">Collected automatically at the assessed commit. People are counted, never named. Full data:
+    <a href="https://github.com/{{ site.repo }}/blob/main/passes/{{ r.pass }}/{{ p.id }}.metrics.json">metrics.json</a>.</p>
+  <table class="kv">
+    {% for label, v, key in key_metrics %}<tr><th scope="row">{{ label }}</th><td>{{ v|metric }}</td><td class="muted small"><code>{{ key }}</code></td></tr>{% endfor %}
+  </table>
+  {% if metrics_errors %}<p class="muted small">Not collected: {{ metrics_errors|join('; ') }}</p>{% endif %}
+</section>
+
+{% if history|length > 1 %}
+<section id="history">
+  <h2>History</h2>
+  <div class="matrix-scroll">
+  <table class="history">
+    <thead><tr><th scope="col">Criterion</th>{% for pid, _ in history %}<th scope="col"><a href="../passes/{{ pid }}.html">{{ pid }}</a></th>{% endfor %}</tr></thead>
+    <tbody>{% for cat in categories %}{% for c in cat.criteria %}
+      <tr><th scope="row"><code>{{ c.id }}</code></th>{% for pid, h in history %}{% set hx = h.criteria.get(c.id) %}
+        <td>{% if hx %}<span class="cell {{ hx.level|lvlclass }}">{{ hx.level if hx.level is not none else '–' }}</span>{% endif %}</td>{% endfor %}</tr>
+    {% endfor %}{% endfor %}</tbody>
+  </table>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

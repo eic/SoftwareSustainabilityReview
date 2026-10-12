@@ -1,0 +1,34 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.0
+      - run: uv run --extra test pytest -q
+      - name: Validate projects, rubrics, and passes
+        run: uv run ssr validate --strict
+      - name: Build site
+        run: uv run ssr build-site --out _site
+      - name: Pass summary
+        if: github.event_name == 'pull_request'
+        run: |
+          # Summaries for any pass directories this PR adds or changes.
+          git fetch --depth=1 origin "${{ github.base_ref }}"
+          for d in $(git diff --name-only "origin/${{ github.base_ref }}" -- passes/ | cut -d/ -f2 | sort -u); do
+            uv run ssr summarize "$d" >> "$GITHUB_STEP_SUMMARY"
+          done
+      - uses: actions/upload-artifact@v7
+        with:
+          name: site-preview
+          path: _site
+          retention-days: 7

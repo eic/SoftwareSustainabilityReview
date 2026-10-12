@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Sustainability of EIC software</h1>
+<p class="lede">
+  Each project is assessed against {{ criteria|length }} criteria in {{ categories|length }} categories, with levels
+  anchored to observable evidence (<a href="rubrics.html">rubrics</a>). The goal is comparison across projects and
+  over time, and concrete next steps for each project. Each project page lists its actions by priority.
+</p>
+
+<div class="legend" aria-label="Level scale">
+  {% for l in range(4) %}<span class="legend-item"><span class="cell lvl-{{ l }}">{{ l }}</span>{{ LEVEL_NAMES[l] }}</span>{% endfor %}
+  <span class="legend-item"><span class="cell lvl-na">–</span>Not applicable</span>
+</div>
+
+<div class="filters" role="group" aria-label="Filters">
+  <label>Domain
+    <select id="f-domain"><option value="">All</option>{% for d in domains %}<option>{{ d }}</option>{% endfor %}</select>
+  </label>
+  <label>Role
+    <select id="f-role"><option value="">All</option><option>core</option><option>community</option></select>
+  </label>
+  <label>View
+    <select id="f-view"><option value="criteria">Criteria</option><option value="categories">Categories</option></select>
+  </label>
+</div>
+
+{% if rows %}
+<div class="matrix-scroll">
+<table class="matrix" id="matrix" data-view="criteria">
+  <thead>
+    <tr class="cat-row">
+      <th rowspan="2" class="sticky sortable" data-sort="name" scope="col">Project</th>
+      <th rowspan="2" class="sortable num" data-sort="overall" scope="col" aria-sort="descending">Overall</th>
+      {% for cat in categories %}
+      <th colspan="{{ cat.criteria|length }}" class="cat-head crit-col" scope="colgroup">
+        <a href="rubrics.html#cat-{{ cat.id }}">{{ cat.title }}</a></th>
+      <th rowspan="2" class="cat-col sortable num" data-sort="cat-{{ cat.id }}" scope="col">
+        <a href="rubrics.html#cat-{{ cat.id }}">{{ cat.title }}</a></th>
+      {% endfor %}
+    </tr>
+    <tr class="crit-row">
+      {% for cat in categories %}{% for c in cat.criteria %}
+      <th class="crit-col vert sortable" data-sort="{{ c.id }}" scope="col" title="{{ c.title }}">
+        <a href="rubrics.html#{{ c.id }}">{{ c.id.split('.', 1)[1] }}</a></th>
+      {% endfor %}{% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in rows %}{% set a = r.assessment %}
+    <tr data-domain="{{ r.project.domain }}" data-role="{{ r.project.role }}"
+        data-name="{{ r.project.name|lower }}" data-overall="{{ r.scores.overall or 0 }}"
+        {% for cat in categories %}data-cat-{{ cat.id }}="{{ r.scores.categories[cat.id] if r.scores.categories[cat.id] is not none else -1 }}" {% endfor %}>
+      <th class="sticky" scope="row">
+        <a href="projects/{{ r.project.id }}.html">{{ r.project.name }}</a>
+        <span class="chip">{{ r.project.domain }}</span>{% if r.project.role == 'core' %}<span class="chip core">core</span>{% endif %}
+      </th>
+      <td class="num"><span class="score {{ r.scores.overall|scoreclass }}">{{ r.scores.overall|score }}</span></td>
+      {% for cat in categories %}
+        {% for c in cat.criteria %}{% set x = a.criteria[c.id] %}
+        <td class="crit-col" data-k="{{ c.id }}" data-v="{{ x.level if x.level is not none else -1 }}">
+          <a class="cell {{ x.level|lvlclass }}" href="projects/{{ r.project.id }}.html#{{ c.id }}"
+             data-tip-title="{{ r.project.name }} · {{ c.title }}"
+             data-tip-level="{{ x.level if x.level is not none else '–' }} {{ LEVEL_NAMES[x.level] }}"
+             data-tip-body="{{ x.rationale|replace('`', '') }}">{{ x.level if x.level is not none else '–' }}</a>
+        </td>
+        {% endfor %}
+        <td class="cat-col num"><span class="score {{ r.scores.categories[cat.id]|scoreclass }}">{{ r.scores.categories[cat.id]|score }}</span></td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+<p class="muted small">
+  Category score: mean level of the category's applicable criteria. Overall: mean of the category scores.
+  Click a column header to sort; click a cell for the evidence. Data: <a href="data/latest.json">latest.json</a>.
+</p>
+{% else %}
+<p class="empty">No assessments yet. Run a review pass (see <code>REVIEWING.md</code>).</p>
+{% endif %}
+
+{% if unassessed %}
+<h2>Not yet assessed</h2>
+<ul class="plain">{% for r in unassessed %}<li><a href="{{ r.project.repo }}">{{ r.project.name }}</a> <span class="chip">{{ r.project.domain }}</span></li>{% endfor %}</ul>
+{% endif %}
+{% endblock %}

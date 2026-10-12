@@ -1,0 +1,135 @@
+# Projects assessed by the EIC Software Sustainability Review.
+#
+# Adding or removing a project is a normal PR. A review pass assesses every project listed here,
+# unless the pass is limited to a subset.
+#
+# Fields:
+#   id:          kebab-case identifier, used in file names and URLs (never change it once
+#                assessments exist).
+#   name:        display name.
+#   repo:        public git URL of the canonical repository (GitHub URLs get the full metrics;
+#                other hosts get git-only metrics).
+#   domain:      simulation | reconstruction | geometry | data-model | generator | analysis |
+#                infrastructure | tooling
+#   role:        core      - part of the EIC-supported stack / ePIC production chain
+#                community - developed in the EIC community, not (yet) part of the core stack
+#   packages:    optional package names where they differ from the repository name or must be
+#                checked explicitly: { spack: ..., pypi: ..., conda: ... }. PyPI and conda-forge
+#                are checked only when listed here.
+#   subdir:      optional; assess only this subdirectory of a monorepo.
+#   notes:       optional context for assessors (scope, known constraints).
+
+projects:
+  - id: eicrecon
+    name: EICrecon
+    repo: https://github.com/eic/EICrecon
+    domain: reconstruction
+    role: core
+
+  - id: epic
+    name: ePIC geometry
+    repo: https://github.com/eic/epic
+    domain: geometry
+    role: core
+
+  - id: edm4eic
+    name: EDM4eic
+    repo: https://github.com/eic/EDM4eic
+    domain: data-model
+    role: core
+
+  - id: npsim
+    name: npsim
+    repo: https://github.com/eic/npsim
+    domain: simulation
+    role: core
+
+  - id: algorithms
+    name: algorithms
+    repo: https://github.com/eic/algorithms
+    domain: reconstruction
+    role: core
+
+  - id: jana2
+    name: JANA2
+    repo: https://github.com/JeffersonLab/JANA2
+    domain: reconstruction
+    role: core
+
+  - id: irt
+    name: IRT (Indirect Ray Tracing)
+    repo: https://github.com/eic/irt
+    domain: reconstruction
+    role: core
+
+  - id: afterburner
+    name: afterburner
+    repo: https://github.com/eic/afterburner
+    domain: generator
+    role: core
+
+  - id: hepmc-merger
+    name: HEPMC_Merger
+    repo: https://github.com/eic/HEPMC_Merger
+    domain: generator
+    role: core
+    packages: { spack: hepmcmerger }
+
+  - id: eic-shell
+    name: eic-shell
+    repo: https://github.com/eic/eic-shell
+    domain: infrastructure
+    role: core
+
+  - id: containers
+    name: EIC containers
+    repo: https://github.com/eic/containers
+    domain: infrastructure
+    role: core
+
+  - id: eic-smear
+    name: eic-smear
+    repo: https://github.com/eic/eic-smear
+    domain: simulation
+    role: community
+
+  - id: epic-capybara
+    name: epic-capybara
+    repo: https://github.com/eic/epic-capybara
+    domain: tooling
+    role: community
+    packages: { spack: py-epic-capybara, pypi: epic-capybara }
+
+  - id: g4occt
+    name: G4OCCT
+    repo: https://github.com/eic/G4OCCT
+    domain: geometry
+    role: community
+
+  - id: timeframebuilder
+    name: TimeframeBuilder
+    repo: https://github.com/eic/TimeframeBuilder
+    domain: simulation
+    role: community
+
+  - id: epic-analysis
+    name: epic-analysis
+    repo: https://github.com/eic/epic-analysis
+    domain: analysis
+    role: community
+
+  - id: firebird
+    name: Firebird
+    repo: https://github.com/eic/firebird
+    domain: tooling
+    role: community
+    packages: { spack: pyrobird, pypi: pyrobird }
+    notes: >-
+      Monorepo: firebird-ng (TypeScript web event display), pyrobird (Python server/CLI, shipped in eic-shell
+      as the spack package `pyrobird`), and a DD4hep plugin. Assess the repository as a whole.
+
+  - id: ai-epic-background
+    name: ai-epic-background
+    repo: https://github.com/eic/ai-epic-background
+    domain: simulation
+    role: community

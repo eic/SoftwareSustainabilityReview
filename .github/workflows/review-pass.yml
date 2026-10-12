@@ -1,0 +1,60 @@
+name: review-pass
+
+# Runs a review pass with Claude Code, following .claude/skills/review-pass/SKILL.md, and opens a PR.
+#
+# Setup (once):
+#   - Add the secret ANTHROPIC_API_KEY (or CLAUDE_CODE_OAUTH_TOKEN and switch the input below).
+#   - PRs opened with the default GITHUB_TOKEN do not trigger other workflows, so the `tests` workflow
+#     would not run on the pass PR. To get CI on it, add a GitHub App token or fine-grained PAT with
+#     contents + pull-requests write as the secret REVIEW_PASS_TOKEN; it is used when present.
+
+on:
+  workflow_dispatch:
+    inputs:
+      projects:
+        description: "Space-separated project ids (empty = all projects)"
+        required: false
+        default: ""
+      model:
+        description: "Assessor model id"
+        required: true
+        default: "claude-opus-5-5"
+  # Quarterly passes, once the secrets above are configured:
+  # schedule:
+  #   - cron: "0 6 1 1,4,7,10 *"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: review-pass
+  cancel-in-progress: false
+
+jobs:
+  pass:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    env:
+      GH_TOKEN: ${{ secrets.REVIEW_PASS_TOKEN || secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          token: ${{ secrets.REVIEW_PASS_TOKEN || secrets.GITHUB_TOKEN }}
+      - uses: astral-sh/setup-uv@v10.3.0
+      - run: uv sync
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.REVIEW_PASS_TOKEN || secrets.GITHUB_TOKEN }}
+          prompt: |
+            Run a review pass by following .claude/skills/review-pass/SKILL.md exactly.
+            Projects: ${{ inputs.projects || 'all projects in projects.yaml' }}.
+            Your model id is ${{ inputs.model || 'claude-opus-5-5' }}; use agent name claude-code-action.
+            Finish by opening the pull request and printing its URL.
+          claude_args: >-
+            --model ${{ inputs.model || 'claude-opus-5-5' }}
+            --allowedTools "Bash(uv:*),Bash(git:*),Bash(gh:*),Bash(ls:*),Bash(cat:*),Bash(grep:*),Bash(find:*),Bash(head:*),Bash(wc:*),Read,Write,Edit,Glob,Grep,Task"
