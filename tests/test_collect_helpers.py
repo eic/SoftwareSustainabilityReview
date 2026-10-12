@@ -6,6 +6,7 @@ from ssr.collect import (
     bus_factor,
     institution_domain,
     is_vendored,
+    normalize_version,
     parse_github,
 )
 
@@ -72,3 +73,10 @@ def test_misc():
     assert parse_github("https://gitlab.com/x/y") is None
     assert is_vendored("cpp/external/CLI/App.hpp")
     assert not is_vendored("src/external.cc")
+
+
+def test_normalize_version():
+    assert normalize_version("v01-38") == normalize_version("1.38") == "1.38"
+    assert normalize_version("v1.42.0") == "1.42.0"
+    assert normalize_version("v00-17-04") == normalize_version("0.17.4")
+    assert normalize_version("2026.03.01") == "2026.3.1"

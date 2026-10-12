@@ -159,6 +159,13 @@ def institution_domain(email: str, generic: set[str]) -> str | None:
     return None if dom in generic else dom
 
 
+def normalize_version(tag: str) -> str:
+    """Compare release tags with package versions: v01-38 -> 1.38, v1.42.0 -> 1.42.0, 2026.03.01 -> 2026.3.1."""
+    t = re.sub(r"^(v|release[-_]?|version[-_]?)", "", tag.strip(), flags=re.I)
+    parts = re.split(r"[.\-_]", t)
+    return ".".join(str(int(p)) if p.isdigit() else p.lower() for p in parts if p)
+
+
 def is_vendored(path: str) -> bool:
     return any(seg.lower() in VENDOR_DIRS for seg in path.split("/")[:-1])
 
@@ -814,7 +821,7 @@ class Collector:
                     out["pypi"] = {"latest": json.load(r)["info"]["version"]}
             except OSError:
                 out["pypi"] = False
-        latest = ((partial.get("releases") or {}).get("latest_tag") or "").lstrip("vV")
-        packaged = [v for src in ("eic_spack", "spack_builtin") for v in ((out[src] or {}).get("versions") or [])]
+        latest = normalize_version((partial.get("releases") or {}).get("latest_tag") or "")
+        packaged = {normalize_version(v) for src in ("eic_spack", "spack_builtin") for v in ((out[src] or {}).get("versions") or [])}
         out["latest_release_packaged"] = (latest in packaged) if latest else None
         return out
