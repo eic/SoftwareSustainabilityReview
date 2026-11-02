@@ -41,7 +41,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           token: ${{ secrets.REVIEW_PASS_TOKEN || secrets.GITHUB_TOKEN }}
-      - uses: astral-sh/setup-uv@v10.3.0
+      - uses: astral-sh/setup-uv@v10.3.3
       - run: uv sync
       - run: |
           git config user.name "github-actions[bot]"
